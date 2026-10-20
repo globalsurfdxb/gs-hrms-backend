@@ -1,0 +1,21 @@
+meta {
+  name: Sign out
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+tests {
+  test("signed out (204)", function () {
+    expect(res.status).to.equal(204);
+  });
+}

@@ -1,0 +1,18 @@
+meta {
+  name: List personas
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/auth/dev/personas
+  body: none
+  auth: none
+}
+
+tests {
+  test("returns personas", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.length).to.be.greaterThan(0);
+  });
+}

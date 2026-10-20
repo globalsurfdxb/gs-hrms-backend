@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+src/generated
+prisma/migrations
+package-lock.json
+docs/api/openapi.json
+flow/**/*.html
+flow/**/*.pdf

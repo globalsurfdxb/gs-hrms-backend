@@ -1,0 +1,21 @@
+meta {
+  name: Get company
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/org/companies/{{companyId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Run "Create company" first — it fills `companyId`.
+}
+
+tests {
+  test("found", function () {
+    expect(res.status).to.equal(200);
+  });
+}

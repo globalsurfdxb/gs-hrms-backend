@@ -1,0 +1,72 @@
+<section class="module">
+  <div class="kicker">Employee Management</div>
+  <h1>6 · Offboarding</h1>
+  <p class="lead">How an employee leaves: a separation case with a clearance checklist, ending with the person becoming
+  Inactive and losing access.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> run it · <span class="chip c-lead">Team Lead</span> views direct reports</div>
+    <b>Frontend</b><div><code>/offboarding</code>, <code>/team/separation</code>, <code>context/SeparationContext.tsx</code></div>
+    <b>Backend</b><div>Phase 1</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>HR opens a <b>separation case</b> with the reason and notice period; the last working day is calculated.</li>
+    <li>Five clearance items are completed: handover, assets returned, access revoked, finance, exit interview.</li>
+    <li>HR approves and completes the case — the person becomes <b>Inactive</b> and can no longer sign in.</li>
+  </ol>
+
+  <h2>The flow</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["HR starts a separation case<br/>for an Active employee"]):::hr --> B["Reason · resignation date · notice period<br/>→ last working day is calculated"]:::hr
+  B --> C["Employee status: OFFBOARDING"]:::sys
+  C --> D["Clearance checklist"]:::hr
+  D --> D1["Knowledge handover"]:::lead
+  D --> D2["All company assets returned<br/>(ticks itself when every asset is returned)"]:::admin
+  D --> D3["Access revoked"]:::admin
+  D --> D4["Finance clearance"]:::admin
+  D --> D5["HR exit interview"]:::hr
+  D1 & D2 & D3 & D4 & D5 --> E{"All done?"}:::sys
+  E -- Yes --> F["Pending approval"]:::sys
+  F --> G["HR: Approve & complete"]:::hr
+  G --> H["Status: INACTIVE<br/>sign-in blocked, sessions ended"]:::good
+  C -. "Withdraw (before completion)" .-> W["Case removed<br/>employee back to ACTIVE"]:::bad
+    </pre>
+  </figure>
+
+  <h2>Statuses</h2>
+  <figure>
+    <pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> ClearancePending: case started
+  ClearancePending --> PendingApproval: all items done
+  PendingApproval --> ClearancePending: item un-ticked
+  PendingApproval --> Completed: approve and complete
+  ClearancePending --> Withdrawn
+  PendingApproval --> Withdrawn
+  Completed --> [*]
+    </pre>
+  </figure>
+
+  <h2>Rules</h2>
+  <ul>
+    <li>Reasons: Resignation, Termination, End of contract, Retirement, Other.</li>
+    <li>Notice: 0, 15, 30, 60 or 90 days. Last working day = resignation date + notice (HR can override).</li>
+    <li>Only <b>Active</b> employees without an open case can be offboarded.</li>
+    <li>A <b>Team Lead</b> can see their direct reports' cases but cannot change them.</li>
+    <li>The separation register can be exported to CSV.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet — decisions needed</h3>
+    <ul>
+      <li><b>No self-service resignation.</b> Only HR can start a case. Expected chain (from Workflow Settings):
+        Resignation logged → Manager / IT / Finance clearance → HR final approval — confirm with the lead.</li>
+      <li>Cases are lost on page refresh; the employee's sessions are not ended (the backend now does this).</li>
+    </ul>
+  </div>
+</section>

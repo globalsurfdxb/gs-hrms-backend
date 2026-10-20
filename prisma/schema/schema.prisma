@@ -1,0 +1,21 @@
+// Prisma entry point. Models live in one file per module next to this one:
+//   core.prisma       — roles, permissions, sessions, audit
+//   org.prisma        — locations, companies, departments, designations
+//   employees.prisma  — employee record
+//
+// Conventions (docs/conventions.md#database):
+//   - Model names PascalCase singular; tables snake_case plural via @@map.
+//   - Columns snake_case via @map; ids are UUID v7 unless the frontend relies on a readable id.
+//   - Timestamps are timestamptz(3); calendar days (leave, joining date) are @db.Date.
+//   - Money is Decimal(14,2) plus a currency column. Never Float.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -1,0 +1,59 @@
+<section class="module">
+  <div class="kicker">Reports</div>
+  <h1>14 · Dashboards and reports</h1>
+  <p class="lead">What each role sees when they open the system, and the reports HR and management can run and export.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Everyone</span> dashboard · <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> reports</div>
+    <b>Frontend</b><div><code>/dashboard</code>, <code>/reports</code>, <code>/hiring/dashboard</code>, <code>/hiring/reports</code>, <code>lib/reportEngine.ts</code></div>
+    <b>Backend</b><div>Phase 4</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>The dashboard is <b>different for each role</b> and shows what needs attention today.</li>
+    <li>There are <b>33 reports</b> in four groups plus hiring reports, filtered by location and exported to CSV.</li>
+    <li>Reports can be <b>scheduled</b> to arrive by email daily, weekly or monthly.</li>
+  </ol>
+
+  <h2>Dashboard by role</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  D(["Open GS HRMS"]):::sys --> R{"Role"}:::sys
+  R -- Employee --> E["My requests · my document renewals ·<br/>today at work · reviews, training, claims ·<br/>quick actions"]:::emp
+  R -- "Team Lead" --> T["Decisions waiting for me ·<br/>team attendance today · team renewals (90 days) ·<br/>overdue reviews and training · team offboarding"]:::lead
+  R -- "HR / Office Admin / Super Admin" --> A["Headcount · joining today · onboarding ·<br/>upcoming renewals · needs attention ·<br/>90-day renewal calendar · attendance mix ·<br/>birthdays and work anniversaries · location switch"]:::hr
+    </pre>
+  </figure>
+
+  <h2>Reports</h2>
+  <div class="grid">
+    <div class="card"><h3>Employee (7)</h3><p>Dashboard, headcount, additions, attrition, distribution, diversity, exits by tenure</p></div>
+    <div class="card"><h3>Leave (8)</h3><p>Daily, availability, balance, booked, by type, encashment, loss of pay, payroll</p></div>
+    <div class="card"><h3>Attendance (7)</h3><p>Daily, early/late punches, presence, hours, payroll, muster roll, consecutive absences</p></div>
+    <div class="card"><h3>Performance (11)</h3><p>Goals, skills, feedback, status, rating, score, nine-box, appraisal feedback, history, summary, extension</p></div>
+    <div class="card"><h3>Hiring</h3><p>Funnel, by source, rejection reasons, open-position age, time to hire, manager workload, recruiter figures</p></div>
+    <div class="card"><h3>Hiring dashboard</h3><p>Open positions, active candidates, interviews this week, pending offers, average time to hire, offer acceptance rate</p></div>
+  </div>
+
+  <h2>Running a report</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["Choose a report"]):::hr --> B["Location filter<br/>(and recruiter for hiring)"]:::hr
+  B --> C["Only data the person may see"]:::sys
+  C --> D["View on screen"]:::good
+  C --> E["Export CSV<br/>(recorded in the audit log)"]:::good
+  A -. "schedule" .-> S["Daily / weekly / monthly ·<br/>CSV, Excel or PDF · recipients"]:::hr --> M["Sent by email (backend)"]:::sys
+    </pre>
+  </figure>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Some reports are estimated from sample data. The backend calculates every report from real records.</li>
+      <li>Scheduled reports are saved in the browser and never sent.</li>
+    </ul>
+  </div>
+</section>

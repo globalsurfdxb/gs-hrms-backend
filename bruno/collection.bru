@@ -1,0 +1,10 @@
+docs {
+  # GS HRMS API — Bruno collection
+
+  1. Pick the **Local** environment (top right).
+  2. Run **Auth → Sign in as persona**. Change `persona` in the environment to switch role.
+  3. Run any other request. The session cookie is reused automatically.
+
+  Every write request sends `Origin: {{origin}}` — the API rejects writes from other origins (CSRF protection).
+  Full guide: docs/api-guide.md
+}

@@ -1,0 +1,109 @@
+<section class="module">
+  <div class="kicker">Hiring Management</div>
+  <h1>8 · Hiring</h1>
+  <p class="lead">From "we need a person" to "the person joined": requisition approval, job posting, candidate
+  pipeline, interviews, offer letter, and the hand-over to onboarding.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-lead">Team Lead</span> as hiring manager · <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> run hiring · <span class="chip c-emp">Any employee</span> interviews, refers · <span class="chip c-cand">Candidate</span></div>
+    <b>Frontend</b><div><code>/hiring/*</code> (dashboard, requisitions, jobs, candidates, interviews, offers, operations, reports), <code>/careers</code>, <code>/offer/respond/[token]</code>, <code>/my/interviews</code>, <code>/my/referrals</code>, <code>lib/hiringStore.ts</code></div>
+    <b>Backend</b><div>Phase 2</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>A <b>hiring manager</b> asks for a position (requisition). It is approved by the hiring manager, HR and management.</li>
+    <li><b>HR</b> turns the approved requisition into a <b>job</b> and publishes it on the careers page and job boards.
+      Employees can share a referral link.</li>
+    <li>Candidates move through <b>Applied → Screening → Technical → HR interview → Offer</b>. Interviews are scheduled with a panel.</li>
+    <li>HR sends an <b>offer letter</b> as a private link. The candidate accepts by typing their name, or declines with a reason.</li>
+    <li>An accepted offer becomes a <b>Hired</b> candidate, and HR starts <b>onboarding</b> with the form already filled.</li>
+  </ol>
+
+  <h2>A · Requisition — asking for a position</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Hiring manager raises a requisition:<br/>company, department, title, location, positions,<br/>new role or replacement, budget, start date"]):::lead --> B{"Submit now?"}:::lead
+  B -- "Save" --> DR["Draft (editable)"]:::sys
+  DR --> B
+  B -- Submit --> S1{"Step 1 · Hiring manager"}:::lead
+  S1 -- "auto-approved when the submitter<br/>is the hiring manager" --> S2
+  S1 -- approve --> S2{"Step 2 · HR"}:::hr
+  S2 -- approve --> S3{"Step 3 · Management<br/>(Super Admin)"}:::admin
+  S3 -- approve --> AP["APPROVED"]:::good
+  S1 -- "reject (note required)" --> RJ["REJECTED<br/>edit and resubmit"]:::bad
+  S2 -- reject --> RJ
+  S3 -- reject --> RJ
+  RJ --> B
+  AP --> J["HR creates the job<br/>(Draft or Open)"]:::hr
+  AP -. "HR can" .-> OH["On hold ⇄ Approved · Closed"]:::hr
+    </pre>
+  </figure>
+
+  <h2>B · Job and candidate pipeline</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  subgraph IN["Where candidates come from"]
+    direction LR
+    c1["Public careers page"]:::cand
+    c2["Employee referral link"]:::emp
+    c3["Job boards: LinkedIn, Naukri,<br/>Bayt, Indeed"]:::cand
+    c4["HR adds manually<br/>(agency, direct)"]:::hr
+  end
+  IN --> DUP{"Same email or phone<br/>already on file?"}:::sys
+  DUP -- "yes: new application<br/>on the existing candidate" --> AP
+  DUP -- no --> AP["APPLIED<br/>(auto 'application received' email)"]:::sys
+  AP --> SC["SCREENING"]:::hr --> TI["TECHNICAL INTERVIEW"]:::lead --> HI["HR INTERVIEW"]:::hr --> OF["OFFER"]:::hr --> HD["HIRED<br/>(only by accepted offer)"]:::good
+  SC & TI & HI & OF -. "exit" .-> EX["REJECTED (reason) · WITHDRAWN · ON HOLD<br/>can be reopened"]:::bad
+    </pre>
+  </figure>
+  <ul>
+    <li><b>Interviews:</b> round (Screening, Technical, HR, Final), date, time, duration, mode (In-person, Teams, Phone)
+      and panel. The system warns when a panel member already has an interview at that time. Scheduling moves the
+      candidate forward to that stage. Interviews can be rescheduled, completed or cancelled.</li>
+    <li><b>Emails</b> per stage are either sent automatically, offered to HR ("ask"), or off. Template fields such as
+      candidate name, job title and interview time are filled in automatically.</li>
+    <li>No candidate can be moved while the job is <b>Closed</b> or <b>Filled</b>.</li>
+  </ul>
+
+  <h2>C · Offer and hand-over</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["HR creates the offer (candidate at OFFER stage):<br/>salary lines, joining date, probation, expiry date"]):::hr --> W{"Above job budget?"}:::sys
+  W -- yes --> WN["Warning shown"]:::sys --> L
+  W -- no --> L["Prepare letter from the location's template<br/>(Dubai or Kochi letterhead and signatory)"]:::hr
+  L --> SND["Send — candidate gets a private link"]:::hr
+  SND --> V["Candidate opens the link,<br/>reads and downloads the PDF"]:::cand
+  V --> D{"Candidate decides<br/>(before expiry)"}:::cand
+  D -- "Accept (types full name)" --> ACC["ACCEPTED<br/>job filled +1; job FILLED when full"]:::good
+  D -- "Decline (reason)" --> DEC["DECLINED<br/>application → Withdrawn"]:::bad
+  SND -. "HR can withdraw the link" .-> L
+  ACC --> ONB["HR: 'Start onboarding'<br/>→ chapter 5, form pre-filled"]:::hr
+  ACC -. "candidate backs out later" .-> WD["Withdraw acceptance (reason)<br/>job re-opens"]:::bad
+    </pre>
+  </figure>
+
+  <h2>Who can do what</h2>
+  <table>
+    <tr><th>Who</th><th>Can</th></tr>
+    <tr><td>HR, Office Admin, Super Admin</td><td>Everything: jobs, all candidates, offers, email templates, offer-letter templates, reports</td></tr>
+    <tr><td>Team Lead (hiring manager)</td><td>Own requisitions; candidates, stage moves, rejections and interviews on <b>their</b> jobs; sees salary on their jobs</td></tr>
+    <tr><td>Any employee</td><td>Interviews they are on (<code>/my/interviews</code>); referral links for referral-eligible jobs and their referrals' progress</td></tr>
+    <tr><td>Candidate</td><td>Careers page and their own offer link only — no account</td></tr>
+  </table>
+  <p>Kochi offers show the India breakup automatically: EPF 12% of Basic (capped at INR 1,800), Kerala professional tax,
+  employer PF and gratuity.</p>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet — decisions needed</h3>
+    <ul>
+      <li>No <b>interview feedback or scorecards</b> — only free notes.</li>
+      <li>No <b>offer approval</b> (even over budget) and offers never expire automatically.</li>
+      <li>CVs are not stored (only the file name); emails are never really sent; Outlook/Teams are switches only.</li>
+      <li>Offer PDF is built in the browser as an image — the backend will produce the official PDF.</li>
+    </ul>
+  </div>
+</section>

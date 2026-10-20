@@ -1,0 +1,46 @@
+# Local development services. Nothing here is used in Azure.
+#   npm run db:up    — start
+#   npm run db:down  — stop (data is kept in named volumes)
+name: hrms
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hrms
+      POSTGRES_PASSWORD: hrms
+      POSTGRES_DB: hrms
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hrms']
+      interval: 5s
+      retries: 10
+
+  # Azure Blob Storage emulator
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite-blob --blobHost 0.0.0.0 --loose
+    ports:
+      - '127.0.0.1:10000:10000'
+    volumes:
+      - azurite:/data
+
+  # Catches all outgoing email. Web UI: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+
+  # HTML → PDF (offer letters, salary certificates). Runs without network access in production.
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    ports:
+      - '127.0.0.1:3002:3000'
+
+volumes:
+  pgdata:
+  azurite:

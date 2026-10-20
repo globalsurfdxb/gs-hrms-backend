@@ -1,0 +1,56 @@
+<section class="module">
+  <div class="kicker">Employee Management</div>
+  <h1>11 · Expense claims</h1>
+  <p class="lead">How an employee claims money spent for work, and how it is approved.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Employee</span> claims · <span class="chip c-lead">Manager</span> approves · <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> categories and dashboard · <span class="chip c-admin">Super Admin</span> senior claims</div>
+    <b>Frontend</b><div><code>/expense/new</code>, <code>/expense/claims</code>, <code>/expense/approvals</code>, <code>/expense/dashboard</code>, <code>/expense/categories</code>, <code>context/ExpenseContext.tsx</code></div>
+    <b>Backend</b><div>Phase 4</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>The employee enters category, amount, date, project, description and attaches a receipt.</li>
+    <li>The claim goes to their <b>reporting manager</b> (the General Manager's claims go to Super Admin).</li>
+    <li>The approver approves or rejects with a note. The employee can withdraw while it is pending.</li>
+  </ol>
+
+  <h2>The flow</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Employee: new claim<br/>category · amount · date · project · description · receipt"]):::emp --> B{"Checks"}:::sys
+  B -- "Older than 90 days" --> X["Not allowed"]:::bad
+  B -- "Amount above the receipt limit<br/>and no receipt" --> X
+  B -- "Same category, amount and date<br/>already claimed" --> W["Duplicate warning"]:::sys --> P
+  B -- OK --> P["PENDING"]:::sys
+  P --> R{"Who approves?"}:::sys
+  R -- "Has a reporting manager" --> M["Reporting manager"]:::lead
+  R -- "General Manager or no manager" --> SA["Super Admin"]:::admin
+  M --> D{"Decision + note"}:::lead
+  SA --> D
+  D -- Approve --> AP["APPROVED"]:::good
+  D -- Reject --> RJ["REJECTED"]:::bad
+  P -. "employee withdraws" .-> WD["Withdrawn"]:::bad
+  AP -. "planned" .-> PAY["Reimbursed through payroll"]:::sys
+    </pre>
+  </figure>
+
+  <h2>Rules</h2>
+  <ul>
+    <li><b>Categories</b> (managed by HR/Admin) have a limit per currency (AED for Dubai, INR for Kochi) and can be switched off.</li>
+    <li><b>Receipt required</b> when the amount is above the category limit or above 200 AED / 2,000 INR, whichever is lower.</li>
+    <li>Totals on the dashboard are kept <b>per currency</b> — AED and INR are never added together.</li>
+    <li>HR and Admin can file a claim on behalf of someone else.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet — decisions needed</h3>
+    <ul>
+      <li>The screen says over-limit claims need an <b>extra management approval</b>, but it is not implemented. Confirm the rule.</li>
+      <li>Withdrawing deletes the claim; the backend keeps it with status Withdrawn (for audit).</li>
+      <li>Receipts are not stored; reimbursement is not linked to payroll.</li>
+    </ul>
+  </div>
+</section>

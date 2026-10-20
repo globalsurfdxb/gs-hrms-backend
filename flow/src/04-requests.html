@@ -1,0 +1,63 @@
+<section class="module">
+  <div class="kicker">Employee Management</div>
+  <h1>4 · Employee requests</h1>
+  <p class="lead">How an employee asks to change their details or asks for a letter, and how it gets approved.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Employee</span> raises · <span class="chip c-lead">Team Lead</span> <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> decide</div>
+    <b>Frontend</b><div><code>/my/requests</code>, <code>/team/requests</code>, <code>/requests</code>, <code>components/profile/NewRequestDrawer.tsx</code>, <code>context/RequestsContext.tsx</code></div>
+    <b>Backend</b><div>Phase 1</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>An employee raises a request to change personal details or to get a letter (e.g. salary certificate).</li>
+    <li>Information updates go to the <b>manager</b>; everything else goes to <b>HR</b>.</li>
+    <li>On approval, the new values are written to the profile automatically and recorded in the audit log.</li>
+  </ol>
+
+  <h2>The flow</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Employee: new request"]):::emp --> B["Chooses type, writes details<br/>(for updates: the new values)"]:::emp
+  B --> C{"Type?"}:::sys
+  C -- "Information Update" --> M["Sent to reporting manager"]:::sys
+  C -- "Document · Address ·<br/>Bank · Other" --> H["Sent to HR"]:::sys
+  M --> D{"Approver decides"}:::lead
+  H --> D
+  D -- Reject --> R["Rejected<br/>employee notified"]:::bad
+  D -- Approve --> P["Approved"]:::good
+  P --> Q{"Has new values?"}:::sys
+  Q -- Yes --> U["Copied into the profile<br/>+ audit log per field"]:::sys
+  Q -- "No (letter)" --> LT["Letter generated as PDF<br/>(backend)"]:::sys
+    </pre>
+  </figure>
+
+  <h2>Request types</h2>
+  <table>
+    <tr><th>Type</th><th>Goes to</th><th>Example</th></tr>
+    <tr><td>Information Update</td><td>Reporting manager</td><td>Personal mobile or email, marital status, blood group, gender, nationality, name, date of birth</td></tr>
+    <tr><td>Document Request</td><td>HR</td><td>Salary certificate, employment letter, experience letter, NOC, visa support letter, bank letter</td></tr>
+    <tr><td>Address Change</td><td>HR</td><td>Current or permanent address</td></tr>
+    <tr><td>Bank Detail Update</td><td>HR</td><td>New account / IBAN</td></tr>
+    <tr><td>Other Request</td><td>HR</td><td>Anything else</td></tr>
+  </table>
+
+  <h2>Who can decide</h2>
+  <ul>
+    <li><b>Nobody</b> can decide their own request.</li>
+    <li><b>HR and Super Admin</b>: any request.</li>
+    <li><b>Office Admin</b>: any request except Bank Detail Update.</li>
+    <li><b>Team Lead</b>: only manager-routed requests from their direct reports.</li>
+  </ul>
+  <p>Statuses: <b>Pending → Approved</b> or <b>Pending → Rejected</b>. New values are applied <b>only</b> when approved.</p>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Requested letters are never produced — the backend will generate them as PDFs from templates.</li>
+      <li>Bank detail changes should also notify the employee by email (protection against fraud).</li>
+    </ul>
+  </div>
+</section>

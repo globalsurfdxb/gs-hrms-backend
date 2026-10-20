@@ -1,0 +1,32 @@
+meta {
+  name: Sign in as persona
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/dev/login
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "employeeCode": "{{persona}}"
+  }
+}
+
+docs {
+  Local only. Personas: GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.
+  Set `persona` in the environment, then run this request.
+}
+
+tests {
+  test("signed in (204)", function () {
+    expect(res.status).to.equal(204);
+  });
+}

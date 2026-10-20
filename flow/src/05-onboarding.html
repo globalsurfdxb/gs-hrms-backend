@@ -1,0 +1,75 @@
+<section class="module">
+  <div class="kicker">Employee Management</div>
+  <h1>5 · Onboarding</h1>
+  <p class="lead">How a new joiner becomes an employee in the system — either typed in by HR or carried over from an
+  accepted job offer.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> · approvals by <span class="chip c-lead">Manager</span> <span class="chip c-hr">HR</span></div>
+    <b>Frontend</b><div><code>/onboarding</code> (10-step wizard), <code>/onboarding?hire=&lt;offerId&gt;</code>, <code>lib/hiringHandoff.ts</code>, <code>lib/workflow.ts</code></div>
+    <b>Backend</b><div>Phase 1</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>HR fills a <b>10-step form</b> for the new joiner — or starts from an <b>accepted job offer</b>, which fills most of it.</li>
+    <li>The form can be saved as a draft at any time and finished later.</li>
+    <li>On submit, the employee record is created with status <b>Onboarding</b> and goes for approval (manager, then HR).</li>
+    <li>After approval the employee becomes <b>Active</b> and payroll is notified.</li>
+  </ol>
+
+  <h2>The flow</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  S1(["HR: New joiner"]):::hr --> W
+  S2(["Hiring: offer accepted →<br/>'Start onboarding'"]):::hr --> PF["Form pre-filled from the offer:<br/>name, job, joining date, salary"]:::sys
+  PF --> W["10-step wizard<br/>each step checked before the next"]:::hr
+  W -. "Save draft any time" .-> DR[("Draft<br/>(per HR user, per offer)")]:::sys
+  W --> SUB["Review & submit"]:::hr
+  SUB --> EMP["Employee created<br/>status: ONBOARDING"]:::sys
+  EMP --> AP1["Manager review"]:::lead
+  AP1 --> AP2["HR approval"]:::hr
+  AP2 --> ACT["Status: ACTIVE<br/>Payroll notified"]:::good
+  AP1 -- reject --> RJ["Back to HR to correct"]:::bad
+  AP2 -- reject --> RJ
+  EMP -.-> HM["Hiring: candidate marked Hired,<br/>welcome email"]:::sys
+    </pre>
+  </figure>
+
+  <h2>The 10 steps</h2>
+  <table>
+    <tr><th>#</th><th>Step</th><th>Dubai</th><th>Kochi</th></tr>
+    <tr><td>1</td><td>Personal</td><td colspan="2">Name, gender, date of birth, nationality, contact, addresses</td></tr>
+    <tr><td>2</td><td>Employment</td><td colspan="2">Company → department → designation (filtered by company and location), manager, joining date, type, system role. Probation ends 6 months after joining. Suggested work email <code>firstname@gs-it.ae</code></td></tr>
+    <tr><td>3</td><td>Identity</td><td>Passport, visa, Emirates ID, labour card</td><td>Passport, Aadhaar, PAN</td></tr>
+    <tr><td>4</td><td>Emergency contacts</td><td>Local (UAE) + home country</td><td>Primary + alternate</td></tr>
+    <tr><td>5</td><td>Experience &amp; education</td><td colspan="2">Previous jobs, qualifications</td></tr>
+    <tr><td>6</td><td>Family</td><td colspan="2">Name, relationship, occupation</td></tr>
+    <tr><td>7</td><td>Bank &amp; PF</td><td>IBAN (checked), WPS / bank transfer</td><td>Account + IFSC, UAN, bank transfer / cheque</td></tr>
+    <tr><td>8</td><td>Salary</td><td>Basic, transport, accommodation</td><td>Basic, HRA, allowances, EPF and other deductions</td></tr>
+    <tr><td>9</td><td>Documents</td><td colspan="2">Required documents for the country, with expiry dates and reminder settings (90/60/30/7 days; employee, HR, manager)</td></tr>
+    <tr><td>10</td><td>Assets &amp; approval</td><td colspan="2">Laptop, monitor, phone, access card, SIM, headset, software licence — then submit</td></tr>
+  </table>
+
+  <h2>UAE visa tracker (Dubai hires)</h2>
+  <p>While the visa is being processed, HR ticks off <b>20 stages in 5 groups</b>:
+  Preparation &amp; documents → Work permit (MOHRE) → Entry permit (GDRFA) → Medical &amp; insurance →
+  Emirates ID &amp; residence.</p>
+
+  <h2>When the hire comes from Hiring</h2>
+  <ul>
+    <li>Salary lines are matched: Housing → Accommodation, Transport → Transportation. Kochi offers are yearly, so amounts are divided by 12.</li>
+    <li>Employment type: Full-time → Permanent, Contract → Contract, Intern → Probation.</li>
+    <li>The offer must be <b>Accepted</b> and not already used for an employee.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet — decisions needed</h3>
+    <ul>
+      <li>Nothing moves a joiner from <b>Onboarding</b> to <b>Active</b>; the approval chain is only displayed. The lead must confirm the chain.</li>
+      <li>The visa tracker, asset choices and reminder settings live only in the draft and are never saved to the employee.</li>
+      <li>Document uploads in the wizard are placeholders.</li>
+    </ul>
+  </div>
+</section>

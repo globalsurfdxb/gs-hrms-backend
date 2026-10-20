@@ -1,0 +1,61 @@
+<section class="module">
+  <div class="kicker">Employee Management · Employee Lifecycle</div>
+  <h1>12 · Performance and learning</h1>
+  <p class="lead">Review cycles with self-assessment and manager rating, and training assigned to employees.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-hr">HR</span> creates cycles and assigns courses · <span class="chip c-emp">Employee</span> self-assessment, training · <span class="chip c-lead">Team Lead</span> reviews direct reports</div>
+    <b>Frontend</b><div><code>/performance</code>, <code>/learning</code>, <code>context/PerformanceContext.tsx</code>, <code>context/LearningContext.tsx</code></div>
+    <b>Backend</b><div>Phase 4</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>HR starts a <b>review cycle</b> (e.g. "H1 2026") for chosen employees.</li>
+    <li>The employee rates themselves and comments; the manager adds comments and the final rating (1–5).</li>
+    <li>HR <b>assigns courses</b> with a due date; employees start and complete them, with a score.</li>
+  </ol>
+
+  <h2>Performance review</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["HR: create cycle<br/>choose active employees"]):::hr --> B["NOT STARTED"]:::sys
+  B --> C["SELF ASSESSMENT<br/>employee rating + comments"]:::emp
+  C --> D["MANAGER REVIEW<br/>manager comments + goals"]:::lead
+  D --> E["COMPLETED<br/>final rating 1–5"]:::good
+  B -. "only while not started" .-> R["Removed"]:::bad
+    </pre>
+  </figure>
+  <table>
+    <tr><th>Rating</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+    <tr><td>Meaning</td><td>Needs improvement</td><td>Below expectations</td><td>Meets expectations</td><td>Exceeds expectations</td><td>Outstanding</td></tr>
+  </table>
+  <ul>
+    <li>An employee gets only one review per cycle (duplicates are skipped).</li>
+    <li>A Team Lead sees and reviews direct reports only. Reviews due within 7 days or overdue raise a notification.</li>
+  </ul>
+
+  <h2>Learning</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["HR: assign a course<br/>to one or many employees<br/>with a due date"]):::hr --> B["NOT STARTED"]:::sys
+  B --> C["IN PROGRESS"]:::emp
+  C --> D["COMPLETED<br/>score 0–100, notes"]:::good
+  D -. "reopen" .-> C
+  B -. "unassign (only if not started)" .-> X["Removed"]:::bad
+  B -. "past due date" .-> O["Overdue — notification"]:::bad
+  C -. "past due date" .-> O
+    </pre>
+  </figure>
+  <p>Course categories: Compliance, Sales, Management, Finance, Culture, Technical, Safety, Soft Skills (HR can add more); the same course is never assigned twice to the same person.</p>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>There is no real "cycle" or "course catalogue" — both are just text on each record. The backend adds proper tables.</li>
+      <li>Goals are free text; no KPIs, 360° feedback or calibration yet. The 11 performance reports in the Reports module expect more data than exists.</li>
+    </ul>
+  </div>
+</section>

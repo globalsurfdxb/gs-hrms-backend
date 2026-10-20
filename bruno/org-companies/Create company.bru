@@ -1,0 +1,45 @@
+meta {
+  name: Create company
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/org/companies
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "name": "Bruno Test {{$randomInt}}",
+    "shortCode": "BT{{$randomInt}}",
+    "location": "Dubai",
+    "description": "Created from the Bruno collection"
+  }
+}
+
+script:pre-request {
+  // Short codes are 2–8 characters: keep the random part small.
+  const n = Math.floor(Math.random() * 99999);
+  req.setBody({ ...req.getBody(), name: `Bruno Test ${n}`, shortCode: `BT${n}` });
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("companyId", res.body.id);
+}
+
+docs {
+  Needs Companies → Add (Super Admin, HR, Office Admin). As GS-087 (Employee) this returns 403 — try it.
+  Saves the new id in `companyId` for the next requests.
+}
+
+tests {
+  test("created (201) — or 403 for roles without access", function () {
+    expect([201, 403]).to.include(res.status);
+  });
+}

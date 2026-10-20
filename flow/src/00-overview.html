@@ -1,0 +1,72 @@
+<section class="module">
+  <div class="kicker">Start here</div>
+  <h1>0 · System overview</h1>
+  <p class="lead">GS HRMS is one system for every Global Surf employee in Dubai (UAE) and Kochi (India), across four
+  companies: GS IT, GS Digital, GS AV and GS Security. It covers the whole working life of an employee —
+  from the moment a position is requested until the person leaves.</p>
+
+  <h2>The employee journey</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A["Hiring<br/>position requested,<br/>candidates interviewed,<br/>offer accepted"] --> B["Onboarding<br/>personal, visa, bank,<br/>salary, documents"]
+  B --> C["Active employee"]
+  C --> D["Every day<br/>attendance, leave,<br/>requests, expense claims"]
+  C --> E["Every year<br/>performance reviews,<br/>training, visa renewals"]
+  C --> F["Offboarding<br/>clearance checklist,<br/>final approval"]
+  F --> G["Inactive<br/>(former employee)"]
+    </pre>
+    <figcaption>Each box is one or more modules. The following chapters explain each one.</figcaption>
+  </figure>
+
+  <h2>Modules</h2>
+  <div class="grid">
+    <div class="card"><h3>Employee Management</h3><p>Directory &amp; profile · Onboarding · Offboarding · Requests ·
+      Visa &amp; document expiry · Performance · Learning · Expense claims</p></div>
+    <div class="card"><h3>Hiring Management</h3><p>Requisitions · Jobs &amp; public careers page · Candidates &amp;
+      interviews · Offers &amp; offer letters · Referrals</p></div>
+    <div class="card"><h3>Leave &amp; Attendance</h3><p>Leave requests &amp; balances · Check-in &amp; attendance ·
+      Regularisation · Overtime · Payroll output</p></div>
+    <div class="card"><h3>Administration (shared)</h3><p>Companies &amp; structure · Roles &amp; permissions · Workflow ·
+      Notifications · Reminders · Audit logs · Settings</p></div>
+    <div class="card"><h3>Reports &amp; Dashboards</h3><p>Role-based dashboards · 33 reports · Hiring reports ·
+      Scheduled reports</p></div>
+    <div class="card soon"><h3>Coming later</h3><p>Payroll · Asset management · Renewal management
+      (placeholders in the frontend today)</p></div>
+  </div>
+
+  <h2>Who uses the system</h2>
+  <table>
+    <tr><th>Role</th><th>Sees</th><th>Typical work</th></tr>
+    <tr><td><span class="chip c-emp">Employee</span></td><td>My Space only</td><td>Own profile, leave, attendance, requests, payslips, claims, documents</td></tr>
+    <tr><td><span class="chip c-lead">Team Lead</span></td><td>My Space + Team</td><td>Approves direct reports' leave and requests; raises job requisitions; interviews</td></tr>
+    <tr><td><span class="chip c-hr">HR</span></td><td>My Space + Organization + Operations + Reports + Administration</td><td>Onboarding, offboarding, visas, hiring, leave operations, approvals</td></tr>
+    <tr><td><span class="chip c-admin">Office Admin</span></td><td>Same as HR</td><td>Company structure, files, document expiry, requests (cannot delete)</td></tr>
+    <tr><td><span class="chip c-admin">Super Admin</span></td><td>Everything</td><td>Roles &amp; permissions, final approvals, system settings</td></tr>
+  </table>
+  <p>Any employee can also be an <b>interviewer</b> (sees only candidates they interview) and a <b>referrer</b>
+  (shares job links and follows their referrals). <span class="chip c-cand">Candidate</span> people outside the company
+  use only the public careers page and the offer link.</p>
+
+  <h2>Dubai and Kochi work differently</h2>
+  <table>
+    <tr><th></th><th>Dubai (UAE)</th><th>Kochi (India)</th></tr>
+    <tr><td>Currency</td><td>AED</td><td>INR</td></tr>
+    <tr><td>Identity</td><td>Passport, Residence visa, Emirates ID, Labour card</td><td>Passport, Aadhaar, PAN, UAN (PF)</td></tr>
+    <tr><td>Bank</td><td>IBAN; WPS transfer or bank transfer</td><td>Account number + IFSC; bank transfer or cheque</td></tr>
+    <tr><td>Working hours</td><td>09:00 – 18:00, Mon–Fri</td><td>09:30 – 18:30, Mon–Fri</td></tr>
+    <tr><td>Leave types</td><td>Annual 30, Sick 90, Hajj, Umrah, …</td><td>Casual 12, Earned 15, Sick 12, LOP, …</td></tr>
+    <tr><td>Visa module</td><td>Fully used</td><td>Not applicable</td></tr>
+    <tr><td>Ramadan hours</td><td>Yes</td><td>No</td></tr>
+  </table>
+
+  <h2>How to read the diagrams</h2>
+  <ul>
+    <li><b>Rounded boxes</b> are steps; <b>diamonds</b> are decisions (yes / no).</li>
+    <li><b>Box colour shows who does the step:</b>
+      <div class="legend"><span class="l-emp">Employee</span><span class="l-lead">Team Lead / manager</span><span class="l-hr">HR</span><span class="l-admin">Admin / Super Admin</span><span class="l-cand">Candidate</span><span class="l-sys">System (automatic)</span><span class="l-bad">Stopped / rejected</span></div></li>
+    <li><b>State diagrams</b> show the statuses a record moves through, e.g. Pending → Approved.</li>
+    <li>Red boxes titled <b>"Not in the frontend yet"</b> list behaviour the prototype only shows or does not do.
+      The backend must implement it, or the lead must decide it.</li>
+  </ul>
+</section>

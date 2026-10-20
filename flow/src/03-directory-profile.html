@@ -1,0 +1,81 @@
+<section class="module">
+  <div class="kicker">Employee Management</div>
+  <h1>3 · Employee directory and profile</h1>
+  <p class="lead">The employee record: who sees it, who can change it, and how changes are tracked.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Employee</span> own profile · <span class="chip c-lead">Team Lead</span> direct reports · <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> everyone</div>
+    <b>Frontend</b><div><code>/directory</code>, <code>/directory/[code]</code>, <code>/directory/[code]/edit</code>, <code>/profile</code>, <code>/org-chart</code>, <code>/team/directory</code>, <code>/documents</code>, <code>lib/employeeStore.ts</code></div>
+    <b>Backend</b><div>Phase 1</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>HR, Office Admin and Super Admin see and edit everyone. A Team Lead sees direct reports. An employee sees only themselves.</li>
+    <li>Bank and salary details are visible only to HR and Super Admin.</li>
+    <li>Every change is recorded field by field; employees ask for changes through Requests.</li>
+  </ol>
+
+  <h2>Who can see and change what</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Open an employee profile"]) --> B{"Who is asking?"}
+  B -- "Employee" --> C{"Own profile?"}
+  C -- Yes --> V["View all tabs<br/>edit mobile only"]
+  C -- No --> NO["Not allowed"]
+  B -- "Team Lead" --> T{"Own profile or<br/>a direct report?"}
+  T -- Yes --> V2["View only"]
+  T -- No --> NO
+  B -- "HR / Office Admin / Super Admin" --> M["View and edit anyone"]
+  M --> S{"Bank & PF or<br/>Salary tab?"}
+  S -- "HR / Super Admin" --> E1["Can view and edit"]
+  S -- "Office Admin" --> E2["Hidden"]
+  class A emp
+  class B,C,T,S sys
+  class NO,E2 bad
+  class V,V2,M,E1 good
+    </pre>
+  </figure>
+
+  <h2>What a profile contains</h2>
+  <table>
+    <tr><th>Tab</th><th>Contents</th></tr>
+    <tr><td>Overview / Employment</td><td>Code (GS-NNN), name, work email, company, department, designation, location, seating, reporting manager, joining date, status, type (Permanent / Contract / Probation), probation end</td></tr>
+    <tr><td>Personal</td><td>Gender, marital status, blood group, personal email and mobile, addresses, emergency contacts, education, experience, family</td></tr>
+    <tr><td>Passport / Visa / EID <i>(Dubai)</i></td><td>Passport, residence visa, Emirates ID (784-YYYY-NNNNNNN-N), labour card</td></tr>
+    <tr><td>Passport / Aadhaar / PAN <i>(Kochi)</i></td><td>Passport, Aadhaar (12 digits), PAN (ABCDE1234F), UAN (12 digits)</td></tr>
+    <tr><td>Documents</td><td>Uploaded files with expiry dates (PDF, image, Word up to 10 MB)</td></tr>
+    <tr><td>Bank &amp; Salary</td><td>Dubai: IBAN, WPS/bank transfer, Basic + Transport + Accommodation · Kochi: account + IFSC, Basic + HRA + allowances − EPF and other deductions</td></tr>
+  </table>
+
+  <h2>Editing a profile</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["HR opens Edit"]) --> B["Changes fields"]
+  B --> C{"Location changed?"}
+  C -- Yes --> D["Other country's ID and bank fields cleared;<br/>currency, payment mode and<br/>required documents switch"]
+  C -- No --> E["Review screen:<br/>old value → new value"]
+  D --> E
+  E --> F["Save"]
+  F --> G[("Audit log:<br/>one line per changed field")]
+  class A,B,F hr
+  class C,D,E,G sys
+    </pre>
+  </figure>
+  <ul>
+    <li><b>Never editable directly:</b> work email, employee code and employment status (status changes only through onboarding and offboarding).</li>
+    <li><b>Employees</b> change other personal details through <b>Requests</b> (chapter 4).</li>
+    <li><b>Org chart:</b> HR can drag a person onto a new manager. The system blocks loops (someone reporting to their own report).</li>
+    <li>Identity numbers and bank details are <b>encrypted</b> in the backend and shown masked (e.g. ••••••234F) unless the viewer may reveal them.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Edits are saved in the browser only; uploaded files are not stored anywhere.</li>
+      <li>The employee's own mobile change is not saved.</li>
+    </ul>
+  </div>
+</section>

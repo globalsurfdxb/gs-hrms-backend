@@ -1,0 +1,34 @@
+# dependencies / build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# generated code (re-created by `npm run db:generate`)
+src/generated/
+
+# secrets — never commit. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
+
+# local data
+*.dump
+*.sql.gz
+tmp/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# personal Claude Code settings (shared settings live in .claude/settings.json)
+.claude/settings.local.json
+
+# personal Docker overrides (e.g. Postgres on another port)
+docker-compose.override.yml

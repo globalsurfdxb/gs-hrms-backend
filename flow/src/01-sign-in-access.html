@@ -1,0 +1,89 @@
+<section class="module">
+  <div class="kicker">Administration · everyone</div>
+  <h1>1 · Sign-in, roles and access</h1>
+  <p class="lead">Who can get into the system, and what each person is allowed to see and do once inside.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Everyone</span> <span class="chip c-admin">Super Admin</span> manages roles</div>
+    <b>Frontend</b><div><code>/login</code>, <code>/admin/roles</code>, <code>lib/auth.ts</code>, <code>lib/access.ts</code>, <code>lib/guard.ts</code>, <code>lib/nav.ts</code></div>
+    <b>Backend</b><div>Phase 0 — sign-in, sessions and the access check are built; Roles &amp; Permissions API is next</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>Everyone signs in with their <b>Microsoft 365</b> work account (with MFA). There are no separate HRMS passwords.</li>
+    <li>Each person has one <b>role</b>: Employee, Team Lead, HR, Office Admin or Super Admin.</li>
+    <li>The role decides which <b>screens</b> appear and which <b>actions</b> (view, add, edit, delete) are allowed.</li>
+    <li>Data is limited to the person's <b>scope</b>: own records, direct reports, their location, or everyone.</li>
+  </ol>
+
+  <h2>Signing in</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Person opens GS HRMS"]) --> B["Clicks 'Continue with Microsoft'"]
+  B --> C["Microsoft sign-in page<br/>company account + MFA"]
+  C --> D{"Account belongs to<br/>our company?"}
+  D -- No --> X["Back to sign-in page:<br/>'no access'"]
+  D -- Yes --> E{"Employee record found<br/>and not Inactive?"}
+  E -- No --> X
+  E -- Yes --> F["Session started<br/>(30 min idle, 12 h max)"]
+  F --> G["Dashboard for the person's role"]
+  X -.-> L[("Audit log:<br/>failed sign-in")]
+  F -.-> L2[("Audit log:<br/>signed in")]
+  class A,B emp
+  class C,D,E,F,L,L2 sys
+  class X bad
+  class G good
+    </pre>
+  </figure>
+  <ol class="steps">
+    <li>Everyone signs in with their <b>Microsoft 365 work account</b>. Microsoft checks the password and MFA; GS HRMS never stores passwords.</li>
+    <li>The system looks for the employee record that belongs to that Microsoft account. On the very first sign-in it links them by work email.</li>
+    <li>People who are <b>Inactive</b> (left the company) or not in the system cannot get in.</li>
+    <li>The session ends after <b>30 minutes without activity</b>, after <b>12 hours</b> in total, on sign-out, or immediately when the employee is offboarded.</li>
+    <li>Every sign-in, sign-out and failed attempt is written to the audit log.</li>
+  </ol>
+
+  <h2>Every request is checked</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  R(["Screen asks for data"]) --> S{"Signed in?"}
+  S -- No --> U["401 → sign-in page"]
+  S -- Yes --> P{"Role has permission<br/>for this feature + action?"}
+  P -- No --> F["403 → 'no access'"]
+  P -- Yes --> Q["Only records in the person's scope:<br/>own · direct reports · location · everyone"]
+  Q --> OK(["Data shown"])
+  class R emp
+  class S,P,Q sys
+  class U,F bad
+  class OK good
+    </pre>
+  </figure>
+
+  <h2>Roles, spaces and permissions</h2>
+  <table>
+    <tr><th>Role</th><th>My Space</th><th>Team</th><th>Organization</th><th>Operations / Reports / Admin</th><th>Data scope</th></tr>
+    <tr><td>Employee</td><td>✔</td><td></td><td></td><td></td><td>Own records</td></tr>
+    <tr><td>Team Lead</td><td>✔</td><td>✔</td><td></td><td></td><td>Own + direct reports</td></tr>
+    <tr><td>HR</td><td>✔</td><td></td><td>✔</td><td>✔ (no delete in Administration)</td><td>All locations</td></tr>
+    <tr><td>Office Admin</td><td>✔</td><td></td><td>✔</td><td>✔ (never delete)</td><td>Own location</td></tr>
+    <tr><td>Super Admin</td><td>✔</td><td>✔</td><td>✔</td><td>✔</td><td>Everything</td></tr>
+  </table>
+  <ul>
+    <li>Permissions are set per <b>feature</b> with four actions: <b>View, Add, Edit, Delete</b>. Add/Edit/Delete always need View.</li>
+    <li>Features are grouped Module → Category → Feature (for example <i>Administration → Organization → Companies</i>).</li>
+    <li>Super Admin can create <b>custom roles</b>, tick permissions per feature, and add custom features. System roles cannot be renamed.</li>
+    <li>"Team" means <b>direct reports only</b>, not the whole tree below a manager.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Sign-in only checks that the email exists — no password, no Microsoft. The persona switcher changes role freely.</li>
+      <li>The permission matrix is shown but never enforced; custom roles disappear on page refresh and cannot be given to anyone.</li>
+      <li>The backend now enforces all of this on every request. Next: the Roles &amp; Permissions API and assigning roles to employees.</li>
+    </ul>
+  </div>
+</section>

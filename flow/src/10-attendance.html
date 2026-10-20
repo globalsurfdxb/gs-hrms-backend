@@ -1,0 +1,76 @@
+<section class="module">
+  <div class="kicker">Leave &amp; Attendance</div>
+  <h1>10 · Attendance, overtime and payroll output</h1>
+  <p class="lead">How daily attendance is recorded and corrected, how overtime is claimed, and how HR closes the month
+  for payroll.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Employee</span> checks in, requests corrections · <span class="chip c-lead">Manager</span> approves · <span class="chip c-hr">HR</span> processes and locks the month · <span class="chip c-admin">Super Admin</span> devices &amp; integrations</div>
+    <b>Frontend</b><div><code>/my/leave-attendance</code>, <code>/team/attendance</code>, <code>/modules/leave-attendance/*</code> (<code>public/la/la-att.js</code>, <code>la-ops1.js</code>, <code>la-ops2.js</code>)</div>
+    <b>Backend</b><div>Phase 3 — needs the biometric device decision</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>Employees check in and out on the web or on a biometric device.</li>
+    <li>Each day the system works out a status: present, late, half day, on leave, holiday, weekly off, missing punch, absent…</li>
+    <li>Mistakes are fixed with a <b>regularisation request</b> approved by the manager.</li>
+    <li>At month end HR resolves exceptions, <b>locks</b> the month and exports the figures for payroll.</li>
+  </ol>
+
+  <h2>A normal day</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Check-in (web or biometric)"]):::emp --> B(["Check-out"]):::emp
+  B --> C["System builds the day record"]:::sys
+  C --> D{"Which applies first?"}:::sys
+  D -- "1 · Weekly off" --> S1["Weekly off"]:::sys
+  D -- "2 · Public holiday" --> S2["Holiday"]:::sys
+  D -- "3 · Approved leave" --> S3["On leave"]:::sys
+  D -- "4 · Punches" --> S4["Worked time = first in → last out<br/>payable time capped at 8 h"]:::sys
+  S4 --> E{"Late, early, missing<br/>punch or no punch?"}:::sys
+  E -- No --> OK["Present"]:::good
+  E -- Yes --> EX["Exception recorded<br/>(late login, early departure,<br/>missing check-in/out, unauthorised absence)"]:::bad
+  EX --> R["Employee: regularisation request<br/>reason: missing punch, biometric failure,<br/>client site, WFH, meeting, travel…"]:::emp
+  R --> M{"Manager decides"}:::lead
+  M -- Approve --> FIX["Times corrected, exception resolved"]:::good
+  M -- Reject --> EX
+    </pre>
+  </figure>
+  <ul>
+    <li><b>Planned</b> late login, early departure or shift change can be requested in advance (today or later) and then do not count against the employee.</li>
+    <li>Regularisation: not for future dates or weekly offs; one per date. HR can also correct times directly (reason + attachment required).</li>
+    <li><b>Ramadan</b> (Dubai): reduced working hours for the configured period.</li>
+  </ul>
+
+  <h2>Overtime and month end</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  O(["Employee claims overtime<br/>within 14 days, once per date,<br/>0.5–12 hours"]):::emp --> OC["Category: normal (+25%), night 10 PM–4 AM (+50%),<br/>weekend / holiday — must match the calendar"]:::sys
+  OC --> OM{"Manager decides"}:::lead
+  OM -- Approve --> OP["Paid, special allowance, or<br/>compensatory off (hours ÷ 8 = days)"]:::good
+  OM -- Reject --> ORJ["Rejected"]:::bad
+  P1(["Month end — HR"]):::hr --> P2["Process attendance, review exceptions"]:::hr
+  P2 --> P3{"Open exceptions?"}:::sys
+  P3 -- Yes --> P4["Resolve, or HR override"]:::hr --> P5
+  P3 -- No --> P5["Lock the month (type LOCK)"]:::hr
+  P5 --> P6["Payroll export per location:<br/>scheduled, present, payable, LOP days,<br/>overtime, comp-off, encashment"]:::good
+  P5 -. "re-open needs a reason" .-> P2
+    </pre>
+  </figure>
+
+  <h2>Occurrences and discipline</h2>
+  <p>Repeated late logins or early departures count as <b>occurrences</b>: 2 → verbal warning, 3 → first written,
+  6 → second written, 8 → final, 10 → termination review. Unauthorised absence escalates faster (1, 2, 3, 4).
+  The system only <b>recommends</b>; HR confirms every outcome.</p>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Past attendance is generated as sample data; nothing is really recorded. No biometric device is connected.</li>
+      <li>Approval chains for unpaid leave and overtime are described but each approval is a single step today.</li>
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,18 @@
+meta {
+  name: Who am I
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: none
+}
+
+tests {
+  test("signed in", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.employeeCode).to.equal(bru.getEnvVar("persona"));
+  });
+}

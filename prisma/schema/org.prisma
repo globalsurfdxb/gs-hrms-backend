@@ -1,0 +1,109 @@
+// Organisation master data. Owned by src/modules/org.
+
+enum LocationTemplate {
+  /// Emirates ID, visa, labour card, WPS, IBAN
+  UAE
+  /// Aadhaar, PAN, UAN/PF, IFSC
+  INDIA
+
+  @@map("location_template")
+}
+
+/// A country/office the company operates in. Drives statutory fields, currency, calendar and leave rules.
+/// Ids are readable ("Dubai", "Kochi") because the frontend uses them as keys.
+model Location {
+  id           String           @id
+  name         String
+  city         String
+  currency     String           @db.Char(3)
+  /// IANA zone, e.g. Asia/Dubai, Asia/Kolkata. Leave and attendance days are interpreted in this zone.
+  timezone     String
+  phoneCode    String           @map("phone_code")
+  phoneDigits  Int              @map("phone_digits")
+  phoneExample String?          @map("phone_example")
+  /// Display text for now ("09:00 – 18:00, Mon–Fri"). Structured work-week columns arrive with the leave module.
+  workingHours String           @map("working_hours")
+  seating      String[]
+  template     LocationTemplate
+  /// Built-in locations cannot be deleted.
+  system       Boolean          @default(false)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  companies           Company[]
+  departmentLocations DepartmentLocation[]
+  employees           Employee[]
+
+  @@map("locations")
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("company_status")
+}
+
+model Company {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  name        String        @unique
+  shortCode   String        @unique @map("short_code")
+  description String        @default("")
+  website     String        @default("")
+  /// null = operates in every location (the frontend's "Both").
+  locationId  String?       @map("location_id")
+  established String?
+  status      CompanyStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  location    Location?    @relation(fields: [locationId], references: [id])
+  departments Department[]
+  employees   Employee[]
+
+  @@map("companies")
+}
+
+/// Departments belong to one company ("Sales" exists separately under several companies).
+model Department {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  name           String
+  headEmployeeId String?  @map("head_employee_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  head         Employee?            @relation("DepartmentHead", fields: [headEmployeeId], references: [id], onDelete: SetNull)
+  locations    DepartmentLocation[]
+  designations Designation[]
+  employees    Employee[]
+
+  @@unique([companyId, name])
+  @@map("departments")
+}
+
+model DepartmentLocation {
+  departmentId String @map("department_id") @db.Uuid
+  locationId   String @map("location_id")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  @@id([departmentId, locationId])
+  @@map("department_locations")
+}
+
+model Designation {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  departmentId String   @map("department_id") @db.Uuid
+  title        String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  employees  Employee[]
+
+  @@unique([departmentId, title])
+  @@map("designations")
+}

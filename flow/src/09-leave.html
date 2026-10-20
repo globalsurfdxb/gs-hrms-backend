@@ -1,0 +1,85 @@
+<section class="module">
+  <div class="kicker">Leave &amp; Attendance</div>
+  <h1>9 · Leave</h1>
+  <p class="lead">How an employee applies for leave, how the system checks it, who approves it, and how balances change.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Employee</span> applies · <span class="chip c-lead">Reporting manager</span> approves · <span class="chip c-hr">HR</span> operations (types, holidays, adjustments)</div>
+    <b>Frontend</b><div><code>/my/leave-attendance</code>, <code>/team/leave</code>, <code>/modules/leave-attendance/*</code> (full Leave &amp; Attendance app in <code>public/la/*.js</code>), <code>lib/leaveBridge.ts</code></div>
+    <b>Backend</b><div>Phase 3 — needs the lead's decision on the correct leave entitlements (see last box)</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>The employee picks a leave type and dates. The system counts <b>working days</b> only (weekends and public holidays are skipped).</li>
+    <li>The system checks balance, overlaps, notice, documents and eligibility before the request is accepted.</li>
+    <li>The request goes to the <b>reporting manager</b>. If there is none, it goes up the chain: manager's manager → HR → Super Admin.</li>
+    <li>Approved leave is deducted from the balance. Pending leave is shown as "pending" and reserved.</li>
+  </ol>
+
+  <h2>Applying and approving</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Employee: apply for leave<br/>type · from–to · half day · reason · document"]):::emp --> B["System counts working days<br/>for the employee's location"]:::sys
+  B --> C{"Checks pass?"}:::sys
+  C -- "No" --> X["Shown to the employee with the reason"]:::bad
+  C -- "Not enough balance" --> SP{"Convert the excess<br/>to unpaid leave?"}:::emp
+  SP -- Yes --> SPL["Split into two linked requests:<br/>paid part + unpaid part"]:::sys
+  SP -- No --> X
+  C -- Yes --> P["PENDING<br/>balance shows it as pending"]:::sys
+  SPL --> P
+  P --> APR{"Reporting manager decides"}:::lead
+  P -. "employee withdraws" .-> WD["WITHDRAWN"]:::bad
+  APR -- "Approve" --> OK["APPROVED<br/>balance deducted, team calendar updated"]:::good
+  APR -- "Approve as exception<br/>(rule broken — reason required)" --> OK
+  APR -- "Reject (can suggest other dates)" --> RJ["REJECTED"]:::bad
+  OK -. "start date still in the future" .-> CN["Employee cancels → CANCELLED,<br/>days returned"]:::emp
+  OK -. "needs more days" .-> EXT["Extension = new linked request"]:::emp
+    </pre>
+  </figure>
+
+  <h2>What the system checks</h2>
+  <ul>
+    <li>Not more than <b>30 days in the past</b>; no overlap with other pending or approved leave.</li>
+    <li><b>Notice:</b> Annual leave 30 days ahead, Earned leave 7 days ahead (warning only).</li>
+    <li><b>Sick leave certificate:</b> Dubai — 2 days or more, or a Monday; Kochi — more than 2 days.</li>
+    <li><b>Eligibility:</b> maternity (female), paternity/parental, Hajj once per service after 1 year, Umrah once a year,
+      marriage leave once, study leave after 2 years. Restricted festive leave is exactly 1 day.</li>
+    <li><b>Annual leave plan:</b> at most 3 blocks a year, each at least 7 days, at least 90 days apart.</li>
+    <li>The approver is never the requester, and never someone who reports to the requester.</li>
+  </ul>
+
+  <h2>Balances</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  E["Entitled<br/>(yearly, or accrued monthly)"]:::sys --> AV["Available"]:::good
+  CF["+ Carried forward<br/>max 5 days, expires 31 Mar"]:::hr --> AV
+  AJ["± HR adjustment<br/>(with reason)"]:::hr --> AV
+  T["− Taken"]:::emp --> AV
+  PD["− Pending"]:::emp --> AV
+  EN["− Encashed<br/>max 10 days: manager → HR → payroll"]:::hr --> AV
+    </pre>
+  </figure>
+
+  <h2>Leave types</h2>
+  <table>
+    <tr><th>Dubai (UAE)</th><th>Kochi (India)</th></tr>
+    <tr><td>Annual 30 days (2.5 a month) · Sick 90 (15 full pay, 30 half, 45 unpaid) · Compassionate · Maternity (45 full + 15 half) ·
+      Parental · Hajj · Umrah · Study · Restricted festive · Casual · Unpaid</td>
+      <td>Casual 12 (1 a month) · Earned 15 (1.25 a month) · Sick 12 · Maternity 26 weeks · Paternity · Marriage ·
+      Bereavement · Loss of pay (LOP)</td></tr>
+    <tr><td colspan="2">Both: Compensatory off (earned from overtime) and Work from home are requested the same way.</td></tr>
+  </table>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet — decisions needed</h3>
+    <ul>
+      <li>The frontend has <b>two leave systems</b> that disagree: the main app says Annual 21 / Sick 10 / Casual 7, the
+        Leave &amp; Attendance app says Annual 30 / Sick 90 (Dubai). The lead must confirm the correct numbers.</li>
+      <li>Monthly accrual is described but not calculated. Multi-step approval chains (e.g. unpaid leave → HR) are shown as text only.</li>
+      <li>The backend keeps <b>one</b> balance, built from a history of every change (accrual, taken, adjustment, carry-forward, encashment).</li>
+    </ul>
+  </div>
+</section>

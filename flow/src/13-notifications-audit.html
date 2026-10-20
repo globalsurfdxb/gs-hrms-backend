@@ -1,0 +1,78 @@
+<section class="module">
+  <div class="kicker">Administration · shared by every module</div>
+  <h1>13 · Notifications, workflow and audit</h1>
+  <p class="lead">The shared machinery: who gets told about what, who approves what, and the permanent record of every change.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-emp">Everyone</span> receives notifications · <span class="chip c-admin">Super Admin</span> <span class="chip c-hr">HR</span> configure rules and read the audit log</div>
+    <b>Frontend</b><div><code>/my/notifications</code>, <code>/team/notifications</code>, bell in the top bar, <code>/admin/workflow</code>, <code>/admin/notifications</code>, <code>/admin/reminders</code>, <code>/admin/audit</code></div>
+    <b>Backend</b><div>Phase 0 — audit log built; workflow engine and notifications next</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>When something happens (a request is raised, an offer is accepted…), the right people get a <b>notification</b>.</li>
+    <li>Some notifications are <b>time-based</b> (a document expiring, an interview in one hour) and are checked automatically.</li>
+    <li>All approvals follow <b>workflow chains</b> that admins can see (and, in the backend, change).</li>
+    <li>Every change is written to the <b>audit log</b>, which can never be edited or deleted.</li>
+  </ol>
+
+  <h2>Notifications</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  subgraph EV["Something happens"]
+    direction LR
+    e1["Request raised / decided"]:::sys
+    e2["Claim submitted / decided"]:::sys
+    e3["Requisition step waiting"]:::sys
+    e4["Interview scheduled / moved"]:::sys
+    e5["Offer viewed / accepted / declined"]:::sys
+  end
+  subgraph TM["Checked automatically"]
+    direction LR
+    t1["Document expiring"]:::sys
+    t2["Review / training due or overdue"]:::sys
+    t3["Interview in 1 h / 24 h"]:::sys
+    t4["Offer expiring in 3 days"]:::sys
+  end
+  EV --> R{"Notification rule:<br/>who, in-app and/or email,<br/>on or off"}:::admin
+  TM --> R
+  R --> N1["Bell + notification page<br/>(never to the person who did it)"]:::good
+  R --> N2["Email (backend)"]:::good
+    </pre>
+  </figure>
+
+  <h2>Approval workflows</h2>
+  <table>
+    <tr><th>Process</th><th>Approval chain</th></tr>
+    <tr><td>Job requisition</td><td>Hiring manager → HR → Management (Super Admin)</td></tr>
+    <tr><td>Onboarding</td><td>HR initiates → Manager review → HR approval → Payroll notified</td></tr>
+    <tr><td>Offboarding</td><td>Resignation logged → Manager / IT / Finance clearance → HR final approval</td></tr>
+    <tr><td>Employee request</td><td>Information update → manager; other types → HR</td></tr>
+    <tr><td>Leave</td><td>Reporting manager (fallback: manager's manager → HR → Super Admin)</td></tr>
+    <tr><td>Expense claim</td><td>Reporting manager (General Manager → Super Admin)</td></tr>
+    <tr><td>Leave encashment</td><td>Manager → HR → payroll</td></tr>
+  </table>
+
+  <h2>Audit log</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["Any change or sign-in"]):::emp --> B["Audit entry:<br/>who · when · module · what ·<br/>old value → new value"]:::sys
+  B --> C[("Audit log<br/>cannot be changed or deleted")]:::sys
+  C --> D["Administration → Audit Logs:<br/>filter by text, module, user, dates;<br/>export CSV"]:::admin
+    </pre>
+  </figure>
+  <p>Recorded modules include Security (sign-ins, exports), Employee, Bank, Salary, Organization, Access (roles and
+  permissions), Approvals, Requests, Expense, Hiring, Leave &amp; Attendance, Documents, Performance and Learning.</p>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Notification rules and workflow switches are only displayed — nothing reads them. No email is ever sent.</li>
+      <li>Approval chains cannot be changed. The backend adds one shared workflow engine that admins can configure.</li>
+      <li>The frontend audit log lives in the browser; the backend version is permanent and protected by the database.</li>
+    </ul>
+  </div>
+</section>

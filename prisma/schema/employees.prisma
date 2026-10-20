@@ -1,0 +1,58 @@
+// Employee record. Owned by src/modules/employees.
+// Phase 0 holds only what sign-in, permissions and org placement need. Phase 1 adds the profile tables
+// (personal, identity documents, bank, salary, education, experience, family, emergency contacts).
+// Sensitive identity and bank columns are stored encrypted — see docs/security.md#field-encryption.
+
+enum EmploymentStatus {
+  ONBOARDING
+  ACTIVE
+  OFFBOARDING
+  INACTIVE
+
+  @@map("employment_status")
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  PROBATION
+
+  @@map("employment_type")
+}
+
+model Employee {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  /// GS-NNN, shown everywhere in the UI.
+  employeeCode       String           @unique @map("employee_code")
+  /// Microsoft Entra object id (oid). Linked on first SSO sign-in. Identity is matched on this, not on email.
+  entraObjectId      String?          @unique @map("entra_object_id") @db.Uuid
+  /// Work email, stored lower-case.
+  email              String           @unique
+  fullName           String           @map("full_name")
+  locationId         String           @map("location_id")
+  companyId          String           @map("company_id") @db.Uuid
+  departmentId       String?          @map("department_id") @db.Uuid
+  designationId      String?          @map("designation_id") @db.Uuid
+  reportingManagerId String?          @map("reporting_manager_id") @db.Uuid
+  roleId             String           @map("role_id") @db.Uuid
+  employmentStatus   EmploymentStatus @default(ONBOARDING) @map("employment_status")
+  employmentType     EmploymentType   @map("employment_type")
+  dateOfJoining      DateTime         @map("date_of_joining") @db.Date
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  location         Location     @relation(fields: [locationId], references: [id])
+  company          Company      @relation(fields: [companyId], references: [id])
+  department       Department?  @relation(fields: [departmentId], references: [id])
+  designation      Designation? @relation(fields: [designationId], references: [id])
+  reportingManager Employee?    @relation("ReportingLine", fields: [reportingManagerId], references: [id])
+  directReports    Employee[]   @relation("ReportingLine")
+  role             Role         @relation(fields: [roleId], references: [id])
+  sessions         Session[]
+  headOf           Department[] @relation("DepartmentHead")
+
+  @@index([reportingManagerId])
+  @@index([locationId])
+  @@index([companyId, departmentId])
+  @@map("employees")
+}

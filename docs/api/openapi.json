@@ -1,0 +1,777 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "description": "Public. The process is running.",
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ok"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error — details are in the server log; quote the requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Liveness",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "description": "Public. The database is reachable. Used by Azure health checks.",
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ok"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database not reachable"
+          }
+        },
+        "summary": "Readiness",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/auth/dev/login": {
+      "post": {
+        "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.",
+        "operationId": "AuthController_devLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Signed in — session cookie set"
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — slow down",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dev sign-in as a seeded persona",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/dev/personas": {
+      "get": {
+        "description": "Local development only (404 elsewhere).",
+        "operationId": "AuthController_devPersonas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DevPersonaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List dev personas",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "description": "The signed-in person, their role and granted permission keys. Call on app load; 401 → sign-in page.",
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Who am I",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Ends the session on the server and clears the cookie.",
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Sign out",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/org/companies": {
+      "get": {
+        "description": "Any signed-in person. Used to fill company pickers.",
+        "operationId": "CompaniesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List companies",
+        "tags": [
+          "Organization · Companies"
+        ]
+      },
+      "post": {
+        "description": "Needs Companies → Add (Super Admin, HR, Office Admin by default). Short code is stored upper-case.",
+        "operationId": "CompaniesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCompanyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a company",
+        "tags": [
+          "Organization · Companies"
+        ]
+      }
+    },
+    "/api/org/companies/{id}": {
+      "get": {
+        "description": "Any signed-in person.",
+        "operationId": "CompaniesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one company",
+        "tags": [
+          "Organization · Companies"
+        ]
+      },
+      "patch": {
+        "description": "Needs Companies → Edit. Send only the fields that change. Set status INACTIVE to deactivate.",
+        "operationId": "CompaniesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update a company",
+        "tags": [
+          "Organization · Companies"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "GS HRMS API",
+    "description": "\nAPI for GS HRMS. **Generated from the code** — every endpoint must be documented (CI checks it).\nBusiness rules and flows: `docs/modules/*.md` and the PDFs in `flow/`. Testing guide: `docs/api-guide.md`.\n\n### Try it in 3 steps\n1. Open **Auth → POST /api/auth/dev/login**, click **Try it out**, send `{ \"employeeCode\": \"GS-120\" }`.\n   The session cookie is now set in this browser.\n2. Call any endpoint with **Try it out** — you are signed in as that persona.\n3. Switch persona by signing in again (GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee).\n\n### Errors\nEvery error has the same body: `{ statusCode, code, message, details?, requestId }`. Switch on `code`.\n",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "hrms_sid"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 403
+          },
+          "code": {
+            "type": "string",
+            "example": "auth.forbidden",
+            "description": "Stable code — the frontend switches on this"
+          },
+          "message": {
+            "type": "string",
+            "example": "You do not have access to this"
+          },
+          "details": {
+            "type": "object",
+            "description": "Field errors for request.invalid"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "req-42",
+            "description": "Quote this when reporting a problem"
+          }
+        },
+        "required": [
+          "statusCode",
+          "code",
+          "message"
+        ]
+      },
+      "DevLoginDto": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-120",
+            "description": "Employee code of a seeded persona"
+          }
+        },
+        "required": [
+          "employeeCode"
+        ]
+      },
+      "DevPersonaResponse": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "employeeCode",
+          "fullName",
+          "role"
+        ]
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "string"
+          },
+          "permissions": {
+            "description": "Granted permission keys (frontend catalogue format)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "employeeId",
+          "employeeCode",
+          "fullName",
+          "email",
+          "role",
+          "locationId",
+          "companyId",
+          "permissions"
+        ]
+      },
+      "CompanyResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shortCode": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "website": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "description": "Location id, or \"Both\""
+          },
+          "established": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "shortCode",
+          "description",
+          "website",
+          "location",
+          "established",
+          "status",
+          "updatedAt"
+        ]
+      },
+      "CreateCompanyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "GS Digital"
+          },
+          "shortCode": {
+            "type": "string",
+            "example": "GSD",
+            "description": "2–8 letters or digits; stored upper-case"
+          },
+          "description": {
+            "type": "string",
+            "example": "Digital marketing and software solutions."
+          },
+          "website": {
+            "type": "string",
+            "example": "www.gsdigital.ae"
+          },
+          "location": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "A location id, or \"Both\" for every location"
+          },
+          "established": {
+            "type": "string",
+            "example": "2019"
+          }
+        },
+        "required": [
+          "name",
+          "shortCode",
+          "location"
+        ]
+      },
+      "UpdateCompanyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "GS Digital"
+          },
+          "shortCode": {
+            "type": "string",
+            "example": "GSD",
+            "description": "2–8 letters or digits; stored upper-case"
+          },
+          "description": {
+            "type": "string",
+            "example": "Digital marketing and software solutions."
+          },
+          "website": {
+            "type": "string",
+            "example": "www.gsdigital.ae"
+          },
+          "location": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "A location id, or \"Both\" for every location"
+          },
+          "established": {
+            "type": "string",
+            "example": "2019"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

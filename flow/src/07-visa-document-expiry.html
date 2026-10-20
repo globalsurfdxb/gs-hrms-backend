@@ -1,0 +1,67 @@
+<section class="module">
+  <div class="kicker">Employee Management · Documents &amp; Compliance</div>
+  <h1>7 · Visa and document expiry</h1>
+  <p class="lead">Keeps every dated document (visa, Emirates ID, passport, labour card, licences…) valid, by
+  reminding the right people before it expires and recording each renewal.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> register and renewals · <span class="chip c-emp">Employee</span> own documents · <span class="chip c-lead">Team Lead</span> team view</div>
+    <b>Frontend</b><div><code>/visa</code>, <code>/team/visa</code>, <code>/employee-expiry</code>, <code>/my/expiry</code>, <code>/team/expiry</code>, <code>/admin/reminders</code>, <code>lib/reminderRules.ts</code>, <code>lib/expiryRegister.ts</code></div>
+    <b>Backend</b><div>Phase 1 (daily reminder job)</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li>Every dated document has an expiry date and a reminder schedule (for example 90, 60, 30 and 7 days before).</li>
+    <li>Each day the system sends the reminders that are due — once per step — to the employee and HR, and to the manager near the end.</li>
+    <li>When the document is renewed, HR enters the new expiry date and the reminders start again.</li>
+  </ol>
+
+  <h2>Daily reminder check</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Every morning (automatic)"]):::sys --> B["For each dated document:<br/>days left until expiry"]:::sys
+  B --> C{"Expired?"}:::sys
+  C -- Yes --> X["Marked EXPIRED — escalated<br/>mandatory document ⇒ employee non-compliant"]:::bad
+  C -- No --> D{"A reminder step due?<br/>e.g. 90 / 60 / 30 / 7 days"}:::sys
+  D -- No --> Z["Nothing to do"]:::sys
+  D -- Yes --> E{"Already sent for this<br/>step and expiry date?"}:::sys
+  E -- Yes --> Z
+  E -- No --> F["Remind employee + HR<br/>(+ manager when 30 days or less)"]:::sys
+  F --> G[("Reminder log")]:::sys
+  X --> R
+  F --> R["HR renews the document:<br/>new expiry date (+ new Emirates ID expiry),<br/>reference number"]:::hr
+  R --> S["Renewal history saved<br/>reminders start again for the new date"]:::good
+    </pre>
+  </figure>
+
+  <h2>Reminder schedules</h2>
+  <table>
+    <tr><th>Documents</th><th>Remind (days before)</th><th>Default</th></tr>
+    <tr><td>Residence visa, Emirates ID, work permit</td><td>90 · 60 · 30 · 7</td><td>On</td></tr>
+    <tr><td>Passport</td><td>90 · 30</td><td>On</td></tr>
+    <tr><td>Labour card</td><td>60 · 30 · 7</td><td>On</td></tr>
+    <tr><td>Trade and professional licence</td><td>90 · 60 · 30</td><td>On</td></tr>
+    <tr><td>Employment contract</td><td>60 · 30</td><td>Off</td></tr>
+    <tr><td>Other dated documents (insurance, driving licence…)</td><td>60 · 30 · 7</td><td>On</td></tr>
+  </table>
+
+  <h2>Rules</h2>
+  <ul>
+    <li><b>Status:</b> OK · Expiring soon (90 days or less) · Expired.</li>
+    <li><b>Mandatory</b> for compliance: residence visa, Emirates ID, labour card, passport.</li>
+    <li>The visa register covers <b>Dubai only</b> and excludes inactive employees; Kochi shows "not applicable".</li>
+    <li>A renewal must have a new expiry date in the future and later than the current one.</li>
+    <li>A dated document only counts as valid when its file is uploaded.</li>
+    <li>HR can also send a reminder manually; it always includes the manager.</li>
+  </ul>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Reminders are only listed on screen — no email is sent and nothing runs automatically.</li>
+      <li>Admins can switch schedules on/off but cannot change the days or recipients yet.</li>
+    </ul>
+  </div>
+</section>

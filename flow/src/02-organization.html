@@ -1,0 +1,75 @@
+<section class="module">
+  <div class="kicker">Administration</div>
+  <h1>2 · Organization setup</h1>
+  <p class="lead">The master data every other module depends on: locations, companies, departments and designations.
+  Set up once, changed rarely.</p>
+
+  <div class="meta">
+    <b>Used by</b><div><span class="chip c-admin">Super Admin</span> <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> edit · everyone reads (dropdowns)</div>
+    <b>Frontend</b><div><code>/admin/companies</code>, <code>/admin/structure</code>, <code>/admin/settings</code> (locations), <code>context/OrgContext.tsx</code></div>
+    <b>Backend</b><div>Phase 0 — Companies API done (reference module); locations, departments, designations next</div>
+  </div>
+
+  <h2>In short</h2>
+  <ol class="short">
+    <li><b>Locations</b> (Dubai, Kochi) carry the country rules.</li>
+    <li><b>Companies</b> work in one or both locations; <b>departments</b> belong to a company; <b>designations</b> are job titles in a department.</li>
+    <li>Every employee is placed in a location, company, department and designation.</li>
+  </ol>
+
+  <h2>How the pieces fit</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  L["Location<br/>Dubai (UAE rules) · Kochi (India rules)<br/>currency, phone format, hours, seating"]
+  C["Company<br/>GS IT · GS Digital · GS AV · GS Security<br/>works in one location or both"]
+  D["Department<br/>belongs to one company<br/>works in one or more locations"]
+  G["Designation<br/>job title inside a department"]
+  E(["Employee<br/>placed in location + company +<br/>department + designation"])
+  L --> C --> D --> G --> E
+  L --> E
+    </pre>
+    <figcaption>"Sales" can exist in several companies — a department always belongs to exactly one company.</figcaption>
+  </figure>
+
+  <h2>Adding and changing</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Admin opens Administration"]) --> B{"What?"}
+  B --> L1["Location<br/>(System Settings)"]
+  B --> C1["Company"]
+  B --> D1["Department / Designation"]
+  L1 --> L2{"Delete?"}
+  L2 -- "Built-in Dubai/Kochi" --> N1["Not allowed"]
+  L2 -- "Used by companies,<br/>departments or employees" --> N1
+  L2 -- "Unused custom location" --> OK1["Deleted"]
+  C1 --> C2["Name, short code (2–8 letters),<br/>location or Both, website, year"]
+  C2 --> OK2["Saved + audit log"]
+  D1 --> D2["Department: company + locations + head<br/>Designation: title under a department"]
+  D2 --> OK3["Saved + audit log"]
+  class A,B,L1,C1,D1,C2,D2 admin
+  class L2 sys
+  class N1 bad
+  class OK1,OK2,OK3 good
+    </pre>
+  </figure>
+  <ol class="steps">
+    <li><b>Locations</b> decide the country rules: which ID fields an employee has, currency, bank format, holidays and leave types.</li>
+    <li><b>Companies</b> are business units. A company works in Dubai, Kochi or both.</li>
+    <li><b>Departments</b> belong to a company and list the locations they operate in. When an employee is placed,
+      the department must belong to their company <i>and</i> operate in their location.</li>
+    <li><b>Designations</b> are the job titles inside a department.</li>
+    <li>Every change is recorded in the audit log (module "Organization").</li>
+  </ol>
+
+  <div class="callout gap">
+    <h3>Not in the frontend yet</h3>
+    <ul>
+      <li>Changes are kept only in the browser and are lost on refresh.</li>
+      <li>Removing a company also removes its departments and designations, even if employees still use them.
+        Backend rule: block or deactivate instead of deleting when records are in use.</li>
+      <li>Employees store company/department/designation as <b>names</b>; the backend uses ids, so renaming is safe.</li>
+    </ul>
+  </div>
+</section>
