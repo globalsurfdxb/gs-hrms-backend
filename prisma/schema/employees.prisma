@@ -51,6 +51,12 @@ model Employee {
   sessions         Session[]
   headOf           Department[] @relation("DepartmentHead")
 
+  // Hiring (src/modules/hiring) — references only; hiring owns these tables.
+  requisitionsReplacing   Requisition[]     @relation("RequisitionReplaces")
+  requisitionsManaged     Requisition[]     @relation("RequisitionHiringManager")
+  requisitionsRaised      Requisition[]     @relation("RequisitionCreatedBy")
+  requisitionStepsDecided RequisitionStep[] @relation("RequisitionStepDecidedBy")
+
   @@index([reportingManagerId])
   @@index([locationId])
   @@index([companyId, departmentId])

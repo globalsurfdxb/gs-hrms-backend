@@ -1,0 +1,23 @@
+meta {
+  name: Get requisition
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Run "Raise requisition" first — it fills `requisitionId`. 404 when you may not see it. `viewer` says which
+  buttons to show (canEdit, canDecide, canManage).
+}
+
+tests {
+  test("found", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.viewer).to.be.an("object");
+  });
+}

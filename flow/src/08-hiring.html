@@ -7,7 +7,7 @@
   <div class="meta">
     <b>Used by</b><div><span class="chip c-lead">Team Lead</span> as hiring manager · <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> run hiring · <span class="chip c-emp">Any employee</span> interviews, refers · <span class="chip c-cand">Candidate</span></div>
     <b>Frontend</b><div><code>/hiring/*</code> (dashboard, requisitions, jobs, candidates, interviews, offers, operations, reports), <code>/careers</code>, <code>/offer/respond/[token]</code>, <code>/my/interviews</code>, <code>/my/referrals</code>, <code>lib/hiringStore.ts</code></div>
-    <b>Backend</b><div>Phase 2</div>
+    <b>Backend</b><div>Phase 2 — in progress, step by step</div>
   </div>
 
   <h2>In short</h2>
@@ -40,6 +40,12 @@ flowchart TD
   AP -. "HR can" .-> OH["On hold ⇄ Approved · Closed"]:::hr
     </pre>
   </figure>
+  <ul>
+    <li><b>Nobody approves their own requisition:</b> whoever raised it cannot decide its HR or Management step
+      (the Hiring Manager step is approved automatically when the hiring manager raises it).</li>
+    <li>The HR step is decided by HR or Office Admin; the Management step by a Super Admin, who may also decide any
+      other step.</li>
+  </ul>
 
   <h2>B · Job and candidate pipeline</h2>
   <figure>
@@ -74,23 +80,31 @@ flowchart TD
 flowchart TD
   A(["HR creates the offer (candidate at OFFER stage):<br/>salary lines, joining date, probation, expiry date"]):::hr --> W{"Above job budget?"}:::sys
   W -- yes --> WN["Warning shown"]:::sys --> L
-  W -- no --> L["Prepare letter from the location's template<br/>(Dubai or Kochi letterhead and signatory)"]:::hr
+  W -- no --> L["Prepare letter from the template:<br/>UAE — the issuing company's own letter<br/>India — one letter for Kochi<br/>(built-in letter when none uploaded)"]:::hr
   L --> SND["Send — candidate gets a private link"]:::hr
   SND --> V["Candidate opens the link,<br/>reads and downloads the PDF"]:::cand
   V --> D{"Candidate decides<br/>(before expiry)"}:::cand
-  D -- "Accept (types full name)" --> ACC["ACCEPTED<br/>job filled +1; job FILLED when full"]:::good
+  D -- "Accept (types full name)" --> ACC["ACCEPTED → candidate HIRED<br/>job filled +1; job FILLED when full"]:::good
   D -- "Decline (reason)" --> DEC["DECLINED<br/>application → Withdrawn"]:::bad
+  SND -. "candidate answered by phone/email:<br/>HR records accepted or declined" .-> D
   SND -. "HR can withdraw the link" .-> L
   ACC --> ONB["HR: 'Start onboarding'<br/>→ chapter 5, form pre-filled"]:::hr
-  ACC -. "candidate backs out later" .-> WD["Withdraw acceptance (reason)<br/>job re-opens"]:::bad
+  ACC -. "candidate backs out later" .-> WD["Withdraw acceptance (reason, before an employee exists)<br/>application Withdrawn · filled −1 · FILLED job re-opens"]:::bad
     </pre>
   </figure>
+  <ul>
+    <li><b>Offer letters:</b> in the UAE every company (GS IT, GS Digital, GS AV, GS Security) has its own letter
+      template; India has one. The letter's company name and footer follow the company that issues the offer
+      (taken from the job). HR uploads a .docx/.html file or edits the text; letters already prepared keep their text.</li>
+    <li><b>Recruiter:</b> every job has a recruiter who runs it. HR can change the recruiter; the new recruiter is notified
+      and the change is kept in the job's history.</li>
+  </ul>
 
   <h2>Who can do what</h2>
   <table>
     <tr><th>Who</th><th>Can</th></tr>
-    <tr><td>HR, Office Admin, Super Admin</td><td>Everything: jobs, all candidates, offers, email templates, offer-letter templates, reports</td></tr>
-    <tr><td>Team Lead (hiring manager)</td><td>Own requisitions; candidates, stage moves, rejections and interviews on <b>their</b> jobs; sees salary on their jobs</td></tr>
+    <tr><td>HR, Super Admin</td><td>Everything: requisitions, jobs, all candidates, offers, email templates, offer-letter templates, reports</td></tr>
+    <tr><td>Team Lead, Office Admin</td><td>Raise a requisition (request for a position) and follow it; a Team Lead approves the Hiring Manager step of requisitions they manage and sees salary on their jobs</td></tr>
     <tr><td>Any employee</td><td>Interviews they are on (<code>/my/interviews</code>); referral links for referral-eligible jobs and their referrals' progress</td></tr>
     <tr><td>Candidate</td><td>Careers page and their own offer link only — no account</td></tr>
   </table>
@@ -104,6 +118,11 @@ flowchart TD
       <li>No <b>offer approval</b> (even over budget) and offers never expire automatically.</li>
       <li>CVs are not stored (only the file name); emails are never really sent; Outlook/Teams are switches only.</li>
       <li>Offer PDF is built in the browser as an image — the backend will produce the official PDF.</li>
+      <li>Access follows the Roles &amp; Permissions matrix (decided 22 Oct 2026). The prototype's hiring screens still
+        give Office Admin full access and Team Leads their jobs' pipeline — the frontend must be aligned.</li>
+      <li>Rejecting or withdrawing a candidate does not withdraw an offer already sent — the candidate could still accept.</li>
+      <li>Requisition and job status changes, and HR "record accepted", have no checks in the prototype — the backend
+        enforces the transitions shown above.</li>
     </ul>
   </div>
 </section>

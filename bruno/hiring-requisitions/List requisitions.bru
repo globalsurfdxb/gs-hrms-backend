@@ -1,0 +1,32 @@
+meta {
+  name: List requisitions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/hiring/requisitions?page=1&pageSize=50
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  pageSize: 50
+  ~status: PENDING_APPROVAL
+  ~locationId: Dubai
+  ~waitingOnMe: true
+}
+
+docs {
+  Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead). HR and Super Admin see all; others see
+  what they raised or manage, what waits on their approval step, and what they decided.
+  Enable `waitingOnMe=true` for the approval inbox. As GS-087 (Employee) this returns 403.
+}
+
+tests {
+  test("paged list (200) — or 403 for Employee", function () {
+    expect([200, 403]).to.include(res.status);
+    if (res.status === 200) expect(res.body.items).to.be.an("array");
+  });
+}

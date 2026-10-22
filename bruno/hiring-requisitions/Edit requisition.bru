@@ -1,0 +1,32 @@
+meta {
+  name: Edit requisition
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "positions": 3
+  }
+}
+
+docs {
+  Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or
+  REJECTED — otherwise 409 `requisition.not_editable`. Send only the fields that change.
+}
+
+tests {
+  test("updated (200) — or 409 once submitted", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

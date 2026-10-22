@@ -1,0 +1,27 @@
+meta {
+  name: Submit requisition
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}/submit
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  DRAFT or REJECTED → PENDING_APPROVAL. If you are the hiring manager, your step is approved automatically and
+  the HR step waits.
+}
+
+tests {
+  test("submitted", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.status).to.equal("PENDING_APPROVAL");
+  });
+}

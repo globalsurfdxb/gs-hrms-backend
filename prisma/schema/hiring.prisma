@@ -1,0 +1,108 @@
+// Hiring Management. Owned by src/modules/hiring. Spec: docs/modules/hiring.md.
+// Built step by step (spec §11): step 1 = requisitions and their approval steps.
+
+enum HiringEmploymentType {
+  FULL_TIME
+  CONTRACT
+  INTERN
+
+  @@map("hiring_employment_type")
+}
+
+enum RequisitionReason {
+  NEW_ROLE
+  REPLACEMENT
+
+  @@map("requisition_reason")
+}
+
+enum RequisitionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ON_HOLD
+  CLOSED
+
+  @@map("requisition_status")
+}
+
+/// The fixed approval chain (lead decision 2026-10-22): Hiring Manager → HR → Management.
+enum RequisitionStepLabel {
+  HIRING_MANAGER
+  HR
+  MANAGEMENT
+
+  @@map("requisition_step_label")
+}
+
+enum RequisitionStepStatus {
+  WAITING
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("requisition_step_status")
+}
+
+/// A request for headcount. Only an APPROVED requisition can become a job.
+model Requisition {
+  id                 String               @id @default(uuid(7)) @db.Uuid
+  /// REQ-0001, from a sequence so concurrent saves never share a code (see the migration).
+  code               String               @unique @default(dbgenerated("('REQ-'::text || lpad((nextval('hiring_requisition_code_seq'::regclass))::text, 4, '0'::text))"))
+  title              String
+  companyId          String               @map("company_id") @db.Uuid
+  departmentId       String               @map("department_id") @db.Uuid
+  designationId      String?              @map("designation_id") @db.Uuid
+  locationId         String               @map("location_id")
+  positions          Int
+  employmentType     HiringEmploymentType @map("employment_type")
+  reason             RequisitionReason
+  replacesEmployeeId String?              @map("replaces_employee_id") @db.Uuid
+  /// Monthly (UAE) or yearly CTC (India) budget per position, in the location's currency.
+  budgetMin          Decimal              @map("budget_min") @db.Decimal(14, 2)
+  budgetMax          Decimal              @map("budget_max") @db.Decimal(14, 2)
+  currency           String               @db.Char(3)
+  targetStart        DateTime             @map("target_start") @db.Date
+  hiringManagerId    String               @map("hiring_manager_id") @db.Uuid
+  justification      String
+  status             RequisitionStatus    @default(DRAFT)
+  createdById        String               @map("created_by_id") @db.Uuid
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  company       Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  department    Department        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  designation   Designation?      @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  location      Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  replaces      Employee?         @relation("RequisitionReplaces", fields: [replacesEmployeeId], references: [id], onDelete: Restrict)
+  hiringManager Employee          @relation("RequisitionHiringManager", fields: [hiringManagerId], references: [id], onDelete: Restrict)
+  createdBy     Employee          @relation("RequisitionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  steps         RequisitionStep[]
+
+  @@index([status])
+  @@index([locationId])
+  @@index([hiringManagerId])
+  @@index([createdById])
+  @@map("requisitions")
+}
+
+/// One step of a requisition's approval chain. Recreated on every (re)submit.
+model RequisitionStep {
+  requisitionId String                @map("requisition_id") @db.Uuid
+  /// 1, 2, 3 — the chain order.
+  position      Int
+  label         RequisitionStepLabel
+  status        RequisitionStepStatus @default(WAITING)
+  decidedById   String?               @map("decided_by_id") @db.Uuid
+  decidedAt     DateTime?             @map("decided_at") @db.Timestamptz(3)
+  note          String?
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  decidedBy   Employee?   @relation("RequisitionStepDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+
+  @@id([requisitionId, position])
+  /// Finds requisitions waiting on a given step (approval inbox).
+  @@index([label, status])
+  @@map("requisition_steps")
+}

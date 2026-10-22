@@ -1,0 +1,26 @@
+meta {
+  name: Close requisition
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}/close
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  HR / Super Admin only. APPROVED or ON_HOLD → CLOSED (final). Any other status → 409 `requisition.invalid_transition`.
+}
+
+tests {
+  test("CLOSED (200) — or 409 from the wrong status", function () {
+    expect([200, 409]).to.include(res.status);
+    if (res.status === 200) expect(res.body.status).to.equal("CLOSED");
+  });
+}
