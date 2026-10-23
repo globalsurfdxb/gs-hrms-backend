@@ -83,6 +83,20 @@ describe('BR-HIR-002 deciding steps', () => {
     );
   });
 
+  it('never lets a Super Admin decide the Hiring Manager step of a requisition they raised for someone else', () => {
+    const own = { hiringManagerId: MANAGER, raisedById: 'sa' };
+    expect(canDecideStep('HIRING_MANAGER', actor('sa', 'Super Admin'), own)).toBe(false);
+    expect(canDecideStep('HIRING_MANAGER', actor(MANAGER, 'Team Lead'), own)).toBe(true);
+    expect(canDecideStep('HIRING_MANAGER', actor('other-sa', 'Super Admin'), own)).toBe(true);
+    // A hiring manager who raised it but had someone else submit still decides their own step.
+    const raisedByManager = { hiringManagerId: MANAGER, raisedById: MANAGER };
+    expect(canDecideStep('HIRING_MANAGER', actor(MANAGER, 'Team Lead'), raisedByManager)).toBe(true);
+    const steps = stepsForSubmit('sa', MANAGER, NOW);
+    expect(
+      code(() => decideStep('PENDING_APPROVAL', steps, own, actor('sa', 'Super Admin'), 'APPROVED', '', NOW)),
+    ).toBe('requisition.own_request');
+  });
+
   it('lists the steps a role can decide for others', () => {
     expect(decidableLabels('HR')).toEqual(['HR']);
     expect(decidableLabels('Super Admin')).toEqual(['HIRING_MANAGER', 'HR', 'MANAGEMENT']);

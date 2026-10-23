@@ -120,13 +120,13 @@ export interface Parties {
 }
 
 /** BR-HIR-002: Hiring Manager step → that manager; HR step → HR or Office Admin; Management → Super Admin (who may
-    decide any step). Nobody decides the HR or Management step of a requisition they raised (security.md §2). The
-    Hiring Manager step of one's own requisition is approved on submit (BR-HIR-001), never decided here. */
+    decide any step). Nobody decides any step of a requisition they raised (security.md §2) — except the hiring
+    manager their own step, which BR-HIR-001 approves on submit when they submit it themselves. */
 export function canDecideStep(label: StepLabel, actor: Actor, parties: Parties): boolean {
-  if (label !== 'HIRING_MANAGER' && actor.employeeId === parties.raisedById) return false;
+  if (label === 'HIRING_MANAGER' && actor.employeeId === parties.hiringManagerId) return true;
+  if (actor.employeeId === parties.raisedById) return false;
   if (actor.roleName === 'Super Admin') return true;
-  if (label === 'HIRING_MANAGER') return actor.employeeId === parties.hiringManagerId;
-  return DECIDERS[label].includes(actor.roleName);
+  return label !== 'HIRING_MANAGER' && DECIDERS[label].includes(actor.roleName);
 }
 
 /** The step labels a person could decide on someone else's requisition (used to scope the approval inbox). */

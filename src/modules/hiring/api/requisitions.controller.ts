@@ -97,8 +97,9 @@ export class RequisitionsController {
     summary: 'Approve or reject the pending approval step',
     description:
       'Needs Requisition approvals → Edit, and the pending step must be yours: Hiring Manager step → that ' +
-      'manager; HR step → HR or Office Admin; Management step → Super Admin (who may decide any step). Rejecting ' +
-      'needs a note and rejects the requisition; approving the last step approves it (BR-HIR-002).',
+      'manager; HR step → HR or Office Admin; Management step → Super Admin (who may decide any step). Nobody ' +
+      'decides a step of a requisition they raised, except the hiring manager their own step. Rejecting needs a ' +
+      'note and rejects the requisition; approving the last step approves it (BR-HIR-002).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403, 404, 409)

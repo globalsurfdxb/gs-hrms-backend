@@ -178,7 +178,8 @@ model JobEvent {
   actorLabel String   @map("actor_label")
   text       String
 
-  job   Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  /// Restrict: history is append-only, so a job that has history cannot be deleted.
+  job   Job       @relation(fields: [jobId], references: [id], onDelete: Restrict)
   actor Employee? @relation("JobEventActor", fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([jobId, at])

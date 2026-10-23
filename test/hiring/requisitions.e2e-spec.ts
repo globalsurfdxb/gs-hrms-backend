@@ -115,6 +115,15 @@ describe('Requisitions API', () => {
     expect(again.body.steps[0].status).toBe('PENDING');
   });
 
+  it('stops a Super Admin approving the Hiring Manager step of a requisition they raised', async () => {
+    const r = (await post('superAdmin', '', body({ submit: true })).expect(201)).body;
+    expect(r.steps[0]).toMatchObject({ label: 'HIRING_MANAGER', status: 'PENDING' });
+    expect(r.viewer.canDecide).toBe(false);
+    const refused = await post('superAdmin', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(403);
+    expect(refused.body.code).toBe('requisition.own_request');
+    await post('teamLead', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(200);
+  });
+
   it('scopes what Office Admin and Team Lead can see; Employee has no access', async () => {
     const hrOnly = (await post('hr', '', body({ hiringManagerId: id.superAdmin })).expect(201)).body;
     await as.teamLead.get(`/api/hiring/requisitions/${hrOnly.id}`).expect(404);

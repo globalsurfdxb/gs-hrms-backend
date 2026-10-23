@@ -178,6 +178,16 @@ describe('Jobs API', () => {
     expect(full.body.code).toBe('job.no_open_positions');
   });
 
+  it('keeps the History tab append-only in the database, and a job with history cannot be deleted', async () => {
+    const req = await approvedRequisition();
+    const job = (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(201)).body;
+    const where = { jobId: job.id };
+    await expect(prisma.jobEvent.updateMany({ where, data: { text: 'rewritten' } })).rejects.toThrow(/append-only/);
+    await expect(prisma.jobEvent.deleteMany({ where })).rejects.toThrow(/append-only/);
+    await expect(prisma.job.delete({ where: { id: job.id } })).rejects.toThrow();
+    expect(await prisma.jobEvent.count({ where })).toBe(1);
+  });
+
   it('changes the recruiter and records it', async () => {
     const req = await approvedRequisition();
     const job = (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(201)).body;
