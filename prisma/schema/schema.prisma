@@ -2,6 +2,7 @@
 //   core.prisma       — roles, permissions, sessions, audit
 //   org.prisma        — locations, companies, departments, designations
 //   employees.prisma  — employee record
+//   hiring.prisma     — requisitions, jobs (more hiring tables arrive step by step)
 //
 // Conventions (docs/conventions.md#database):
 //   - Model names PascalCase singular; tables snake_case plural via @@map.

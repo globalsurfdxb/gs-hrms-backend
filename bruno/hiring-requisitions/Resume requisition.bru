@@ -1,0 +1,26 @@
+meta {
+  name: Resume requisition
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}/resume
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  HR / Super Admin only. ON_HOLD → APPROVED. Any other status → 409 `requisition.invalid_transition`.
+}
+
+tests {
+  test("APPROVED (200) — or 409 from the wrong status", function () {
+    expect([200, 409]).to.include(res.status);
+    if (res.status === 200) expect(res.body.status).to.equal("APPROVED");
+  });
+}

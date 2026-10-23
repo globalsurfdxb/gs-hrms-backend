@@ -1,0 +1,57 @@
+meta {
+  name: Raise requisition
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "title": "Network Engineer",
+    "companyId": "{{reqCompanyId}}",
+    "departmentId": "{{reqDepartmentId}}",
+    "locationId": "Dubai",
+    "positions": 2,
+    "employmentType": "FULL_TIME",
+    "reason": "NEW_ROLE",
+    "budgetMin": "9000",
+    "budgetMax": "12000",
+    "targetStart": "2027-01-15",
+    "hiringManagerId": "{{reqHiringManagerId}}",
+    "justification": "Created from the Bruno collection",
+    "submit": false
+  }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("requisitionId", res.body.id);
+}
+
+docs {
+  Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead). `submit: true` sends it straight into
+  the approval chain Hiring Manager → HR → Management.
+
+  Fill these environment variables first (there is no departments API yet — copy the ids from
+  `npx prisma studio`, tables companies / departments / employees):
+  - `reqCompanyId` — e.g. GS IT
+  - `reqDepartmentId` — a department of that company, e.g. Cloud & Infra
+  - `reqHiringManagerId` — an active employee, e.g. GS-058 (the `employeeId` from "Who am I")
+
+  Saves the new id in `requisitionId` for the next requests.
+}
+
+tests {
+  test("created (201) — or 403 for Employee", function () {
+    expect([201, 403]).to.include(res.status);
+    if (res.status === 201) expect(res.body.code).to.match(/^REQ-/);
+  });
+}

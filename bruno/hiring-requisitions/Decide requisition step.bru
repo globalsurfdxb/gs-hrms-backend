@@ -1,0 +1,34 @@
+meta {
+  name: Decide requisition step
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}/decision
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "decision": "APPROVED",
+    "note": "Approved from Bruno"
+  }
+}
+
+docs {
+  Needs Requisition approvals → Edit, and the pending step must be yours: Hiring Manager → that manager;
+  HR → HR or Office Admin (GS-119 / GS-101); Management → Super Admin (GS-120, may decide any step).
+  To walk the chain, sign in as each persona in turn and run this request. REJECTED needs a note.
+}
+
+tests {
+  test("decided (200) — or 403 when the step is not yours", function () {
+    expect([200, 403]).to.include(res.status);
+  });
+}

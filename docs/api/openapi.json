@@ -523,6 +523,1625 @@
           "Organization · Companies"
         ]
       }
+    },
+    "/api/hiring/requisitions": {
+      "get": {
+        "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
+        "operationId": "RequisitionsController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "PENDING_APPROVAL",
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "PENDING_APPROVAL",
+                "APPROVED",
+                "REJECTED",
+                "ON_HOLD",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          },
+          {
+            "name": "waitingOnMe",
+            "required": false,
+            "in": "query",
+            "description": "Only requisitions waiting on a step you can decide",
+            "schema": {
+              "example": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List requisitions",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      },
+      "post": {
+        "description": "Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step is approved automatically when you are the hiring manager). Currency follows the location. Rules BR-HIR-003.",
+        "operationId": "RequisitionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequisitionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Raise a requisition",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}": {
+      "get": {
+        "description": "Needs Requisitions → View. HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404.",
+        "operationId": "RequisitionsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one requisition",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      },
+      "patch": {
+        "description": "Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted.",
+        "operationId": "RequisitionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequisitionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Edit a requisition",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/submit": {
+      "post": {
+        "description": "Same access as edit. DRAFT or REJECTED → PENDING_APPROVAL with a fresh chain Hiring Manager → HR → Management; the Hiring Manager step is approved automatically when you are the hiring manager (BR-HIR-001).",
+        "operationId": "RequisitionsController_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Submit a requisition for approval",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/decision": {
+      "post": {
+        "description": "Needs Requisition approvals → Edit, and the pending step must be yours: Hiring Manager step → that manager; HR step → HR or Office Admin; Management step → Super Admin (who may decide any step). Nobody decides a step of a requisition they raised, except the hiring manager their own step. Rejecting needs a note and rejects the requisition; approving the last step approves it (BR-HIR-002).",
+        "operationId": "RequisitionsController_decide",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideRequisitionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Approve or reject the pending approval step",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/hold": {
+      "post": {
+        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED → ON_HOLD (BR-HIR-004).",
+        "operationId": "RequisitionsController_hold",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Put an approved requisition on hold",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/resume": {
+      "post": {
+        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). ON_HOLD → APPROVED (BR-HIR-004).",
+        "operationId": "RequisitionsController_resume",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Resume a requisition on hold",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/close": {
+      "post": {
+        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED or ON_HOLD → CLOSED, final (BR-HIR-004).",
+        "operationId": "RequisitionsController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Close a requisition",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/jobs": {
+      "get": {
+        "description": "Needs Jobs → View (HR, Super Admin by default). Every job, newest first. Filters: status, location, recruiter.",
+        "operationId": "JobsController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "OPEN",
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "OPEN",
+                "ON_HOLD",
+                "CLOSED",
+                "FILLED"
+              ]
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List jobs",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}": {
+      "get": {
+        "description": "Needs Jobs → View (HR, Super Admin by default).",
+        "operationId": "JobsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one job with its history",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/{id}/job": {
+      "post": {
+        "description": "Needs Jobs → Add (HR, Super Admin by default). Only from an APPROVED requisition that has no job yet (409 otherwise). Title, company, department, location, positions, budget and hiring manager come from the requisition. Recruiter and interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005).",
+        "operationId": "JobsController_create",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create the job for an approved requisition",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/open": {
+      "post": {
+        "description": "Needs Jobs → Edit. DRAFT → OPEN (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "operationId": "JobsController_open",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Open a draft job",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/hold": {
+      "post": {
+        "description": "Needs Jobs → Edit. OPEN → ON_HOLD (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "operationId": "JobsController_hold",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Put a job on hold",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/resume": {
+      "post": {
+        "description": "Needs Jobs → Edit. ON_HOLD → OPEN (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "operationId": "JobsController_resume",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Resume a job on hold",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/close": {
+      "post": {
+        "description": "Needs Jobs → Edit. OPEN or ON_HOLD → CLOSED (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "operationId": "JobsController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Close a job",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/reopen": {
+      "post": {
+        "description": "Needs Jobs → Edit. CLOSED → OPEN, only while positions are left to fill (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "operationId": "JobsController_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reopen a closed job",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/recruiter": {
+      "put": {
+        "description": "Needs Jobs → Edit. The new recruiter must be an active employee; the change is added to the job history.",
+        "operationId": "JobsController_changeRecruiter",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRecruiterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Change the recruiter of a job",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
     }
   },
   "info": {
@@ -771,6 +2390,1072 @@
             ]
           }
         }
+      },
+      "RefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "GS IT"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PersonRefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-058"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dev Team Lead"
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "name"
+        ]
+      },
+      "MoneyResponse": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "example": "9000.00",
+            "description": "Decimal as a string — never a float"
+          },
+          "currency": {
+            "type": "string",
+            "example": "AED"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ]
+      },
+      "RequisitionStepResponse": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number",
+            "example": 1
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "HIRING_MANAGER",
+              "HR",
+              "MANAGEMENT"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "description": "PENDING = waiting for a decision now"
+          },
+          "decidedBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "decidedAt": {
+            "type": "string",
+            "nullable": true,
+            "example": "2026-10-22T08:00:00.000Z"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "position",
+          "label",
+          "status",
+          "decidedBy",
+          "decidedAt",
+          "note"
+        ]
+      },
+      "RequisitionJobResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "OPEN",
+              "ON_HOLD",
+              "CLOSED",
+              "FILLED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status"
+        ]
+      },
+      "RequisitionViewerResponse": {
+        "type": "object",
+        "properties": {
+          "canEdit": {
+            "type": "boolean",
+            "description": "Edit and (re)submit: DRAFT/REJECTED, and you raised it, manage it, or run recruiting"
+          },
+          "canDecide": {
+            "type": "boolean",
+            "description": "The pending approval step is yours to decide"
+          },
+          "canManage": {
+            "type": "boolean",
+            "description": "Hold, resume or close (HR / Super Admin)"
+          },
+          "canCreateJob": {
+            "type": "boolean",
+            "description": "APPROVED, no job yet, and you have Jobs → Add"
+          }
+        },
+        "required": [
+          "canEdit",
+          "canDecide",
+          "canManage",
+          "canCreateJob"
+        ]
+      },
+      "RequisitionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "REQ-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "company": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "department": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "designation": {
+            "nullable": true,
+            "description": "name = designation title",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "positions": {
+            "type": "number",
+            "example": 2
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "FULL_TIME",
+              "CONTRACT",
+              "INTERN"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "NEW_ROLE",
+              "REPLACEMENT"
+            ]
+          },
+          "replaces": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "budgetMin": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "budgetMax": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "targetStart": {
+            "type": "string",
+            "example": "2026-12-01"
+          },
+          "hiringManager": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "justification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING_APPROVAL",
+              "APPROVED",
+              "REJECTED",
+              "ON_HOLD",
+              "CLOSED"
+            ]
+          },
+          "steps": {
+            "description": "Empty until first submitted",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequisitionStepResponse"
+            }
+          },
+          "job": {
+            "nullable": true,
+            "description": "The job opened from it, if any",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RequisitionJobResponse"
+              }
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/RequisitionViewerResponse"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "company",
+          "department",
+          "designation",
+          "location",
+          "positions",
+          "employmentType",
+          "reason",
+          "replaces",
+          "budgetMin",
+          "budgetMax",
+          "targetStart",
+          "hiringManager",
+          "justification",
+          "status",
+          "steps",
+          "job",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "viewer"
+        ]
+      },
+      "RequisitionListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequisitionResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "CreateRequisitionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "companyId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+            "description": "An active company"
+          },
+          "departmentId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a02",
+            "description": "A department of that company"
+          },
+          "designationId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03",
+            "description": "A designation of that department"
+          },
+          "locationId": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "Location id; sets the currency"
+          },
+          "positions": {
+            "type": "number",
+            "example": 2,
+            "minimum": 1,
+            "maximum": 500
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "FULL_TIME",
+              "CONTRACT",
+              "INTERN"
+            ],
+            "example": "FULL_TIME"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "NEW_ROLE",
+              "REPLACEMENT"
+            ],
+            "example": "NEW_ROLE"
+          },
+          "replacesEmployeeId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a04",
+            "description": "Required when reason is REPLACEMENT; ignored otherwise"
+          },
+          "budgetMin": {
+            "type": "string",
+            "example": "9000.00",
+            "description": "Per position: monthly (UAE) or yearly CTC (India)"
+          },
+          "budgetMax": {
+            "type": "string",
+            "example": "12000.00"
+          },
+          "targetStart": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "YYYY-MM-DD, not in the past (location timezone)"
+          },
+          "hiringManagerId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
+            "description": "An active employee"
+          },
+          "justification": {
+            "type": "string",
+            "example": "Two new managed-network clients from January need on-site support."
+          },
+          "submit": {
+            "type": "boolean",
+            "example": true,
+            "description": "true = submit for approval now; false/omitted = save as draft"
+          }
+        },
+        "required": [
+          "title",
+          "companyId",
+          "departmentId",
+          "locationId",
+          "positions",
+          "employmentType",
+          "reason",
+          "budgetMin",
+          "budgetMax",
+          "targetStart",
+          "hiringManagerId",
+          "justification"
+        ]
+      },
+      "UpdateRequisitionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "companyId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+            "description": "An active company"
+          },
+          "departmentId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a02",
+            "description": "A department of that company"
+          },
+          "designationId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03",
+            "description": "A designation of that department"
+          },
+          "locationId": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "Location id; sets the currency"
+          },
+          "positions": {
+            "type": "number",
+            "example": 2,
+            "minimum": 1,
+            "maximum": 500
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "FULL_TIME",
+              "CONTRACT",
+              "INTERN"
+            ],
+            "example": "FULL_TIME"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "NEW_ROLE",
+              "REPLACEMENT"
+            ],
+            "example": "NEW_ROLE"
+          },
+          "replacesEmployeeId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a04",
+            "description": "Required when reason is REPLACEMENT; ignored otherwise"
+          },
+          "budgetMin": {
+            "type": "string",
+            "example": "9000.00",
+            "description": "Per position: monthly (UAE) or yearly CTC (India)"
+          },
+          "budgetMax": {
+            "type": "string",
+            "example": "12000.00"
+          },
+          "targetStart": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "YYYY-MM-DD, not in the past (location timezone)"
+          },
+          "hiringManagerId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
+            "description": "An active employee"
+          },
+          "justification": {
+            "type": "string",
+            "example": "Two new managed-network clients from January need on-site support."
+          }
+        }
+      },
+      "DecideRequisitionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "APPROVED"
+          },
+          "note": {
+            "type": "string",
+            "example": "Budget confirmed with finance.",
+            "description": "Required to reject"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "JobRequisitionRefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "REQ-0001"
+          }
+        },
+        "required": [
+          "id",
+          "code"
+        ]
+      },
+      "JobViewerResponse": {
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array",
+            "description": "Status actions allowed now (empty for FILLED)",
+            "items": {
+              "type": "string",
+              "enum": [
+                "open",
+                "hold",
+                "resume",
+                "close",
+                "reopen"
+              ]
+            }
+          },
+          "canChangeRecruiter": {
+            "type": "boolean",
+            "description": "Change the recruiter (Jobs → Edit)"
+          }
+        },
+        "required": [
+          "actions",
+          "canChangeRecruiter"
+        ]
+      },
+      "JobResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "requisition": {
+            "$ref": "#/components/schemas/JobRequisitionRefResponse"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "company": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "department": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "designation": {
+            "nullable": true,
+            "description": "name = designation title",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "positions": {
+            "type": "number",
+            "example": 2
+          },
+          "filled": {
+            "type": "number",
+            "example": 0,
+            "description": "Accepted offers counted against positions"
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "FULL_TIME",
+              "CONTRACT",
+              "INTERN"
+            ]
+          },
+          "budgetMin": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "budgetMax": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "hiringManager": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "recruiter": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skills": {
+            "example": [
+              "Cisco",
+              "SD-WAN"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expMin": {
+            "type": "number",
+            "example": 2
+          },
+          "expMax": {
+            "type": "number",
+            "example": 6
+          },
+          "qualifications": {
+            "type": "string",
+            "example": "CCNA or higher"
+          },
+          "panel": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRefResponse"
+            }
+          },
+          "referralEligible": {
+            "type": "boolean"
+          },
+          "closingDate": {
+            "type": "string",
+            "example": "2026-12-15"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "OPEN",
+              "ON_HOLD",
+              "CLOSED",
+              "FILLED"
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/JobViewerResponse"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "requisition",
+          "title",
+          "company",
+          "department",
+          "designation",
+          "location",
+          "positions",
+          "filled",
+          "employmentType",
+          "budgetMin",
+          "budgetMax",
+          "hiringManager",
+          "recruiter",
+          "description",
+          "skills",
+          "expMin",
+          "expMax",
+          "qualifications",
+          "panel",
+          "referralEligible",
+          "closingDate",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "viewer"
+        ]
+      },
+      "JobListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "JobEventResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "example": "2026-10-22T08:00:00.000Z"
+          },
+          "by": {
+            "type": "string",
+            "example": "Dev HR",
+            "description": "Name at the time, or \"system\""
+          },
+          "text": {
+            "type": "string",
+            "example": "Status changed from Open to On Hold"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "by",
+          "text"
+        ]
+      },
+      "JobDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "requisition": {
+            "$ref": "#/components/schemas/JobRequisitionRefResponse"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "company": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "department": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "designation": {
+            "nullable": true,
+            "description": "name = designation title",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "positions": {
+            "type": "number",
+            "example": 2
+          },
+          "filled": {
+            "type": "number",
+            "example": 0,
+            "description": "Accepted offers counted against positions"
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "FULL_TIME",
+              "CONTRACT",
+              "INTERN"
+            ]
+          },
+          "budgetMin": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "budgetMax": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "hiringManager": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "recruiter": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skills": {
+            "example": [
+              "Cisco",
+              "SD-WAN"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expMin": {
+            "type": "number",
+            "example": 2
+          },
+          "expMax": {
+            "type": "number",
+            "example": 6
+          },
+          "qualifications": {
+            "type": "string",
+            "example": "CCNA or higher"
+          },
+          "panel": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRefResponse"
+            }
+          },
+          "referralEligible": {
+            "type": "boolean"
+          },
+          "closingDate": {
+            "type": "string",
+            "example": "2026-12-15"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "OPEN",
+              "ON_HOLD",
+              "CLOSED",
+              "FILLED"
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/JobViewerResponse"
+          },
+          "history": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobEventResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "requisition",
+          "title",
+          "company",
+          "department",
+          "designation",
+          "location",
+          "positions",
+          "filled",
+          "employmentType",
+          "budgetMin",
+          "budgetMax",
+          "hiringManager",
+          "recruiter",
+          "description",
+          "skills",
+          "expMin",
+          "expMax",
+          "qualifications",
+          "panel",
+          "referralEligible",
+          "closingDate",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "viewer",
+          "history"
+        ]
+      },
+      "CreateJobDto": {
+        "type": "object",
+        "properties": {
+          "designationId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03",
+            "description": "A designation of the requisition's department; defaults to the requisition's designation"
+          },
+          "description": {
+            "type": "string",
+            "example": "Design, deploy and support client networks.\nOwn incident response for managed customers."
+          },
+          "skills": {
+            "example": [
+              "Cisco",
+              "Fortinet",
+              "SD-WAN"
+            ],
+            "description": "At least one; trimmed and de-duplicated",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expMin": {
+            "type": "number",
+            "example": 2,
+            "minimum": 0,
+            "maximum": 50
+          },
+          "expMax": {
+            "type": "number",
+            "example": 6,
+            "minimum": 0,
+            "maximum": 50,
+            "description": "At least expMin"
+          },
+          "qualifications": {
+            "type": "string",
+            "example": "CCNA or higher"
+          },
+          "panelIds": {
+            "example": [
+              "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05"
+            ],
+            "description": "Active employees; at least one",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recruiterId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+            "description": "An active employee who runs this job"
+          },
+          "referralEligible": {
+            "type": "boolean",
+            "example": true,
+            "default": true
+          },
+          "closingDate": {
+            "type": "string",
+            "example": "2026-12-15",
+            "description": "YYYY-MM-DD"
+          },
+          "publish": {
+            "type": "boolean",
+            "example": true,
+            "description": "true = OPEN now; false/omitted = DRAFT"
+          }
+        },
+        "required": [
+          "description",
+          "skills",
+          "expMin",
+          "expMax",
+          "panelIds",
+          "recruiterId",
+          "closingDate"
+        ]
+      },
+      "ChangeRecruiterDto": {
+        "type": "object",
+        "properties": {
+          "recruiterId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+            "description": "An active employee"
+          }
+        },
+        "required": [
+          "recruiterId"
+        ]
       }
     }
   }

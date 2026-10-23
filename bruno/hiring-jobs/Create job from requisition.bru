@@ -1,0 +1,48 @@
+meta {
+  name: Create job from requisition
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/hiring/requisitions/{{requisitionId}}/job
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "description": "Design, deploy and support client networks.\nOwn incident response for managed customers.",
+    "skills": ["Cisco", "Fortinet", "SD-WAN"],
+    "expMin": 2,
+    "expMax": 6,
+    "qualifications": "CCNA or higher",
+    "panelIds": ["{{reqHiringManagerId}}"],
+    "recruiterId": "{{reqHiringManagerId}}",
+    "referralEligible": true,
+    "closingDate": "2027-01-31",
+    "publish": false
+  }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("jobId", res.body.id);
+}
+
+docs {
+  Needs Jobs → Add (HR, Super Admin). `requisitionId` must be an APPROVED requisition without a job — walk one
+  through "Hiring · Requisitions" first (raise with submit, then decide as HR GS-119 and Super Admin GS-120).
+  Recruiter and panel must be active employees (this uses `reqHiringManagerId` for both).
+  `publish: true` opens the job now. Saves the new id in `jobId`.
+}
+
+tests {
+  test("created (201) — or 409 when not approved / already has a job", function () {
+    expect([201, 409]).to.include(res.status);
+    if (res.status === 201) expect(res.body.code).to.match(/^JOB-/);
+  });
+}

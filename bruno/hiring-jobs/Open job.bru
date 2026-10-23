@@ -1,0 +1,27 @@
+meta {
+  name: Open job
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/hiring/jobs/{{jobId}}/open
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Jobs → Edit (HR, Super Admin). DRAFT → OPEN. Any other status → 409 `job.invalid_transition`.
+  FILLED is set by the system only.
+}
+
+tests {
+  test("OPEN (200) — or 409 from the wrong status", function () {
+    expect([200, 409]).to.include(res.status);
+    if (res.status === 200) expect(res.body.status).to.equal("OPEN");
+  });
+}

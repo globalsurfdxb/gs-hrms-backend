@@ -1,0 +1,27 @@
+meta {
+  name: Close job
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/hiring/jobs/{{jobId}}/close
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Jobs → Edit (HR, Super Admin). OPEN or ON_HOLD → CLOSED. Any other status → 409 `job.invalid_transition`.
+  FILLED is set by the system only.
+}
+
+tests {
+  test("CLOSED (200) — or 409 from the wrong status", function () {
+    expect([200, 409]).to.include(res.status);
+    if (res.status === 200) expect(res.body.status).to.equal("CLOSED");
+  });
+}

@@ -33,6 +33,7 @@ model Location {
   companies           Company[]
   departmentLocations DepartmentLocation[]
   employees           Employee[]
+  requisitions        Requisition[]
 
   @@map("locations")
 }
@@ -57,9 +58,10 @@ model Company {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  location    Location?    @relation(fields: [locationId], references: [id])
-  departments Department[]
-  employees   Employee[]
+  location     Location?     @relation(fields: [locationId], references: [id])
+  departments  Department[]
+  employees    Employee[]
+  requisitions Requisition[]
 
   @@map("companies")
 }
@@ -78,6 +80,7 @@ model Department {
   locations    DepartmentLocation[]
   designations Designation[]
   employees    Employee[]
+  requisitions Requisition[]
 
   @@unique([companyId, name])
   @@map("departments")
@@ -101,8 +104,10 @@ model Designation {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  employees  Employee[]
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  employees    Employee[]
+  requisitions Requisition[]
+  jobs         Job[]
 
   @@unique([departmentId, title])
   @@map("designations")

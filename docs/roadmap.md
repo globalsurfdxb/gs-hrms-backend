@@ -9,6 +9,10 @@
 | **4 · Remaining**          | Expense, performance, learning, reports, dashboards, scheduled reports                        | All existing frontend screens on the API                                           |
 | Later                      | Payroll, assets, renewals                                                                     | Designed when the frontend modules are specified                                   |
 
+> **Priority change (2026-10-22):** the lead asked to build **Hiring** next, step by step, ahead of Phase 1.
+> The step plan and the Phase 0 pieces each step needs are in [modules/hiring.md §11](modules/hiring.md#11-build-plan-step-by-step);
+> hiring-specific questions are in its §10.
+
 ## Phase 0 backlog
 
 Done in the scaffold:
@@ -46,3 +50,4 @@ To do:
 | 4   | Biometric device model and integration (push vs pull)                                                                                                                                                           | Phase 3 attendance |
 | 5   | Rules the frontend does not define yet: offer approval & expiry, interview feedback/scorecards, employee self-resignation (employee → TL → HR), onboarding final approval → Active, over-limit expense approval | Phases 1–4         |
 | 6   | Data retention periods (candidates, ex-employees, audit)                                                                                                                                                        | Go-live            |
+| 7   | Hiring access model: frontend uses roles (`hiringLevel`) while the permission catalogue's defaults differ (see hiring.md §10 Q3)                                                                                | Hiring step 0      |
