@@ -121,9 +121,12 @@ export interface Parties {
 
 /** BR-HIR-002: Hiring Manager step → that manager; HR step → HR or Office Admin; Management → Super Admin (who may
     decide any step). Nobody decides any step of a requisition they raised (security.md §2) — except the hiring
-    manager their own step, which BR-HIR-001 approves on submit when they submit it themselves. */
+    manager their own step, which BR-HIR-001 approves on submit when they submit it themselves, and a Super Admin
+    the Management step: it is the top of the chain, reached only after the Hiring Manager and HR steps were
+    approved by others (decided 2026-10-23, hiring.md Q12). */
 export function canDecideStep(label: StepLabel, actor: Actor, parties: Parties): boolean {
   if (label === 'HIRING_MANAGER' && actor.employeeId === parties.hiringManagerId) return true;
+  if (label === 'MANAGEMENT' && actor.roleName === 'Super Admin') return true;
   if (actor.employeeId === parties.raisedById) return false;
   if (actor.roleName === 'Super Admin') return true;
   return label !== 'HIRING_MANAGER' && DECIDERS[label].includes(actor.roleName);

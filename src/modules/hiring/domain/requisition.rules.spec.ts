@@ -66,10 +66,10 @@ describe('BR-HIR-002 deciding steps', () => {
     expect(canDecideStep('MANAGEMENT', actor('x', 'Super Admin'), P)).toBe(true);
   });
 
-  it('never lets the raiser decide the HR or Management step of their own requisition', () => {
+  it('never lets the raiser decide the HR step of their own requisition', () => {
     const own = { hiringManagerId: MANAGER, raisedById: 'hr' };
     expect(canDecideStep('HR', actor('hr', 'HR'), own)).toBe(false);
-    expect(canDecideStep('MANAGEMENT', actor('hr', 'Super Admin'), own)).toBe(false);
+    expect(canDecideStep('HR', actor('hr', 'Super Admin'), own)).toBe(false);
     expect(canDecideStep('HR', actor('other-hr', 'HR'), own)).toBe(true);
     const steps = stepsForSubmit('hr', MANAGER, NOW).map((s) =>
       s.label === 'HIRING_MANAGER'
@@ -95,6 +95,13 @@ describe('BR-HIR-002 deciding steps', () => {
     expect(
       code(() => decideStep('PENDING_APPROVAL', steps, own, actor('sa', 'Super Admin'), 'APPROVED', '', NOW)),
     ).toBe('requisition.own_request');
+  });
+
+  it('lets a Super Admin decide the Management step of their own requisition — the top of the chain', () => {
+    const own = { hiringManagerId: MANAGER, raisedById: 'sa' };
+    expect(canDecideStep('MANAGEMENT', actor('sa', 'Super Admin'), own)).toBe(true);
+    expect(canDecideStep('HR', actor('sa', 'Super Admin'), own)).toBe(false);
+    expect(canDecideStep('MANAGEMENT', actor('sa', 'HR'), { ...own, raisedById: 'hr' })).toBe(false);
   });
 
   it('lists the steps a role can decide for others', () => {

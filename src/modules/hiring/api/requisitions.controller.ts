@@ -53,7 +53,8 @@ export class RequisitionsController {
     description:
       'Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with ' +
       'submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step ' +
-      'is approved automatically when you are the hiring manager). Currency follows the location. Rules BR-HIR-003.',
+      'is approved automatically when you are the hiring manager). The hiring manager must hold Requisition ' +
+      'approvals → Edit. Currency follows the location. Rules BR-HIR-003.',
   })
   @ApiCreatedResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403)
@@ -98,7 +99,8 @@ export class RequisitionsController {
     description:
       'Needs Requisition approvals → Edit, and the pending step must be yours: Hiring Manager step → that ' +
       'manager; HR step → HR or Office Admin; Management step → Super Admin (who may decide any step). Nobody ' +
-      'decides a step of a requisition they raised, except the hiring manager their own step. Rejecting needs a ' +
+      'decides a step of a requisition they raised, except the hiring manager their own step and a Super Admin ' +
+      'the Management step (after the others have approved). Rejecting needs a ' +
       'note and rejects the requisition; approving the last step approves it (BR-HIR-002).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
