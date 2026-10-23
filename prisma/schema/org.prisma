@@ -107,6 +107,7 @@ model Designation {
   department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   employees    Employee[]
   requisitions Requisition[]
+  jobs         Job[]
 
   @@unique([departmentId, title])
   @@map("designations")

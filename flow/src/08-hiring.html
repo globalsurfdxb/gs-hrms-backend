@@ -53,9 +53,9 @@ flowchart TD
 flowchart TD
   subgraph IN["Where candidates come from"]
     direction LR
-    c1["Public careers page"]:::cand
-    c2["Employee referral link"]:::emp
-    c3["Job boards: LinkedIn, Naukri,<br/>Bayt, Indeed"]:::cand
+    c1["Company website<br/>(job posted manually)"]:::hr
+    c2["Employee referral<br/>(HR records the referrer)"]:::emp
+    c3["Job boards: LinkedIn, Naukri,<br/>Bayt, Indeed (posted manually)"]:::hr
     c4["HR adds manually<br/>(agency, direct)"]:::hr
   end
   IN --> DUP{"Same email or phone<br/>already on file?"}:::sys
@@ -71,6 +71,9 @@ flowchart TD
       candidate forward to that stage. Interviews can be rescheduled, completed or cancelled.</li>
     <li><b>Emails</b> per stage are either sent automatically, offered to HR ("ask"), or off. Template fields such as
       candidate name, job title and interview time are filled in automatically.</li>
+    <li><b>Job status:</b> Draft → Open ⇄ On hold → Closed; a closed job can be reopened while positions are left to
+      fill. <b>Filled</b> is set automatically when the last position is filled. Every change, and every recruiter
+      change, is kept in the job's History tab. A job cannot be edited after it is created (frontend).</li>
     <li>No candidate can be moved while the job is <b>Closed</b> or <b>Filled</b>.</li>
   </ul>
 
@@ -114,6 +117,10 @@ flowchart TD
   <div class="callout gap">
     <h3>Not in the frontend yet — decisions needed</h3>
     <ul>
+      <li><b>Nothing is public</b> (decided 22 Oct 2026): no careers page or online apply. HR posts jobs on the website and job
+        boards by hand and adds applicants to the HRMS. The prototype's public careers pages and share links must be
+        removed. <b>Later:</b> push jobs to the website, job boards and social media, and pull applications back.</li>
+      <li>Should the candidate's <b>offer letter link</b> also go (HR emails the PDF and records the answer)?</li>
       <li>No <b>interview feedback or scorecards</b> — only free notes.</li>
       <li>No <b>offer approval</b> (even over budget) and offers never expire automatically.</li>
       <li>CVs are not stored (only the file name); emails are never really sent; Outlook/Teams are switches only.</li>

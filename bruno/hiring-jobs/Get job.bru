@@ -1,0 +1,23 @@
+meta {
+  name: Get job
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/hiring/jobs/{{jobId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Run "Create job from requisition" first — it fills `jobId`. Includes the History tab and `viewer.actions`
+  (the status buttons allowed now).
+}
+
+tests {
+  test("found with history", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.history).to.be.an("array");
+  });
+}

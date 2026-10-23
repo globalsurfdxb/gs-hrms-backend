@@ -14,6 +14,9 @@ Before each step, check the frontend for changes since the commit noted in the s
   The frontend store does not guard most status changes; enforce the transitions the UI shows, not the store's.
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step
   deciders per BR-HIR-002; panelists → their interviews; referrers → their referrals.
+- Jobs (step 2): only Jobs permission holders (HR, Super Admin) reach them, and they see every job. Title, company,
+  department, location, positions, budget and hiring manager are read from the requisition — never copy them.
+  Every job change writes a `JobEvent` (History tab, append-only by trigger) and an audit row in one transaction.
 - Salary (current/expected/offered) only for full access + that job's hiring manager — omit the fields otherwise.
 - Public routes (careers, offer link) live in their own controllers with `@Public()` + reason; never reveal
   whether a person is already on file. Offer tokens are 256-bit, stored hashed.

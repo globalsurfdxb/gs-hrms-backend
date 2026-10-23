@@ -45,7 +45,7 @@ export interface RequisitionFilter {
   waitingOnMe?: boolean;
 }
 
-const PERSON = { select: { id: true, employeeCode: true, fullName: true } } as const;
+export const PERSON = { select: { id: true, employeeCode: true, fullName: true } } as const;
 
 const REQUISITION = {
   id: true,
@@ -69,6 +69,7 @@ const REQUISITION = {
   createdBy: PERSON,
   createdAt: true,
   updatedAt: true,
+  job: { select: { id: true, code: true, status: true } },
   steps: {
     select: {
       position: true,

@@ -1,6 +1,6 @@
 # Hiring
 
-- Status: In progress — steps 0–1 done (requisitions); next: jobs (lead's priority, built step by step — see §11)
+- Status: In progress — steps 0–2 done (requisitions, jobs); next: candidates and pipeline (lead's priority, built step by step — see §11)
 - Phase: 2 (brought forward; depends on the Phase 0 items listed in §11)
 - Source module: `src/modules/hiring/` (+ public `careers` and `offers` controller groups)
 - Frontend reviewed at: `gs-hrms` commit `cad88ae` (2026-10-21)
@@ -12,6 +12,12 @@ the pipeline, interviews, offers, offer letters (per location, and per company i
 and offer-response link, hiring emails, and the hand-over to onboarding.
 
 Not in scope: creating the employee record (onboarding module, Phase 1), payroll.
+
+**Nothing is public (lead decision 2026-10-22).** No careers pages, public apply or other endpoint reachable without
+sign-in. Jobs are posted manually on the company website, LinkedIn, Indeed etc. (the frontend's "Copy job text"),
+candidates apply through those channels, and HR adds them with the source recorded. **Later phase:** push jobs from
+the HRMS to the company website, job boards and social media, and pull applications back into the pipeline
+(LinkedIn/Indeed need partner/ATS approval; Naukri/Bayt need an employer API plan; the website can use an HRMS API).
 
 ## 2. Frontend sources
 
@@ -57,9 +63,11 @@ All ids are uuid; the API uses ids, never the names the frontend stores (`depart
   budgetMin/budgetMax + currency, targetStart (date), hiringManagerId, justification, status, createdById.
 - **RequisitionStep**: order, label (`HIRING_MANAGER | HR | MANAGEMENT`), status (`WAITING | PENDING | APPROVED |
 REJECTED`), decidedById, decidedAt, note. Recreated on every (re)submit.
-- **Job** `JOB-0001`: copied from the requisition (title, company, department, location, positions, employment type,
-  hiring manager, budget) + designationId, description, skills[], expMin/expMax, qualifications, panelIds[] (≥1),
-  referralEligible, closingDate, **recruiterId** (required), filled, status, history (`JobEvent`: at, by, text).
+- **Job** `JOB-0001` (one per requisition): title, company, department, location, positions, employment type, hiring
+  manager and budget are **read from the requisition** (it cannot change once approved; the frontend copies them) +
+  designationId (defaults to the requisition's, must be in its department), description, skills[] (1–30),
+  expMin/expMax (whole years), qualifications, panel (`JobPanelMember`, ≥1 active employee), referralEligible,
+  closingDate, **recruiterId** (active employee), filled, status, history (`JobEvent`: at, actor, text — append-only).
 - **Candidate**: name, email (lower-case), phone (+ `phone_key` = last 9 digits, indexed), locationId, currentCity,
   currentCompany, currentTitle, experienceYears, noticeDays, currentSalary?, expectedSalary? + currency, visaStatus,
   source (`LINKEDIN | NAUKRI | BAYT | INDEED | EMPLOYEE_REFERRAL | AGENCY | CAREERS_PAGE | DIRECT`),
@@ -143,8 +151,8 @@ stateDiagram-v2
 | BR-HIR-002 | Step deciders: Hiring Manager step → that manager; HR step → HR/Office Admin; Management → Super Admin (may decide any step). **Nobody decides the HR or Management step of a requisition they raised** (security.md §2). Reject needs a note; any rejection rejects the requisition; the last approval approves it                      | `domain/requisition.rules.ts` `canDecideStep`, `decideStep`                                                                    | `requisition.rules.spec.ts`, `requisitions.e2e-spec.ts` |
 | BR-HIR-003 | Input: positions integer 1–500; 0 < budgetMin ≤ budgetMax (decimal strings, compared in minor units); targetStart not in the past **in the location's timezone**; replacement needs the replaced employee; active company; department of that company; designation of that department; active hiring manager; currency from the location | `domain/requisition.rules.ts` `checkRequisitionInput` + `application/requisitions.service.ts` `checked` + DB CHECK constraints | `requisition.rules.spec.ts`, `requisitions.e2e-spec.ts` |
 | BR-HIR-004 | Hold (APPROVED → ON_HOLD), resume (ON_HOLD → APPROVED), close (APPROVED/ON_HOLD → CLOSED) only, by HR/Super Admin (the frontend store allows any status)                                                                                                                                                                                 | `domain/requisition.rules.ts` `statusAfter`                                                                                    | `requisition.rules.spec.ts`, `requisitions.e2e-spec.ts` |
-| BR-HIR-005 | Job only from an APPROVED requisition without a job. Requires description, ≥1 skill, expMax ≥ expMin ≥ 0, recruiter, ≥1 panel member, closing date                                                                                                                                                                                       | to do                                                                                                                          | —                                                       |
-| BR-HIR-006 | Job status changes only per the state diagram; FILLED is set by the system only; reopen only when filled < positions                                                                                                                                                                                                                     | to do                                                                                                                          | —                                                       |
+| BR-HIR-005 | Job only from an APPROVED requisition without a job (one per requisition, DB unique). Requires description, ≥1 skill (trimmed, de-duplicated), 0 ≤ expMin ≤ expMax, an active recruiter, ≥1 active interviewer, closing date; designation must be in the requisition's department                                                        | `domain/job.rules.ts` `assertCanCreateJob`, `checkJobInput` + `application/jobs.service.ts`                                    | `job.rules.spec.ts`, `jobs.e2e-spec.ts`                 |
+| BR-HIR-006 | Job status only: open (DRAFT → OPEN), hold (OPEN → ON_HOLD), resume (ON_HOLD → OPEN), close (OPEN/ON_HOLD → CLOSED), reopen (CLOSED → OPEN while filled < positions). FILLED is set by the system only (step 5)                                                                                                                          | `domain/job.rules.ts` `jobStatusAfter`                                                                                         | `job.rules.spec.ts`, `jobs.e2e-spec.ts`                 |
 | BR-HIR-007 | Candidate: name, valid email, phone (≥7 digits), experience ≥ 0, consent required; referral needs referrer; agency needs agency name. Duplicate (email or last-9 phone digits) is refused                                                                                                                                                | to do                                                                                                                          | —                                                       |
 | BR-HIR-008 | One application per candidate per job                                                                                                                                                                                                                                                                                                    | to do                                                                                                                          | —                                                       |
 | BR-HIR-009 | No stage move while the job is CLOSED or FILLED; no move/exit after HIRED; reject needs one of the 11 reasons                                                                                                                                                                                                                            | to do                                                                                                                          | —                                                       |
@@ -180,7 +188,7 @@ Data scope (in the repository query, rule 8):
 
 | Who                     | Sees                                                                                            |
 | ----------------------- | ----------------------------------------------------------------------------------------------- |
-| Super Admin, HR         | everything                                                                                      |
+| Super Admin, HR         | everything (requisitions; jobs = anyone with Jobs → View sees every job)                        |
 | Team Lead, Office Admin | requisitions they manage or raised, those waiting on a step they decide, and those they decided |
 | Any employee (panel)    | interviews they are on, and the candidate profile behind them (read-only)                       |
 | Any employee (referrer) | their referrals' name, job and stage only                                                       |
@@ -190,49 +198,49 @@ Data scope (in the repository query, rule 8):
 
 Built step by step (§11). `Access`: P = permission, S = signed in + scope rule, Pub = public.
 
-| Step | Method         | Path                                                                 | Access                                    | Notes                                                                              |
-| ---- | -------------- | -------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| 1 ✅ | GET            | `/api/hiring/requisitions`                                           | P requisitions (scoped)                   | paged; `status`, `locationId`, `waitingOnMe` (approval inbox)                      |
-| 1 ✅ | GET            | `/api/hiring/requisitions/:id`                                       | P requisitions (scoped)                   | with steps and `viewer` (canEdit/canDecide/canManage) — job link arrives in step 2 |
-| 1 ✅ | POST           | `/api/hiring/requisitions`                                           | P requisitions#add                        | `submit` flag                                                                      |
-| 1 ✅ | PATCH          | `/api/hiring/requisitions/:id`                                       | P requisitions#edit (scoped)              | DRAFT/REJECTED only                                                                |
-| 1 ✅ | POST           | `/api/hiring/requisitions/:id/submit`                                | P requisitions#edit (scoped)              | BR-HIR-001                                                                         |
-| 1 ✅ | POST           | `/api/hiring/requisitions/:id/decision`                              | P requisition-approvals#edit + BR-HIR-002 | `{ decision, note }`                                                               |
-| 1 ✅ | POST           | `/api/hiring/requisitions/:id/hold` · `/resume` · `/close`           | P requisitions#edit + HR/SA               | BR-HIR-004                                                                         |
-| 2    | GET            | `/api/hiring/jobs` · `/:id`                                          | P jobs (scoped)                           | with history                                                                       |
-| 2    | POST           | `/api/hiring/requisitions/:id/job`                                   | P jobs#add                                | BR-HIR-005                                                                         |
-| 2    | PUT            | `/api/hiring/jobs/:id`                                               | P jobs#edit                               | description, skills, panel, closing date                                           |
-| 2    | POST           | `/api/hiring/jobs/:id/status`                                        | P jobs#edit                               | `{ action: open/hold/resume/close/reopen }`                                        |
-| 2    | PUT            | `/api/hiring/jobs/:id/recruiter`                                     | P jobs#edit                               | notifies the new recruiter                                                         |
-| 2    | GET            | `/api/public/careers` · `/:code`                                     | Pub                                       | OPEN jobs only, public fields only                                                 |
-| 3    | GET            | `/api/hiring/candidates` · `/:id`                                    | P candidates (scoped) / panel             | salary per §6                                                                      |
-| 3    | POST           | `/api/hiring/candidates`                                             | P candidates#add                          | optional `jobId`; duplicate check                                                  |
-| 3    | GET            | `/api/hiring/candidates/duplicates?email=&phone=`                    | P candidates#add                          | form warning                                                                       |
-| 3    | POST           | `/api/hiring/candidates/:id/applications`                            | P candidates#add                          | BR-HIR-008                                                                         |
-| 3    | PUT            | `/api/hiring/candidates/:id/tags`                                    | P candidates#edit                         |                                                                                    |
-| 3    | POST           | `/api/hiring/candidates/:id/notes`                                   | P candidates#edit                         |                                                                                    |
-| 3    | POST           | `/api/hiring/applications/:id/move` · `/exit` · `/reopen`            | P candidates#edit (scoped)                | BR-HIR-009                                                                         |
-| 4    | GET            | `/api/hiring/interviews`                                             | P interviews (scoped)                     |                                                                                    |
-| 4    | GET            | `/api/hiring/interviews/clashes`                                     | P interviews#add                          | BR-HIR-010                                                                         |
-| 4    | POST           | `/api/hiring/interviews`                                             | P interviews#add (scoped)                 | may advance stage                                                                  |
-| 4    | PUT            | `/api/hiring/interviews/:id`                                         | P interviews#edit (scoped)                | reschedule                                                                         |
-| 4    | POST           | `/api/hiring/interviews/:id/complete` · `/cancel`                    | P interviews#edit (scoped)                |                                                                                    |
-| 4    | GET            | `/api/me/interviews`                                                 | SignedIn (panelist = me)                  | `/my/interviews`                                                                   |
-| 4    | GET            | `/api/me/referrals`                                                  | SignedIn (referrer = me)                  | `/my/referrals`                                                                    |
-| 5    | GET            | `/api/hiring/offers` · `/:id`                                        | P offers                                  |                                                                                    |
-| 5    | POST           | `/api/hiring/applications/:id/offer`                                 | P offers#add                              | BR-HIR-011                                                                         |
-| 5    | POST           | `/api/hiring/offers/:id/response`                                    | P offers#edit                             | HR records accept/decline (`via: HR`)                                              |
-| 5    | POST           | `/api/hiring/offers/:id/withdraw-acceptance`                         | P offers#edit                             | BR-HIR-013                                                                         |
-| 6    | GET/PUT/DELETE | `/api/hiring/letter-templates/:location[/:companyId]`                | P offers#edit (ops)                       | upload .docx/.html, sanitise                                                       |
-| 6    | PUT            | `/api/hiring/letter-signatories/:location`                           | P offers#edit (ops)                       |                                                                                    |
-| 6    | POST           | `/api/hiring/offers/:id/letter`                                      | P offers#edit                             | server renders from template                                                       |
-| 6    | POST           | `/api/hiring/offers/:id/send` · `/withdraw-link`                     | P offers#edit                             | token issued / cleared                                                             |
-| 6    | GET            | `/api/public/offers/:token` · `/pdf`                                 | Pub (token)                               | records view / download                                                            |
-| 6    | POST           | `/api/public/offers/:token/accept` · `/decline`                      | Pub (token)                               | BR-HIR-014                                                                         |
-| 7    | POST           | `/api/public/careers/:code/apply`                                    | Pub (Turnstile, rate limit)               | CV upload + scan, referral                                                         |
-| 8    | CRUD           | `/api/hiring/mail/templates`, `/rules`, `/settings`, `GET /mail/log` | ops                                       | needs `core/mail`                                                                  |
-| 9    | GET            | `/api/hiring/offers/:id/onboarding-prefill`                          | P offers                                  | needs onboarding module                                                            |
-| 9    | GET            | `/api/hiring/reports/*`, `/dashboard`                                | P hiring-reports                          |                                                                                    |
+| Step | Method         | Path                                                                     | Access                                    | Notes                                                                                                                |
+| ---- | -------------- | ------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 1 ✅ | GET            | `/api/hiring/requisitions`                                               | P requisitions (scoped)                   | paged; `status`, `locationId`, `waitingOnMe` (approval inbox)                                                        |
+| 1 ✅ | GET            | `/api/hiring/requisitions/:id`                                           | P requisitions (scoped)                   | with steps and `viewer` (canEdit/canDecide/canManage) — job link arrives in step 2                                   |
+| 1 ✅ | POST           | `/api/hiring/requisitions`                                               | P requisitions#add                        | `submit` flag                                                                                                        |
+| 1 ✅ | PATCH          | `/api/hiring/requisitions/:id`                                           | P requisitions#edit (scoped)              | DRAFT/REJECTED only                                                                                                  |
+| 1 ✅ | POST           | `/api/hiring/requisitions/:id/submit`                                    | P requisitions#edit (scoped)              | BR-HIR-001                                                                                                           |
+| 1 ✅ | POST           | `/api/hiring/requisitions/:id/decision`                                  | P requisition-approvals#edit + BR-HIR-002 | `{ decision, note }`                                                                                                 |
+| 1 ✅ | POST           | `/api/hiring/requisitions/:id/hold` · `/resume` · `/close`               | P requisitions#edit + HR/SA               | BR-HIR-004                                                                                                           |
+| 2 ✅ | GET            | `/api/hiring/jobs` · `/:id`                                              | P jobs                                    | paged; `status`, `locationId`, `recruiterId`; detail adds the History tab; `viewer.actions` = allowed status buttons |
+| 2 ✅ | POST           | `/api/hiring/requisitions/:id/job`                                       | P jobs#add                                | BR-HIR-005; `publish` → OPEN, else DRAFT                                                                             |
+| —    | PUT            | ~~`/api/hiring/jobs/:id`~~                                               | —                                         | not built: the frontend has no job edit (Q14)                                                                        |
+| 2 ✅ | POST           | `/api/hiring/jobs/:id/open` · `/hold` · `/resume` · `/close` · `/reopen` | P jobs#edit                               | BR-HIR-006                                                                                                           |
+| 2 ✅ | PUT            | `/api/hiring/jobs/:id/recruiter`                                         | P jobs#edit                               | active employee; History line; notice to the new recruiter once `core/notifications` exists                          |
+| —    | GET            | ~~`/api/public/careers` · `/:code`~~                                     | —                                         | dropped: nothing is public (§1); later via job-distribution integration                                              |
+| 3    | GET            | `/api/hiring/candidates` · `/:id`                                        | P candidates (scoped) / panel             | salary per §6                                                                                                        |
+| 3    | POST           | `/api/hiring/candidates`                                                 | P candidates#add                          | optional `jobId`; duplicate check                                                                                    |
+| 3    | GET            | `/api/hiring/candidates/duplicates?email=&phone=`                        | P candidates#add                          | form warning                                                                                                         |
+| 3    | POST           | `/api/hiring/candidates/:id/applications`                                | P candidates#add                          | BR-HIR-008                                                                                                           |
+| 3    | PUT            | `/api/hiring/candidates/:id/tags`                                        | P candidates#edit                         |                                                                                                                      |
+| 3    | POST           | `/api/hiring/candidates/:id/notes`                                       | P candidates#edit                         |                                                                                                                      |
+| 3    | POST           | `/api/hiring/applications/:id/move` · `/exit` · `/reopen`                | P candidates#edit (scoped)                | BR-HIR-009                                                                                                           |
+| 4    | GET            | `/api/hiring/interviews`                                                 | P interviews (scoped)                     |                                                                                                                      |
+| 4    | GET            | `/api/hiring/interviews/clashes`                                         | P interviews#add                          | BR-HIR-010                                                                                                           |
+| 4    | POST           | `/api/hiring/interviews`                                                 | P interviews#add (scoped)                 | may advance stage                                                                                                    |
+| 4    | PUT            | `/api/hiring/interviews/:id`                                             | P interviews#edit (scoped)                | reschedule                                                                                                           |
+| 4    | POST           | `/api/hiring/interviews/:id/complete` · `/cancel`                        | P interviews#edit (scoped)                |                                                                                                                      |
+| 4    | GET            | `/api/me/interviews`                                                     | SignedIn (panelist = me)                  | `/my/interviews`                                                                                                     |
+| 4    | GET            | `/api/me/referrals`                                                      | SignedIn (referrer = me)                  | `/my/referrals`                                                                                                      |
+| 5    | GET            | `/api/hiring/offers` · `/:id`                                            | P offers                                  |                                                                                                                      |
+| 5    | POST           | `/api/hiring/applications/:id/offer`                                     | P offers#add                              | BR-HIR-011                                                                                                           |
+| 5    | POST           | `/api/hiring/offers/:id/response`                                        | P offers#edit                             | HR records accept/decline (`via: HR`)                                                                                |
+| 5    | POST           | `/api/hiring/offers/:id/withdraw-acceptance`                             | P offers#edit                             | BR-HIR-013                                                                                                           |
+| 6    | GET/PUT/DELETE | `/api/hiring/letter-templates/:location[/:companyId]`                    | P offers#edit (ops)                       | upload .docx/.html, sanitise                                                                                         |
+| 6    | PUT            | `/api/hiring/letter-signatories/:location`                               | P offers#edit (ops)                       |                                                                                                                      |
+| 6    | POST           | `/api/hiring/offers/:id/letter`                                          | P offers#edit                             | server renders from template                                                                                         |
+| 6    | POST           | `/api/hiring/offers/:id/send` · `/withdraw-link`                         | P offers#edit                             | token issued / cleared                                                                                               |
+| 6    | GET            | `/api/public/offers/:token` · `/pdf`                                     | Pub (token)                               | records view / download                                                                                              |
+| 6    | POST           | `/api/public/offers/:token/accept` · `/decline`                          | Pub (token)                               | BR-HIR-014                                                                                                           |
+| —    | POST           | ~~`/api/public/careers/:code/apply`~~                                    | —                                         | dropped: nothing is public (§1); HR adds candidates (step 3)                                                         |
+| 8    | CRUD           | `/api/hiring/mail/templates`, `/rules`, `/settings`, `GET /mail/log`     | ops                                       | needs `core/mail`                                                                                                    |
+| 9    | GET            | `/api/hiring/offers/:id/onboarding-prefill`                              | P offers                                  | needs onboarding module                                                                                              |
+| 9    | GET            | `/api/hiring/reports/*`, `/dashboard`                                    | P hiring-reports                          |                                                                                                                      |
 
 ## 8. Events
 
@@ -270,23 +278,30 @@ Until `core/notifications` exists, events are published with no listener (no in-
 4. **Requisition approval chain** — _decided 2026-10-22_: fixed Hiring Manager → HR → Management, as in the frontend
    (its Workflow Settings page only displays chains). Steps are stored per requisition so a configurable chain
    (ADR-0004 workflow engine) can replace it later without a data redesign.
-5. **Hiring manager without hiring access**: the frontend lets any active employee be the hiring manager, but only
-   people with Requisition approvals → Edit can decide a step. An Employee-role hiring manager can never approve
-   their step (only Super Admin can). Limit the picker to Team Leads and above, or let any hiring manager decide?
-6. **Raising your own requisition**: the backend now blocks deciding the HR or Management step of a requisition you
-   raised (security.md "nobody decides their own request"); the frontend allows it. Consequences: HR-raised
-   requisitions need Office Admin, another HR or Super Admin for the HR step; one raised by the only Super Admin
-   can never pass the Management step. Confirm, or name who decides in that case. (The Hiring Manager step is still
-   auto-approved when the hiring manager submits — that is the frontend's rule.)
-7. **Interview feedback / scorecards**: none (free notes only). Needed for v1?
-8. **HR "Record accepted/declined"**: allowed today without the letter being downloaded or the offer being in date.
+5. **Interview feedback / scorecards**: none (free notes only). Needed for v1?
+6. **HR "Record accepted/declined"**: allowed today without the letter being downloaded or the offer being in date.
    Keep? Should it require an attachment/note as evidence?
-9. **Exiting an application with a live (SENT) offer**: the offer stays SENT and the candidate can still accept a
+7. **Exiting an application with a live (SENT) offer**: the offer stays SENT and the candidate can still accept a
    rejected/withdrawn application. Proposal: exiting withdraws the link (offer → DRAFT) or is refused.
-10. **Salary at rest**: candidate and offer salary are not in rule 10's encrypted list. Encrypt them, or restrict
-    by access only?
-11. **Per-company letters**: "per company" is hard-coded to Dubai. Make it a location setting?
-12. **Retention**: how long are rejected candidates and CVs kept (consent period)?
+8. **Salary at rest**: candidate and offer salary are not in rule 10's encrypted list. Encrypt them, or restrict
+   by access only?
+9. **Per-company letters**: "per company" is hard-coded to Dubai. Make it a location setting?
+10. **Retention**: how long are rejected candidates and CVs kept (consent period)?
+11. **Hiring manager without hiring access**: the frontend lets any active employee be the hiring manager, but only
+    people with Requisition approvals → Edit can decide a step. An Employee-role hiring manager can never approve
+    their step (only Super Admin can). Limit the picker to Team Leads and above, or let any hiring manager decide?
+12. **Raising your own requisition**: the backend now blocks deciding the HR or Management step of a requisition you
+    raised (security.md "nobody decides their own request"); the frontend allows it. Consequences: HR-raised
+    requisitions need Office Admin, another HR or Super Admin for the HR step; one raised by the only Super Admin
+    can never pass the Management step. Confirm, or name who decides in that case. (The Hiring Manager step is still
+    auto-approved when the hiring manager submits — that is the frontend's rule.)
+13. **Offer letter link**: the candidate's offer page (`/offer/respond/<token>`) is public. With "nothing is public",
+    HR emails the letter PDF and records the answer ("Record accepted/declined", already in the frontend). Drop the
+    link too? Needed by step 6.
+14. **Editing a job**: the frontend cannot change a job after it is created (description, skills, panel, closing date,
+    designation). Not built. Is editing needed — e.g. to extend the closing date or change the panel?
+15. **Closing date**: the frontend does not check it (it may be in the past) and nothing happens when it passes; it
+    only stopped the public apply form, which is dropped. Should a job close itself after its closing date?
 
 **Frontend store guards missing (the backend will enforce the UI's rules, not the store's)**
 
@@ -299,19 +314,25 @@ Until `core/notifications` exists, events are published with no listener (no in-
 
 **Not built in the frontend**: CV storage (file name only), real email, Outlook/Teams (switches only).
 
+**Frontend to align with "nothing is public"**: hide/remove `/careers`, `/careers/[code]` (apply form) and the share
+panel's public application, per-board (`?src=`) and referral (`?ref=`) links (`components/hiring/ShareJob.tsx`); keep
+"Copy job text for a job board" but drop the apply-link line from the text. Referrals are then recorded by HR on the
+candidate (source Employee Referral + referrer), which `/my/referrals` still shows.
+
 ## 11. Build plan (step by step)
 
 Each step ships per CLAUDE.md rules 15–19 (Swagger, e2e + 403/404 tests, Bruno, OpenAPI, docs).
 
-| Step | Scope                                                            | Needs first (backend gaps)                                                                                                          |
-| ---- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | ✅ Module scaffold, hiring permission ids, default grants        | done                                                                                                                                |
-| 1    | ✅ Requisitions + approval steps                                 | done. Reference checks read org/employee tables directly until their APIs exist; no in-app notices yet (needs `core/notifications`) |
-| 2    | Jobs, recruiter, history, public careers list/detail             | —                                                                                                                                   |
-| 3    | Candidates, applications, pipeline                               | Q7, Q8                                                                                                                              |
-| 4    | Interviews, `/me/interviews`, `/me/referrals`                    | —                                                                                                                                   |
-| 5    | Offers (create, HR response, withdraw acceptance)                | Q1, Q6                                                                                                                              |
-| 6    | Letter templates, server-rendered letter, PDF, public offer link | `core/pdf` (Gotenberg), HTML sanitiser, .docx → HTML converter, Q2                                                                  |
-| 7    | Public apply with CV                                             | `core/files` (Blob + scan), Turnstile, rate limiting                                                                                |
-| 8    | Email templates, stage rules, mail log                           | `core/mail`, `core/jobs` (pg-boss)                                                                                                  |
-| 9    | Onboarding prefill + `completeHire`, reports, dashboard          | onboarding/employees modules (Phase 1), `core/notifications`                                                                        |
+| Step  | Scope                                                                                                       | Needs first (backend gaps)                                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | ✅ Module scaffold, hiring permission ids, default grants                                                   | done                                                                                                                                |
+| 1     | ✅ Requisitions + approval steps                                                                            | done. Reference checks read org/employee tables directly until their APIs exist; no in-app notices yet (needs `core/notifications`) |
+| 2     | ✅ Jobs, recruiter, history (internal only)                                                                 | done. Requisition response now links its job (`job`, `viewer.canCreateJob`)                                                         |
+| 3     | Candidates, applications, pipeline                                                                          | Q7, Q8                                                                                                                              |
+| 4     | Interviews, `/me/interviews`, `/me/referrals`                                                               | —                                                                                                                                   |
+| 5     | Offers (create, HR response, withdraw acceptance)                                                           | Q1, Q6                                                                                                                              |
+| 6     | Letter templates, server-rendered letter, PDF, public offer link                                            | `core/pdf` (Gotenberg), HTML sanitiser, .docx → HTML converter, Q2                                                                  |
+| 7     | ~~Public apply~~ — dropped (nothing is public). CV upload moves to step 3 (HR attaches it to the candidate) | `core/files` (Blob + scan)                                                                                                          |
+| Later | Job distribution: push jobs to the website / job boards / social media, pull applications back              | platform API access (LinkedIn/Indeed partner approval), lead decision                                                               |
+| 8     | Email templates, stage rules, mail log                                                                      | `core/mail`, `core/jobs` (pg-boss)                                                                                                  |
+| 9     | Onboarding prefill + `completeHire`, reports, dashboard                                                     | onboarding/employees modules (Phase 1), `core/notifications`                                                                        |

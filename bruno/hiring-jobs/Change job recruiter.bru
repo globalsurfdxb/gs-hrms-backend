@@ -1,0 +1,33 @@
+meta {
+  name: Change job recruiter
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/hiring/jobs/{{jobId}}/recruiter
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "recruiterId": "{{reqHiringManagerId}}"
+  }
+}
+
+docs {
+  Needs Jobs → Edit. Must be an active employee. Adds "Recruiter changed from … to …" to the History tab
+  (no change when it is already the recruiter).
+}
+
+tests {
+  test("updated", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.recruiter.id).to.equal(bru.getEnvVar("reqHiringManagerId"));
+  });
+}

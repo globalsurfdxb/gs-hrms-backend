@@ -2,27 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { dayOf } from '../../../../shared/time/calendar-day.js';
 import { canDecideStep, type Actor } from '../../domain/requisition.rules.js';
 import type { RequisitionRecord } from '../../infrastructure/requisitions.repository.js';
+import { MoneyResponse, PersonRefResponse, person, RefResponse } from './common.response.js';
 import { EMPLOYMENT_TYPES, REQUISITION_REASONS } from './create-requisition.dto.js';
 import { REQUISITION_STATUSES } from './list-requisitions.query.js';
 
 /* Explicit response shapes. Never return Prisma records directly — every field that leaves the API is listed here.
    Enums are returned as stored (UPPER_SNAKE); the frontend maps them to its labels. */
-
-export class RefResponse {
-  @ApiProperty() id: string;
-  @ApiProperty({ example: 'GS IT' }) name: string;
-}
-
-export class PersonRefResponse {
-  @ApiProperty() id: string;
-  @ApiProperty({ example: 'GS-058' }) employeeCode: string;
-  @ApiProperty({ example: 'Dev Team Lead' }) name: string;
-}
-
-export class MoneyResponse {
-  @ApiProperty({ example: '9000.00', description: 'Decimal as a string — never a float' }) amount: string;
-  @ApiProperty({ example: 'AED' }) currency: string;
-}
 
 export class RequisitionStepResponse {
   @ApiProperty({ example: 1 }) position: number;
@@ -43,6 +28,15 @@ export class RequisitionViewerResponse {
   canEdit: boolean;
   @ApiProperty({ description: 'The pending approval step is yours to decide' }) canDecide: boolean;
   @ApiProperty({ description: 'Hold, resume or close (HR / Super Admin)' }) canManage: boolean;
+  @ApiProperty({ description: 'APPROVED, no job yet, and you have Jobs → Add' }) canCreateJob: boolean;
+}
+
+/** The job opened from a requisition. */
+export class RequisitionJobResponse {
+  @ApiProperty() id: string;
+  @ApiProperty({ example: 'JOB-0001' }) code: string;
+  @ApiProperty({ enum: ['DRAFT', 'OPEN', 'ON_HOLD', 'CLOSED', 'FILLED'] })
+  status: 'DRAFT' | 'OPEN' | 'ON_HOLD' | 'CLOSED' | 'FILLED';
 }
 
 export class RequisitionResponse {
@@ -66,12 +60,18 @@ export class RequisitionResponse {
   @ApiProperty({ enum: REQUISITION_STATUSES }) status: (typeof REQUISITION_STATUSES)[number];
   @ApiProperty({ type: [RequisitionStepResponse], description: 'Empty until first submitted' })
   steps: RequisitionStepResponse[];
+  @ApiProperty({ type: RequisitionJobResponse, nullable: true, description: 'The job opened from it, if any' })
+  job: RequisitionJobResponse | null;
   @ApiProperty({ type: PersonRefResponse }) createdBy: PersonRefResponse;
   @ApiProperty() createdAt: string;
   @ApiProperty() updatedAt: string;
   @ApiProperty({ type: RequisitionViewerResponse }) viewer: RequisitionViewerResponse;
 
-  static from(this: void, r: RequisitionRecord, viewer: Actor & { seesAll: boolean }): RequisitionResponse {
+  static from(
+    this: void,
+    r: RequisitionRecord,
+    viewer: Actor & { seesAll: boolean; canAddJob: boolean },
+  ): RequisitionResponse {
     const pending = r.steps.find((s) => s.status === 'PENDING');
     const involved = viewer.seesAll || r.createdBy.id === viewer.employeeId || r.hiringManager.id === viewer.employeeId;
     return {
@@ -100,6 +100,7 @@ export class RequisitionResponse {
         decidedAt: s.decidedAt?.toISOString() ?? null,
         note: s.note,
       })),
+      job: r.job,
       createdBy: person(r.createdBy),
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
@@ -110,6 +111,7 @@ export class RequisitionResponse {
           !!pending &&
           canDecideStep(pending.label, viewer, { hiringManagerId: r.hiringManager.id, raisedById: r.createdBy.id }),
         canManage: viewer.seesAll && (r.status === 'APPROVED' || r.status === 'ON_HOLD'),
+        canCreateJob: viewer.canAddJob && r.status === 'APPROVED' && !r.job,
       },
     };
   }
@@ -121,9 +123,3 @@ export class RequisitionListResponse {
   @ApiProperty({ example: 1 }) page: number;
   @ApiProperty({ example: 50 }) pageSize: number;
 }
-
-const person = (p: { id: string; employeeCode: string; fullName: string }): PersonRefResponse => ({
-  id: p.id,
-  employeeCode: p.employeeCode,
-  name: p.fullName,
-});

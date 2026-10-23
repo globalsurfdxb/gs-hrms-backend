@@ -56,6 +56,10 @@ model Employee {
   requisitionsManaged     Requisition[]     @relation("RequisitionHiringManager")
   requisitionsRaised      Requisition[]     @relation("RequisitionCreatedBy")
   requisitionStepsDecided RequisitionStep[] @relation("RequisitionStepDecidedBy")
+  jobsRecruiting          Job[]             @relation("JobRecruiter")
+  jobsCreated             Job[]             @relation("JobCreatedBy")
+  jobPanels               JobPanelMember[]  @relation("JobPanel")
+  jobEvents               JobEvent[]        @relation("JobEventActor")
 
   @@index([reportingManagerId])
   @@index([locationId])

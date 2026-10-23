@@ -244,7 +244,12 @@ export class RequisitionsService {
 /** Recruiting users (Jobs → View: HR, Super Admin by default) see and manage every requisition. */
 const seesAll = (user: AuthUser) => hasPermission(user.permissions, PERMISSIONS.hiring.jobs);
 
-const viewerOf = (user: AuthUser) => ({ employeeId: user.employeeId, roleName: user.roleName, seesAll: seesAll(user) });
+const viewerOf = (user: AuthUser) => ({
+  employeeId: user.employeeId,
+  roleName: user.roleName,
+  seesAll: seesAll(user),
+  canAddJob: hasPermission(user.permissions, PERMISSIONS.hiring.jobs, 'add'),
+});
 
 const scopeOf = (user: AuthUser): RequisitionScope => ({
   all: seesAll(user),

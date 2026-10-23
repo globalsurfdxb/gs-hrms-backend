@@ -79,6 +79,7 @@ model Requisition {
   hiringManager Employee          @relation("RequisitionHiringManager", fields: [hiringManagerId], references: [id], onDelete: Restrict)
   createdBy     Employee          @relation("RequisitionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   steps         RequisitionStep[]
+  job           Job?
 
   @@index([status])
   @@index([locationId])
@@ -105,4 +106,81 @@ model RequisitionStep {
   /// Finds requisitions waiting on a given step (approval inbox).
   @@index([label, status])
   @@map("requisition_steps")
+}
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  ON_HOLD
+  CLOSED
+  /// Set by the system when filled = positions (offers, step 5) — never by a person.
+  FILLED
+
+  @@map("job_status")
+}
+
+/// A vacancy opened from one APPROVED requisition. Title, company, department, location, positions, budget and hiring
+/// manager are read from the requisition (it cannot change once approved), so they are not copied here.
+model Job {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  /// JOB-0001, from a sequence so concurrent saves never share a code (see the migration).
+  code             String    @unique @default(dbgenerated("('JOB-'::text || lpad((nextval('hiring_job_code_seq'::regclass))::text, 4, '0'::text))"))
+  requisitionId    String    @unique @map("requisition_id") @db.Uuid
+  /// The grade hired at; defaults to the requisition's. Must belong to the requisition's department.
+  designationId    String?   @map("designation_id") @db.Uuid
+  description      String
+  skills           String[]
+  expMin           Int       @map("exp_min")
+  expMax           Int       @map("exp_max")
+  qualifications   String    @default("")
+  referralEligible Boolean   @default(true) @map("referral_eligible")
+  closingDate      DateTime  @map("closing_date") @db.Date
+  recruiterId      String    @map("recruiter_id") @db.Uuid
+  /// Accepted offers counted against positions (offers, step 5).
+  filled           Int       @default(0)
+  status           JobStatus @default(DRAFT)
+  createdById      String    @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requisition Requisition      @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  designation Designation?     @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  recruiter   Employee         @relation("JobRecruiter", fields: [recruiterId], references: [id], onDelete: Restrict)
+  createdBy   Employee         @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  panel       JobPanelMember[]
+  events      JobEvent[]
+
+  @@index([status])
+  @@index([recruiterId])
+  @@map("jobs")
+}
+
+/// Interviewers for a job (at least one).
+model JobPanelMember {
+  jobId      String @map("job_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  employee Employee @relation("JobPanel", fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@id([jobId, employeeId])
+  @@index([employeeId])
+  @@map("job_panel_members")
+}
+
+/// The job's History tab: created, opened, put on hold, recruiter changed, filled… Append-only.
+model JobEvent {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  jobId      String   @map("job_id") @db.Uuid
+  at         DateTime @default(now()) @db.Timestamptz(3)
+  /// null = the system (e.g. FILLED when the last position is filled).
+  actorId    String?  @map("actor_id") @db.Uuid
+  actorLabel String   @map("actor_label")
+  text       String
+
+  job   Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  actor Employee? @relation("JobEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([jobId, at])
+  @@map("job_events")
 }
