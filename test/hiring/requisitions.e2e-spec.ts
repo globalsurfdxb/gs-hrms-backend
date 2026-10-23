@@ -115,13 +115,17 @@ describe('Requisitions API', () => {
     expect(again.body.steps[0].status).toBe('PENDING');
   });
 
-  it('stops a Super Admin approving the Hiring Manager step of a requisition they raised', async () => {
+  it('makes a Super Admin wait for the others on their own requisition, then confirm Management', async () => {
     const r = (await post('superAdmin', '', body({ submit: true })).expect(201)).body;
     expect(r.steps[0]).toMatchObject({ label: 'HIRING_MANAGER', status: 'PENDING' });
     expect(r.viewer.canDecide).toBe(false);
     const refused = await post('superAdmin', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(403);
     expect(refused.body.code).toBe('requisition.own_request');
     await post('teamLead', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(200);
+    await post('superAdmin', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(403);
+    await post('hr', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(200);
+    const approved = await post('superAdmin', `/${r.id}/decision`, { decision: 'APPROVED' }).expect(200);
+    expect(approved.body.status).toBe('APPROVED');
   });
 
   it('scopes what Office Admin and Team Lead can see; Employee has no access', async () => {
@@ -149,6 +153,7 @@ describe('Requisitions API', () => {
     expect(await code({ departmentId: ref.otherDepartmentId })).toBe('requisition.department_mismatch');
     expect(await code({ reason: 'REPLACEMENT' })).toBe('request.invalid');
     expect(await code({ locationId: 'Mars' })).toBe('requisition.unknown_location');
+    expect(await code({ hiringManagerId: id.employee })).toBe('requisition.hiring_manager_no_access');
     expect(await code({ status: 'APPROVED' })).toBe('request.invalid');
   });
 

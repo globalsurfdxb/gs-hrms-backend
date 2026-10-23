@@ -147,6 +147,14 @@ export class RequisitionsRepository {
     return this.prisma.employee.findUnique({ where: { id }, select: { id: true, employmentStatus: true } });
   }
 
+  /** A hiring manager candidate with the permission keys of their role (BR-HIR-003: they must be able to decide). */
+  hiringManager(id: string) {
+    return this.prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, employmentStatus: true, role: { select: { permissions: { select: { key: true } } } } },
+    });
+  }
+
   /* ---------------------------------------------------------------- writes */
 
   create(data: RequisitionData, chain: { status: RequisitionStatus; steps: Step[] } | null, actor: AuditActor) {

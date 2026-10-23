@@ -209,7 +209,7 @@ export class RequisitionsService {
       this.requisitions.company(d.companyId),
       this.requisitions.department(d.departmentId),
       d.designationId ? this.requisitions.designation(d.designationId) : null,
-      this.requisitions.employee(d.hiringManagerId),
+      this.requisitions.hiringManager(d.hiringManagerId),
       d.replacesEmployeeId ? this.requisitions.employee(d.replacesEmployeeId) : null,
     ]);
     if (!location) throw new AppError('requisition.unknown_location', `Unknown location "${d.locationId}"`);
@@ -224,6 +224,19 @@ export class RequisitionsService {
     }
     if (!manager || manager.employmentStatus !== 'ACTIVE') {
       throw new AppError('requisition.invalid_hiring_manager', 'The hiring manager must be an active employee');
+    }
+    // Q11: the hiring manager must be able to decide their step — checked by permission, so custom roles qualify.
+    if (
+      !hasPermission(
+        new Set(manager.role.permissions.map((p) => p.key)),
+        PERMISSIONS.hiring.requisitionApprovals,
+        'edit',
+      )
+    ) {
+      throw new AppError(
+        'requisition.hiring_manager_no_access',
+        'The hiring manager needs Requisition approvals access (Team Lead and above by default)',
+      );
     }
     if (d.replacesEmployeeId && !replaced) {
       throw new AppError('requisition.unknown_employee', 'The employee being replaced was not found');
