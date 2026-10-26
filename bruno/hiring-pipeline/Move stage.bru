@@ -1,0 +1,33 @@
+meta {
+  name: Move stage
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/hiring/applications/{{applicationId}}/move
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "stage": "SCREENING",
+    "note": "Strong first call"
+  }
+}
+
+docs {
+  Needs Candidates → Edit. APPLIED … OFFER, forward or back; never HIRED. 409 while the job is closed or filled,
+  or when the offer letter is out (withdraw it first).
+}
+
+tests {
+  test("moved (200) — or 409 when the job is closed", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

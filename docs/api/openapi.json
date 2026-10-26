@@ -2142,6 +2142,1246 @@
           "Hiring · Jobs"
         ]
       }
+    },
+    "/api/hiring/candidates": {
+      "get": {
+        "description": "Needs Candidates → View (HR, Super Admin by default); such users see every candidate. Newest first. Search q matches name, email, phone, company, title, city or an exact tag. No salary in the list.",
+        "operationId": "CandidatesController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Name, email, phone, company, title, city or tag",
+            "schema": {
+              "example": "priya",
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobId",
+            "required": false,
+            "in": "query",
+            "description": "Applied to this job",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a10",
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "description": "Has an active (not exited) application at this stage",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "APPLIED",
+                "SCREENING",
+                "TECHNICAL_INTERVIEW",
+                "HR_INTERVIEW",
+                "OFFER",
+                "HIRED"
+              ]
+            }
+          },
+          {
+            "name": "source",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LINKEDIN",
+                "NAUKRI",
+                "BAYT",
+                "INDEED",
+                "EMPLOYEE_REFERRAL",
+                "AGENCY",
+                "CAREERS_PAGE",
+                "DIRECT"
+              ]
+            }
+          },
+          {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Shortlisted",
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List candidates",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      },
+      "post": {
+        "description": "Needs Candidates → Add. With jobId (an OPEN job) the candidate is also added to that job at APPLIED and takes its location; otherwise locationId is required. Consent must be true. A candidate with the same email or phone returns 409 candidate.duplicate with details.candidateId — add that person to the job instead (BR-HIR-007, BR-HIR-008). Sending salary needs salary access (403 otherwise).",
+        "operationId": "CandidatesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCandidateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a candidate",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/duplicates": {
+      "get": {
+        "description": "Needs Candidates → Add. For the add form’s \"already in the system\" warning: same email, or the same last 9 phone digits (7+ digits). At most 5 matches (BR-HIR-007).",
+        "operationId": "CandidatesController_duplicates",
+        "parameters": [
+          {
+            "name": "email",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "priya.nair@example.com",
+              "type": "string"
+            }
+          },
+          {
+            "name": "phone",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "+971 50 123 4567",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateCandidateResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Find candidates with the same email or phone",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/{id}": {
+      "get": {
+        "description": "Needs Candidates → View. With notes and every application and its stage history. Salary appears only for HR / Super Admin (Jobs → View) and the hiring manager of one of the candidate’s jobs. Viewing salary is audited.",
+        "operationId": "CandidatesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one candidate",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/{id}/applications": {
+      "post": {
+        "description": "Needs Candidates → Add. Only an OPEN job, once per job; starts at APPLIED (BR-HIR-008). Returns the application.",
+        "operationId": "CandidatesController_apply",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyToJobDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a candidate to a job",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/{id}/tags": {
+      "put": {
+        "description": "Needs Candidates → Edit. The whole list, at most 20; trimmed and de-duplicated.",
+        "operationId": "CandidatesController_setTags",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateTagsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Replace a candidate’s tags",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/{id}/notes": {
+      "post": {
+        "description": "Needs Candidates → Edit. Notes cannot be changed or deleted afterwards.",
+        "operationId": "CandidatesController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a note to a candidate",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/jobs/{id}/applications": {
+      "get": {
+        "description": "Needs Candidates → View (HR, Super Admin by default). The job’s applications with the candidate behind each, for the board and the list. stage = active applications at that stage; exit = an exit or NONE; inStageForDays finds stalled candidates. Sort by applied (default, newest first), name, stage or inStage.",
+        "operationId": "ApplicationsController_forJob",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "description": "Active (not exited) applications at this stage",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "APPLIED",
+                "SCREENING",
+                "TECHNICAL_INTERVIEW",
+                "HR_INTERVIEW",
+                "OFFER",
+                "HIRED"
+              ]
+            }
+          },
+          {
+            "name": "exit",
+            "required": false,
+            "in": "query",
+            "description": "An exit, or NONE for applications still in the pipeline",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "REJECTED",
+                "WITHDRAWN",
+                "ON_HOLD",
+                "NONE"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Name, email, phone, company, title, city or tag",
+            "schema": {
+              "example": "priya",
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LINKEDIN",
+                "NAUKRI",
+                "BAYT",
+                "INDEED",
+                "EMPLOYEE_REFERRAL",
+                "AGENCY",
+                "CAREERS_PAGE",
+                "DIRECT"
+              ]
+            }
+          },
+          {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Shortlisted",
+              "type": "string"
+            }
+          },
+          {
+            "name": "appliedWithinDays",
+            "required": false,
+            "in": "query",
+            "description": "Applied in the last N days",
+            "schema": {
+              "example": 7,
+              "type": "number"
+            }
+          },
+          {
+            "name": "inStageForDays",
+            "required": false,
+            "in": "query",
+            "description": "In the current stage for at least N days (stalled)",
+            "schema": {
+              "example": 14,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "applied",
+              "type": "string",
+              "enum": [
+                "applied",
+                "name",
+                "stage",
+                "inStage"
+              ]
+            }
+          },
+          {
+            "name": "dir",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List a job’s pipeline",
+        "tags": [
+          "Hiring · Pipeline"
+        ]
+      }
+    },
+    "/api/hiring/applications/{id}": {
+      "get": {
+        "description": "Needs Candidates → View. With its stage history.",
+        "operationId": "ApplicationsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one application",
+        "tags": [
+          "Hiring · Pipeline"
+        ]
+      }
+    },
+    "/api/hiring/applications/{id}/move": {
+      "post": {
+        "description": "Needs Candidates → Edit. Any stage from APPLIED to OFFER, forward or back; also brings an exited candidate back. Never HIRED (an accepted offer sets it), nothing after HIRED, and not while the job is CLOSED or FILLED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk moves: one call per application.",
+        "operationId": "ApplicationsController_move",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Move a candidate to another stage",
+        "tags": [
+          "Hiring · Pipeline"
+        ]
+      }
+    },
+    "/api/hiring/applications/{id}/exit": {
+      "post": {
+        "description": "Needs Candidates → Edit. REJECTED needs one of the rejection reasons; WITHDRAWN and ON_HOLD take a free reason. Not after HIRED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk reject: one call per application.",
+        "operationId": "ApplicationsController_exit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExitApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reject, withdraw or put a candidate on hold",
+        "tags": [
+          "Hiring · Pipeline"
+        ]
+      }
+    },
+    "/api/hiring/applications/{id}/reopen": {
+      "post": {
+        "description": "Needs Candidates → Edit. Back to the stage it left from; not while the job is CLOSED or FILLED (BR-HIR-009).",
+        "operationId": "ApplicationsController_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reopen an exited application",
+        "tags": [
+          "Hiring · Pipeline"
+        ]
+      }
     }
   },
   "info": {
@@ -3455,6 +4695,1088 @@
         },
         "required": [
           "recruiterId"
+        ]
+      },
+      "ApplicationJobRefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title"
+        ]
+      },
+      "ApplicationSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ApplicationJobRefResponse"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ]
+          },
+          "exit": {
+            "type": "string",
+            "enum": [
+              "REJECTED",
+              "WITHDRAWN",
+              "ON_HOLD"
+            ],
+            "nullable": true,
+            "description": "Set when the candidate left the pipeline"
+          },
+          "exitFrom": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ],
+            "nullable": true,
+            "description": "The stage they left from (Reopen returns there)"
+          },
+          "exitReason": {
+            "type": "object",
+            "example": "Skills mismatch",
+            "nullable": true
+          },
+          "exitNote": {
+            "type": "object",
+            "nullable": true
+          },
+          "appliedAt": {
+            "type": "string",
+            "example": "2026-10-20T09:30:00.000Z"
+          },
+          "stageChangedAt": {
+            "type": "string",
+            "example": "2026-10-24T11:00:00.000Z",
+            "description": "Last stage change (for \"days in stage\")"
+          }
+        },
+        "required": [
+          "id",
+          "job",
+          "stage",
+          "exit",
+          "exitFrom",
+          "exitReason",
+          "exitNote",
+          "appliedAt",
+          "stageChangedAt"
+        ]
+      },
+      "CandidateResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "email": {
+            "type": "string",
+            "example": "priya.nair@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+971 50 123 4567"
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "currentCompany": {
+            "type": "string",
+            "example": "Emirates Networks LLC"
+          },
+          "currentTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "experienceYears": {
+            "type": "number",
+            "example": 4.5
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LINKEDIN",
+              "NAUKRI",
+              "BAYT",
+              "INDEED",
+              "EMPLOYEE_REFERRAL",
+              "AGENCY",
+              "CAREERS_PAGE",
+              "DIRECT"
+            ]
+          },
+          "tags": {
+            "example": [
+              "Shortlisted"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "applications": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSummaryResponse"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "location",
+          "currentCompany",
+          "currentTitle",
+          "experienceYears",
+          "source",
+          "tags",
+          "applications",
+          "createdAt"
+        ]
+      },
+      "CandidateListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 120
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "DuplicateCandidateResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "email": {
+            "type": "string",
+            "example": "priya.nair@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+971 50 123 4567"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone"
+        ]
+      },
+      "StageChangeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "example": "2026-10-26T08:00:00.000Z"
+          },
+          "by": {
+            "type": "string",
+            "example": "Dev HR",
+            "description": "Name at the time, or \"system\""
+          },
+          "from": {
+            "type": "object",
+            "example": "SCREENING",
+            "nullable": true,
+            "description": "Stage or exit code; null on the first line"
+          },
+          "to": {
+            "type": "string",
+            "example": "TECHNICAL_INTERVIEW",
+            "description": "Stage or exit code"
+          },
+          "note": {
+            "type": "object",
+            "example": "Strong screening call",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "by",
+          "from",
+          "to",
+          "note"
+        ]
+      },
+      "CandidateApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ApplicationJobRefResponse"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ]
+          },
+          "exit": {
+            "type": "string",
+            "enum": [
+              "REJECTED",
+              "WITHDRAWN",
+              "ON_HOLD"
+            ],
+            "nullable": true,
+            "description": "Set when the candidate left the pipeline"
+          },
+          "exitFrom": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ],
+            "nullable": true,
+            "description": "The stage they left from (Reopen returns there)"
+          },
+          "exitReason": {
+            "type": "object",
+            "example": "Skills mismatch",
+            "nullable": true
+          },
+          "exitNote": {
+            "type": "object",
+            "nullable": true
+          },
+          "appliedAt": {
+            "type": "string",
+            "example": "2026-10-20T09:30:00.000Z"
+          },
+          "stageChangedAt": {
+            "type": "string",
+            "example": "2026-10-24T11:00:00.000Z",
+            "description": "Last stage change (for \"days in stage\")"
+          },
+          "history": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StageChangeResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "job",
+          "stage",
+          "exit",
+          "exitFrom",
+          "exitReason",
+          "exitNote",
+          "appliedAt",
+          "stageChangedAt",
+          "history"
+        ]
+      },
+      "CandidateNoteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "example": "Asked for 45 days notice."
+          },
+          "by": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "by",
+          "at"
+        ]
+      },
+      "CandidateViewerResponse": {
+        "type": "object",
+        "properties": {
+          "canEdit": {
+            "type": "boolean",
+            "description": "Tags, notes, pipeline moves (Candidates → Edit)"
+          },
+          "canAddApplication": {
+            "type": "boolean",
+            "description": "Add to another job (Candidates → Add)"
+          },
+          "canSeeSalary": {
+            "type": "boolean",
+            "description": "Salary fields are included"
+          }
+        },
+        "required": [
+          "canEdit",
+          "canAddApplication",
+          "canSeeSalary"
+        ]
+      },
+      "CandidateDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "email": {
+            "type": "string",
+            "example": "priya.nair@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+971 50 123 4567"
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "currentCompany": {
+            "type": "string",
+            "example": "Emirates Networks LLC"
+          },
+          "currentTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "experienceYears": {
+            "type": "number",
+            "example": 4.5
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LINKEDIN",
+              "NAUKRI",
+              "BAYT",
+              "INDEED",
+              "EMPLOYEE_REFERRAL",
+              "AGENCY",
+              "CAREERS_PAGE",
+              "DIRECT"
+            ]
+          },
+          "tags": {
+            "example": [
+              "Shortlisted"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "applications": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateApplicationResponse"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "currentCity": {
+            "type": "string",
+            "example": "Dubai"
+          },
+          "noticeDays": {
+            "type": "number",
+            "example": 30
+          },
+          "currentSalary": {
+            "nullable": true,
+            "description": "Only with salary access",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              }
+            ]
+          },
+          "expectedSalary": {
+            "nullable": true,
+            "description": "Only with salary access",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              }
+            ]
+          },
+          "visaStatus": {
+            "type": "string",
+            "example": "Employment visa (transferable)"
+          },
+          "referrer": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "agency": {
+            "type": "object",
+            "example": "TalentHub",
+            "nullable": true
+          },
+          "cvName": {
+            "type": "object",
+            "example": "Priya_Nair_CV.pdf",
+            "nullable": true,
+            "description": "File name only (no file stored yet)"
+          },
+          "links": {
+            "type": "string",
+            "example": "linkedin.com/in/priya-nair"
+          },
+          "consentGivenAt": {
+            "type": "string",
+            "example": "2026-10-26T08:00:00.000Z"
+          },
+          "notes": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateNoteResponse"
+            }
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/CandidateViewerResponse"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "location",
+          "currentCompany",
+          "currentTitle",
+          "experienceYears",
+          "source",
+          "tags",
+          "applications",
+          "createdAt",
+          "currentCity",
+          "noticeDays",
+          "visaStatus",
+          "referrer",
+          "agency",
+          "cvName",
+          "links",
+          "consentGivenAt",
+          "notes",
+          "createdBy",
+          "updatedAt",
+          "viewer"
+        ]
+      },
+      "CreateCandidateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "email": {
+            "type": "string",
+            "example": "priya.nair@example.com",
+            "description": "Stored lower-case; one candidate per email"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+971 50 123 4567",
+            "description": "With the country code; at least 7 digits"
+          },
+          "jobId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a10",
+            "description": "An OPEN job: also creates the application, and the candidate takes the job location"
+          },
+          "locationId": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "Required without jobId; ignored with it"
+          },
+          "currentCity": {
+            "type": "string",
+            "example": "Dubai"
+          },
+          "currentCompany": {
+            "type": "string",
+            "example": "Emirates Networks LLC"
+          },
+          "currentTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "experienceYears": {
+            "type": "number",
+            "example": 4.5,
+            "minimum": 0,
+            "maximum": 60,
+            "description": "Total years; one decimal"
+          },
+          "noticeDays": {
+            "type": "number",
+            "example": 30,
+            "minimum": 0,
+            "maximum": 365
+          },
+          "currentSalary": {
+            "type": "string",
+            "example": "9000",
+            "description": "UAE per month, India per year; needs salary access"
+          },
+          "expectedSalary": {
+            "type": "string",
+            "example": "11000",
+            "description": "UAE per month, India per year; needs salary access"
+          },
+          "visaStatus": {
+            "type": "string",
+            "example": "Employment visa (transferable)"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LINKEDIN",
+              "NAUKRI",
+              "BAYT",
+              "INDEED",
+              "EMPLOYEE_REFERRAL",
+              "AGENCY",
+              "CAREERS_PAGE",
+              "DIRECT"
+            ],
+            "example": "LINKEDIN",
+            "description": "CAREERS_PAGE = the company website"
+          },
+          "referrerId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a04",
+            "description": "Active employee; required when source is EMPLOYEE_REFERRAL, ignored otherwise"
+          },
+          "agency": {
+            "type": "string",
+            "example": "TalentHub",
+            "description": "Required when source is AGENCY, ignored otherwise"
+          },
+          "cvName": {
+            "type": "string",
+            "example": "Priya_Nair_CV.pdf",
+            "description": "File name only (.pdf, .doc, .docx)"
+          },
+          "links": {
+            "type": "string",
+            "example": "linkedin.com/in/priya-nair"
+          },
+          "tags": {
+            "example": [
+              "Shortlisted",
+              "Fortinet NSE4"
+            ],
+            "description": "At most 20; trimmed, de-duplicated",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "string",
+            "example": "Strong SD-WAN background; available in 30 days.",
+            "description": "First note"
+          },
+          "consent": {
+            "type": "boolean",
+            "example": true,
+            "description": "The candidate agreed to their data being stored; must be true"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "experienceYears",
+          "source",
+          "consent"
+        ]
+      },
+      "ApplyToJobDto": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a10",
+            "description": "An OPEN job"
+          }
+        },
+        "required": [
+          "jobId"
+        ]
+      },
+      "ApplicationCandidateResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "email": {
+            "type": "string",
+            "example": "priya.nair@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+971 50 123 4567"
+          },
+          "currentTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "currentCompany": {
+            "type": "string",
+            "example": "Emirates Networks LLC"
+          },
+          "experienceYears": {
+            "type": "number",
+            "example": 4.5
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LINKEDIN",
+              "NAUKRI",
+              "BAYT",
+              "INDEED",
+              "EMPLOYEE_REFERRAL",
+              "AGENCY",
+              "CAREERS_PAGE",
+              "DIRECT"
+            ]
+          },
+          "tags": {
+            "example": [
+              "Shortlisted"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "currentTitle",
+          "currentCompany",
+          "experienceYears",
+          "source",
+          "tags"
+        ]
+      },
+      "ApplicationViewerResponse": {
+        "type": "object",
+        "properties": {
+          "canEdit": {
+            "type": "boolean",
+            "description": "Move, exit and reopen (Candidates → Edit)"
+          }
+        },
+        "required": [
+          "canEdit"
+        ]
+      },
+      "ApplicationDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ApplicationJobRefResponse"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ]
+          },
+          "exit": {
+            "type": "string",
+            "enum": [
+              "REJECTED",
+              "WITHDRAWN",
+              "ON_HOLD"
+            ],
+            "nullable": true,
+            "description": "Set when the candidate left the pipeline"
+          },
+          "exitFrom": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ],
+            "nullable": true,
+            "description": "The stage they left from (Reopen returns there)"
+          },
+          "exitReason": {
+            "type": "object",
+            "example": "Skills mismatch",
+            "nullable": true
+          },
+          "exitNote": {
+            "type": "object",
+            "nullable": true
+          },
+          "appliedAt": {
+            "type": "string",
+            "example": "2026-10-20T09:30:00.000Z"
+          },
+          "stageChangedAt": {
+            "type": "string",
+            "example": "2026-10-24T11:00:00.000Z",
+            "description": "Last stage change (for \"days in stage\")"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/ApplicationCandidateResponse"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ApplicationViewerResponse"
+          },
+          "history": {
+            "description": "Oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StageChangeResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "job",
+          "stage",
+          "exit",
+          "exitFrom",
+          "exitReason",
+          "exitNote",
+          "appliedAt",
+          "stageChangedAt",
+          "candidate",
+          "viewer",
+          "history"
+        ]
+      },
+      "CandidateTagsDto": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "example": [
+              "Shortlisted",
+              "Fortinet NSE4"
+            ],
+            "description": "The whole list; at most 20",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "tags"
+        ]
+      },
+      "CandidateNoteDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "example": "Asked for 45 days notice; open to Kochi."
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ApplicationJobRefResponse"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ]
+          },
+          "exit": {
+            "type": "string",
+            "enum": [
+              "REJECTED",
+              "WITHDRAWN",
+              "ON_HOLD"
+            ],
+            "nullable": true,
+            "description": "Set when the candidate left the pipeline"
+          },
+          "exitFrom": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER",
+              "HIRED"
+            ],
+            "nullable": true,
+            "description": "The stage they left from (Reopen returns there)"
+          },
+          "exitReason": {
+            "type": "object",
+            "example": "Skills mismatch",
+            "nullable": true
+          },
+          "exitNote": {
+            "type": "object",
+            "nullable": true
+          },
+          "appliedAt": {
+            "type": "string",
+            "example": "2026-10-20T09:30:00.000Z"
+          },
+          "stageChangedAt": {
+            "type": "string",
+            "example": "2026-10-24T11:00:00.000Z",
+            "description": "Last stage change (for \"days in stage\")"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/ApplicationCandidateResponse"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ApplicationViewerResponse"
+          }
+        },
+        "required": [
+          "id",
+          "job",
+          "stage",
+          "exit",
+          "exitFrom",
+          "exitReason",
+          "exitNote",
+          "appliedAt",
+          "stageChangedAt",
+          "candidate",
+          "viewer"
+        ]
+      },
+      "ApplicationListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "MoveApplicationDto": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "APPLIED",
+              "SCREENING",
+              "TECHNICAL_INTERVIEW",
+              "HR_INTERVIEW",
+              "OFFER"
+            ],
+            "example": "TECHNICAL_INTERVIEW",
+            "description": "HIRED only by an accepted offer"
+          },
+          "note": {
+            "type": "string",
+            "example": "Strong screening call"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "ExitApplicationDto": {
+        "type": "object",
+        "properties": {
+          "exit": {
+            "type": "string",
+            "enum": [
+              "REJECTED",
+              "WITHDRAWN",
+              "ON_HOLD"
+            ],
+            "example": "REJECTED"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Skills mismatch",
+            "description": "REJECTED: one of \"Skills mismatch\", \"Insufficient experience\", \"Salary expectations too high\", \"Failed technical interview\", \"Cultural fit\", \"Notice period too long\", \"Visa / work-permit constraint\", \"Better candidate selected\", \"Position closed or on hold\", \"No response from candidate\", \"Other\". Free text otherwise."
+          },
+          "note": {
+            "type": "string",
+            "example": "No SD-WAN experience"
+          }
+        },
+        "required": [
+          "exit"
         ]
       }
     }

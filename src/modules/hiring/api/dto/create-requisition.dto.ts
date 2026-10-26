@@ -16,7 +16,7 @@ import {
 
 export const EMPLOYMENT_TYPES = ['FULL_TIME', 'CONTRACT', 'INTERN'] as const;
 export const REQUISITION_REASONS = ['NEW_ROLE', 'REPLACEMENT'] as const;
-const AMOUNT = /^\d{1,12}(\.\d{1,2})?$/;
+export const AMOUNT = /^\d{1,12}(\.\d{1,2})?$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /* Currency is not sent: it follows the location. Status, code and the approval chain are set by the server. */

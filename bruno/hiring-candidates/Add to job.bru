@@ -1,0 +1,32 @@
+meta {
+  name: Add to job
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/hiring/candidates/{{candidateId}}/applications
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "jobId": "{{jobId}}"
+  }
+}
+
+docs {
+  Needs Candidates → Add. An OPEN job, once per candidate — 409 `application.already_applied` when they are on
+  it already (as after "Add candidate" with the same job).
+}
+
+tests {
+  test("created (201) — or 409 already applied / job not open", function () {
+    expect([201, 409]).to.include(res.status);
+  });
+}

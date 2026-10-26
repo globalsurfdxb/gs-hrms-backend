@@ -1,5 +1,5 @@
 // Hiring Management. Owned by src/modules/hiring. Spec: docs/modules/hiring.md.
-// Built step by step (spec §11): step 1 = requisitions and their approval steps.
+// Built step by step (spec §11): step 1 = requisitions and their approval steps, step 2 = jobs, step 3 = candidates.
 
 enum HiringEmploymentType {
   FULL_TIME
@@ -143,12 +143,13 @@ model Job {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  requisition Requisition      @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
-  designation Designation?     @relation(fields: [designationId], references: [id], onDelete: SetNull)
-  recruiter   Employee         @relation("JobRecruiter", fields: [recruiterId], references: [id], onDelete: Restrict)
-  createdBy   Employee         @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  panel       JobPanelMember[]
-  events      JobEvent[]
+  requisition  Requisition      @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  designation  Designation?     @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  recruiter    Employee         @relation("JobRecruiter", fields: [recruiterId], references: [id], onDelete: Restrict)
+  createdBy    Employee         @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  panel        JobPanelMember[]
+  events       JobEvent[]
+  applications Application[]
 
   @@index([status])
   @@index([recruiterId])
@@ -184,4 +185,147 @@ model JobEvent {
 
   @@index([jobId, at])
   @@map("job_events")
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Step 3: candidates, applications, pipeline (spec §3, BR-HIR-007…009).
+
+enum CandidateSource {
+  LINKEDIN
+  NAUKRI
+  BAYT
+  INDEED
+  EMPLOYEE_REFERRAL
+  AGENCY
+  /// The company website's careers page (jobs are posted there by hand; nothing in the HRMS is public).
+  CAREERS_PAGE
+  DIRECT
+
+  @@map("candidate_source")
+}
+
+enum ApplicationStage {
+  APPLIED
+  SCREENING
+  TECHNICAL_INTERVIEW
+  HR_INTERVIEW
+  OFFER
+  /// Set only by an accepted offer (BR-HIR-013).
+  HIRED
+
+  @@map("application_stage")
+}
+
+enum ApplicationExit {
+  REJECTED
+  WITHDRAWN
+  ON_HOLD
+
+  @@map("application_exit")
+}
+
+/// A person HR is considering. Salary is protected by access, not encryption (spec Q8): omitted from responses for
+/// callers without salary access, never logged, audited without amounts.
+model Candidate {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  name            String
+  /// Stored lower-case; one candidate per email (BR-HIR-007).
+  email           String          @unique
+  phone           String
+  /// Last 9 digits of the phone, for the duplicate check.
+  phoneKey        String          @map("phone_key")
+  /// The hiring location they are considered for (the job's when added to a job).
+  locationId      String          @map("location_id")
+  currentCity     String          @default("") @map("current_city")
+  currentCompany  String          @default("") @map("current_company")
+  currentTitle    String          @default("") @map("current_title")
+  experienceYears Decimal         @map("experience_years") @db.Decimal(4, 1)
+  noticeDays      Int             @default(0) @map("notice_days")
+  currentSalary   Decimal?        @map("current_salary") @db.Decimal(14, 2)
+  expectedSalary  Decimal?        @map("expected_salary") @db.Decimal(14, 2)
+  /// From the location.
+  currency        String          @db.Char(3)
+  visaStatus      String          @default("") @map("visa_status")
+  source          CandidateSource
+  referrerId      String?         @map("referrer_id") @db.Uuid
+  agency          String?
+  /// File name only until file storage exists (decided 2026-10-23).
+  cvName          String?         @map("cv_name")
+  links           String          @default("")
+  tags            String[]
+  consentGivenAt  DateTime        @map("consent_given_at") @db.Timestamptz(3)
+  createdById     String          @map("created_by_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  location     Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  referrer     Employee?       @relation("CandidateReferrer", fields: [referrerId], references: [id], onDelete: Restrict)
+  createdBy    Employee        @relation("CandidateCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  notes        CandidateNote[]
+  applications Application[]
+
+  @@index([phoneKey])
+  @@index([locationId])
+  @@index([referrerId])
+  @@map("candidates")
+}
+
+/// Notes on a candidate. Append-only (trigger).
+model CandidateNote {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  candidateId String   @map("candidate_id") @db.Uuid
+  text        String
+  authorId    String   @map("author_id") @db.Uuid
+  at          DateTime @default(now()) @db.Timestamptz(3)
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  author    Employee  @relation("CandidateNoteAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([candidateId, at])
+  @@map("candidate_notes")
+}
+
+/// A candidate applying to one job (one per pair, BR-HIR-008). The location is the job's, read through it.
+model Application {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  candidateId String            @map("candidate_id") @db.Uuid
+  jobId       String            @map("job_id") @db.Uuid
+  stage       ApplicationStage  @default(APPLIED)
+  exit        ApplicationExit?
+  /// The stage it left the pipeline from, so Reopen can put it back.
+  exitFrom    ApplicationStage? @map("exit_from")
+  exitReason  String?           @map("exit_reason")
+  exitNote    String?           @map("exit_note")
+  appliedAt   DateTime          @default(now()) @map("applied_at") @db.Timestamptz(3)
+  createdById String            @map("created_by_id") @db.Uuid
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  candidate Candidate     @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  job       Job           @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  createdBy Employee      @relation("ApplicationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  history   StageChange[]
+
+  @@unique([candidateId, jobId])
+  @@index([jobId, stage])
+  @@map("applications")
+}
+
+/// An application's stage history (from/to are stage or exit codes). Append-only (trigger).
+model StageChange {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  applicationId String   @map("application_id") @db.Uuid
+  at            DateTime @default(now()) @db.Timestamptz(3)
+  /// null = the system (e.g. HIRED when an offer is accepted).
+  actorId       String?  @map("actor_id") @db.Uuid
+  actorLabel    String   @map("actor_label")
+  /// null on the first line ("applied").
+  from          String?
+  to            String
+  note          String?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  actor       Employee?   @relation("StageChangeActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, at])
+  @@map("application_stage_changes")
 }

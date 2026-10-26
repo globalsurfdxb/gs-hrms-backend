@@ -1,0 +1,23 @@
+meta {
+  name: Get candidate
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/hiring/candidates/{{candidateId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Candidates → View. Notes, applications and their stage history. Salary only for HR / Super Admin and the
+  hiring manager of one of the candidate's jobs; viewing it is audited.
+}
+
+tests {
+  test("found (200)", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.viewer).to.have.property("canSeeSalary");
+  });
+}

@@ -1,0 +1,59 @@
+meta {
+  name: Add candidate
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/hiring/candidates
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "name": "Priya Nair",
+    "email": "priya.nair@example.com",
+    "phone": "+971 50 123 4567",
+    "jobId": "{{jobId}}",
+    "currentCity": "Dubai",
+    "currentCompany": "Emirates Networks LLC",
+    "currentTitle": "Network Engineer",
+    "experienceYears": 4.5,
+    "noticeDays": 30,
+    "currentSalary": "9000",
+    "expectedSalary": "11000",
+    "visaStatus": "Employment visa (transferable)",
+    "source": "LINKEDIN",
+    "cvName": "Priya_Nair_CV.pdf",
+    "links": "linkedin.com/in/priya-nair",
+    "tags": ["Shortlisted"],
+    "note": "Strong SD-WAN background.",
+    "consent": true
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("candidateId", res.body.id);
+    if (res.body.applications.length) bru.setEnvVar("applicationId", res.body.applications[0].id);
+  }
+}
+
+docs {
+  Needs Candidates → Add. `jobId` must be an OPEN job (run "Hiring · Jobs → Open job" first) — the candidate is
+  added to it at APPLIED. Without `jobId`, send `locationId` instead. Running this twice returns 409
+  `candidate.duplicate` with `details.candidateId`: change the email and phone. Saves `candidateId` and
+  `applicationId`.
+}
+
+tests {
+  test("created (201) — or 409 duplicate / job not open", function () {
+    expect([201, 409]).to.include(res.status);
+    if (res.status === 201) expect(res.body.applications).to.be.an("array");
+  });
+}

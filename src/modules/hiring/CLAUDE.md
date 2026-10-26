@@ -17,7 +17,12 @@ Before each step, check the frontend for changes since the commit noted in the s
 - Jobs (step 2): only Jobs permission holders (HR, Super Admin) reach them, and they see every job. Title, company,
   department, location, positions, budget and hiring manager are read from the requisition — never copy them.
   Every job change writes a `JobEvent` (History tab, append-only by trigger) and an audit row in one transaction.
-- Salary (current/expected/offered) only for full access + that job's hiring manager — omit the fields otherwise.
+- Candidates (step 3): Candidates → View holders see every candidate and application. Duplicate = same email or
+  last-9 phone digits → 409 `candidate.duplicate` with `details.candidateId`. Applications only to OPEN jobs. Pipeline
+  rules live in `domain/application.rules.ts`; a SENT offer blocks exits and leaving OFFER (`offerSent`, wired to
+  offers in step 5). Notes and stage history are append-only by trigger.
+- Salary (current/expected/offered) only for Jobs → View holders + that job's hiring manager — omit the fields
+  otherwise; never in audit amounts or logs (spec Q8); a view of a record with salary writes an audit row.
 - Public routes (careers, offer link) live in their own controllers with `@Public()` + reason; never reveal
   whether a person is already on file. Offer tokens are 256-bit, stored hashed.
 - Letter HTML is rendered by the server from the sanitised template — never accepted from the client.
