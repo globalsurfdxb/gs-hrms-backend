@@ -89,5 +89,11 @@
   "lint-staged": {
     "*.{ts,js,cjs,mjs,json,md,yml,yaml}": "prettier --write --ignore-unknown",
     "*.ts": "oxlint"
+  },
+  "overrides": {
+    "multer": "2.5.0",
+    "@azure/identity": {
+      "@azure/msal-node": "$@azure/msal-node"
+    }
   }
 }

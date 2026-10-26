@@ -1,0 +1,32 @@
+meta {
+  name: Set tags
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/hiring/candidates/{{candidateId}}/tags
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "tags": ["Shortlisted", "Fortinet NSE4"]
+  }
+}
+
+docs {
+  Needs Candidates → Edit. Replaces the whole list (at most 20, trimmed, de-duplicated).
+}
+
+tests {
+  test("saved (200)", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.tags).to.be.an("array");
+  });
+}

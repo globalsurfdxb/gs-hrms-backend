@@ -1,0 +1,28 @@
+meta {
+  name: Find duplicates
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/hiring/candidates/duplicates?email=priya.nair@example.com&phone=%2B971501234567
+  body: none
+  auth: none
+}
+
+params:query {
+  email: priya.nair@example.com
+  phone: +971501234567
+}
+
+docs {
+  Needs Candidates → Add. Same email, or the same last 9 phone digits (7+ digits). At most 5 matches — the add
+  form shows them as "already in the system".
+}
+
+tests {
+  test("matches (200) — or 403 without Candidates → Add", function () {
+    expect([200, 403]).to.include(res.status);
+    if (res.status === 200) expect(res.body).to.be.an("array");
+  });
+}

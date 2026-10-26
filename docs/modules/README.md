@@ -12,7 +12,7 @@ and keep it in sync after (skill: `module-docs`). Template: [_TEMPLATE.md](_TEMP
 | [onboarding-offboarding.md](onboarding-offboarding.md) | 1     | Planned                                                                                    |
 | [requests.md](requests.md)                             | 1     | Planned                                                                                    |
 | [compliance.md](compliance.md)                         | 1     | Planned                                                                                    |
-| [hiring.md](hiring.md)                                 | 2     | In progress — requisitions and jobs done (steps 0–2); next: candidates                     |
+| [hiring.md](hiring.md)                                 | 2     | In progress — requisitions, jobs, candidates done (steps 0–3); next: interviews            |
 | [leave-attendance.md](leave-attendance.md)             | 3     | Planned                                                                                    |
 | [expense.md](expense.md)                               | 4     | Planned                                                                                    |
 | [performance-learning.md](performance-learning.md)     | 4     | Planned                                                                                    |

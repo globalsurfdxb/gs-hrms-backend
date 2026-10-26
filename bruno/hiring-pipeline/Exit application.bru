@@ -1,0 +1,35 @@
+meta {
+  name: Exit application
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/hiring/applications/{{applicationId}}/exit
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "exit": "REJECTED",
+    "reason": "Skills mismatch",
+    "note": "No SD-WAN experience"
+  }
+}
+
+docs {
+  Needs Candidates → Edit. REJECTED needs one of the rejection reasons (see Swagger); WITHDRAWN and ON_HOLD take a
+  free reason. 409 after HIRED or while the offer letter is out.
+}
+
+tests {
+  test("exited (200)", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.exit).to.equal("REJECTED");
+  });
+}

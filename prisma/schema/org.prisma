@@ -34,6 +34,7 @@ model Location {
   departmentLocations DepartmentLocation[]
   employees           Employee[]
   requisitions        Requisition[]
+  candidates          Candidate[]
 
   @@map("locations")
 }

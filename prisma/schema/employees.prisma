@@ -60,6 +60,11 @@ model Employee {
   jobsCreated             Job[]             @relation("JobCreatedBy")
   jobPanels               JobPanelMember[]  @relation("JobPanel")
   jobEvents               JobEvent[]        @relation("JobEventActor")
+  candidatesReferred      Candidate[]       @relation("CandidateReferrer")
+  candidatesCreated       Candidate[]       @relation("CandidateCreatedBy")
+  candidateNotes          CandidateNote[]   @relation("CandidateNoteAuthor")
+  applicationsCreated     Application[]     @relation("ApplicationCreatedBy")
+  stageChanges            StageChange[]     @relation("StageChangeActor")
 
   @@index([reportingManagerId])
   @@index([locationId])

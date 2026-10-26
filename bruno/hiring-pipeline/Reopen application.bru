@@ -1,0 +1,25 @@
+meta {
+  name: Reopen application
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/hiring/applications/{{applicationId}}/reopen
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Candidates → Edit. Back to the stage it left from. 409 when it is not exited or the job is closed.
+}
+
+tests {
+  test("reopened (200) — or 409 when not exited", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

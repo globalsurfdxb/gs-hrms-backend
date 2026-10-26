@@ -1,0 +1,32 @@
+meta {
+  name: Add note
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/hiring/candidates/{{candidateId}}/notes
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "text": "Asked for 45 days notice; open to Kochi."
+  }
+}
+
+docs {
+  Needs Candidates → Edit. Notes cannot be changed or deleted afterwards.
+}
+
+tests {
+  test("added (201)", function () {
+    expect(res.status).to.equal(201);
+    expect(res.body.notes[0].text).to.be.a("string");
+  });
+}
