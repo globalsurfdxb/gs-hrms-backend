@@ -1,0 +1,51 @@
+meta {
+  name: Create location
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/org/locations
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "name": "Bruno Test Country",
+    "city": "Bruno Test City",
+    "currency": "SAR",
+    "timezone": "Asia/Riyadh",
+    "phoneCode": "+966",
+    "phoneDigits": 9,
+    "phoneExample": "50 123 4567",
+    "workingHours": "09:00 – 18:00, Sun–Thu",
+    "seating": ["Olaya Tower, Riyadh"],
+    "template": "UAE"
+  }
+}
+
+script:pre-request {
+  // Names are unique ignoring case: add a random part so the request can be re-run.
+  const n = Math.floor(Math.random() * 99999);
+  req.setBody({ ...req.getBody(), name: `Bruno Test Country ${n}`, city: `Bruno ${n}` });
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("locationId", res.body.id);
+}
+
+docs {
+  Needs System Settings → Add (Super Admin, HR, Office Admin). As GS-087 (Employee) this returns 403 — try it.
+  The server makes the id from the city (here "Bruno-<n>") and saves it in `locationId` for the next requests.
+}
+
+tests {
+  test("created (201) — or 403 for roles without access", function () {
+    expect([201, 403]).to.include(res.status);
+  });
+}

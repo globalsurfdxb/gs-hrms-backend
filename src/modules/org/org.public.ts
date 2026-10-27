@@ -4,3 +4,5 @@
 export { OrgModule } from './org.module.js';
 export { CompaniesService } from './application/companies.service.js';
 export type { CompanyResponse } from './api/dto/company.response.js';
+export { LocationsService } from './application/locations.service.js';
+export type { LocationResponse } from './api/dto/location.response.js';

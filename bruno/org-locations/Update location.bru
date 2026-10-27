@@ -1,0 +1,34 @@
+meta {
+  name: Update location
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/org/locations/{{locationId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "workingHours": "08:00 – 17:00, Sun–Thu",
+    "seating": ["Olaya Tower, Riyadh", "King Fahd Road, Riyadh"]
+  }
+}
+
+docs {
+  Needs System Settings → Edit. Send only the fields that change; `seating` replaces the whole list.
+  Changing `template` on Dubai or Kochi returns 409 location.system_template.
+}
+
+tests {
+  test("updated", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.seating).to.have.length(2);
+  });
+}
