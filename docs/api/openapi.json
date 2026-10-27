@@ -524,6 +524,343 @@
         ]
       }
     },
+    "/api/org/locations": {
+      "get": {
+        "description": "Any signed-in person. Built-in locations first, then by name.",
+        "operationId": "LocationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LocationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List locations",
+        "tags": [
+          "Organization · Locations"
+        ]
+      },
+      "post": {
+        "description": "Needs System Settings → Add (Super Admin, HR, Office Admin by default). The server makes the id from the city (or the name) and returns it. Names are unique ignoring case (409 location.name_taken).",
+        "operationId": "LocationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a location",
+        "tags": [
+          "Organization · Locations"
+        ]
+      }
+    },
+    "/api/org/locations/{id}": {
+      "get": {
+        "description": "Any signed-in person. The id is readable, e.g. Dubai.",
+        "operationId": "LocationsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one location",
+        "tags": [
+          "Organization · Locations"
+        ]
+      },
+      "patch": {
+        "description": "Needs System Settings → Edit. Send only the fields that change; `seating` replaces the whole list. The form rules of a built-in location cannot change (409 location.system_template).",
+        "operationId": "LocationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update a location",
+        "tags": [
+          "Organization · Locations"
+        ]
+      },
+      "delete": {
+        "description": "Needs System Settings → Delete (Super Admin by default). Refused with 409 for a built-in location (location.system) or one still in use (location.in_use; `details.usage` counts what references it).",
+        "operationId": "LocationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Delete a location",
+        "tags": [
+          "Organization · Locations"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -3628,6 +3965,216 @@
               "ACTIVE",
               "INACTIVE"
             ]
+          }
+        }
+      },
+      "LocationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "Readable id, used as the key everywhere"
+          },
+          "name": {
+            "type": "string",
+            "example": "United Arab Emirates"
+          },
+          "city": {
+            "type": "string",
+            "example": "Dubai"
+          },
+          "currency": {
+            "type": "string",
+            "example": "AED"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Dubai"
+          },
+          "phoneCode": {
+            "type": "string",
+            "example": "+971"
+          },
+          "phoneDigits": {
+            "type": "number",
+            "example": 9
+          },
+          "phoneExample": {
+            "type": "string",
+            "nullable": true,
+            "example": "50 123 4567"
+          },
+          "workingHours": {
+            "type": "string",
+            "example": "09:00 – 18:00, Mon–Fri"
+          },
+          "seating": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "UAE",
+              "INDIA"
+            ]
+          },
+          "system": {
+            "type": "boolean",
+            "description": "Built-in: cannot be deleted, template cannot change"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "currency",
+          "timezone",
+          "phoneCode",
+          "phoneDigits",
+          "phoneExample",
+          "workingHours",
+          "seating",
+          "template",
+          "system",
+          "updatedAt"
+        ]
+      },
+      "CreateLocationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Saudi Arabia",
+            "description": "Unique, ignoring case"
+          },
+          "city": {
+            "type": "string",
+            "example": "Riyadh",
+            "description": "Also used to make the id"
+          },
+          "currency": {
+            "type": "string",
+            "example": "SAR",
+            "description": "ISO 4217 code; stored upper-case"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Riyadh",
+            "description": "IANA timezone — leave and attendance days use it"
+          },
+          "phoneCode": {
+            "type": "string",
+            "example": "+966",
+            "description": "\"+\" and 1–4 digits; spaces are removed"
+          },
+          "phoneDigits": {
+            "type": "number",
+            "example": 9,
+            "description": "Digits in a local phone number, 6–15"
+          },
+          "phoneExample": {
+            "type": "string",
+            "example": "50 123 4567"
+          },
+          "workingHours": {
+            "type": "string",
+            "example": "09:00 – 18:00, Sun–Thu"
+          },
+          "seating": {
+            "example": [
+              "Olaya Tower, Riyadh"
+            ],
+            "description": "Seats employees can be given; unique ignoring case",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "UAE",
+              "INDIA"
+            ],
+            "example": "UAE",
+            "description": "Employee form rules: UAE (visa, Emirates ID, WPS) or INDIA (Aadhaar, PAN, PF)"
+          }
+        },
+        "required": [
+          "name",
+          "currency",
+          "timezone",
+          "phoneCode",
+          "phoneDigits",
+          "template"
+        ]
+      },
+      "UpdateLocationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Saudi Arabia",
+            "description": "Unique, ignoring case"
+          },
+          "city": {
+            "type": "string",
+            "example": "Riyadh",
+            "description": "Also used to make the id"
+          },
+          "currency": {
+            "type": "string",
+            "example": "SAR",
+            "description": "ISO 4217 code; stored upper-case"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Riyadh",
+            "description": "IANA timezone — leave and attendance days use it"
+          },
+          "phoneCode": {
+            "type": "string",
+            "example": "+966",
+            "description": "\"+\" and 1–4 digits; spaces are removed"
+          },
+          "phoneDigits": {
+            "type": "number",
+            "example": 9,
+            "description": "Digits in a local phone number, 6–15"
+          },
+          "phoneExample": {
+            "type": "string",
+            "example": "50 123 4567"
+          },
+          "workingHours": {
+            "type": "string",
+            "example": "09:00 – 18:00, Sun–Thu"
+          },
+          "seating": {
+            "example": [
+              "Olaya Tower, Riyadh"
+            ],
+            "description": "Seats employees can be given; unique ignoring case",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "UAE",
+              "INDIA"
+            ],
+            "example": "UAE",
+            "description": "Employee form rules: UAE (visa, Emirates ID, WPS) or INDIA (Aadhaar, PAN, PF)"
           }
         }
       },

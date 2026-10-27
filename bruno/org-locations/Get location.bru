@@ -1,0 +1,21 @@
+meta {
+  name: Get location
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/org/locations/{{locationId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Run "Create location" first — it fills `locationId`. Built-in ids also work, e.g. Dubai.
+}
+
+tests {
+  test("found", function () {
+    expect(res.status).to.equal(200);
+  });
+}

@@ -1,6 +1,6 @@
 # Organization
 
-- Status: In progress (companies done)
+- Status: In progress (companies and locations done)
 - Phase: 0
 - Source module: `src/modules/org/` — **reference implementation for every other module**
 
@@ -35,14 +35,19 @@ erDiagram
 
 ## 5. Business rules
 
-| Id         | Rule                                                                                                                | Enforced in                        | Test                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ----------------------- |
-| BR-ORG-001 | Short code 2–8 letters/digits, stored upper-case                                                                    | `domain/company.rules.ts`          | `company.rules.spec.ts` |
-| BR-ORG-002 | "Both" ⇄ `location_id = null`                                                                                       | `domain/company.rules.ts`          | `company.rules.spec.ts` |
-| BR-ORG-003 | Company location must exist                                                                                         | `application/companies.service.ts` | `companies.e2e-spec.ts` |
-| BR-ORG-004 | System locations cannot be deleted; a location in use (companies, departments, employees) cannot be deleted         | to do                              | —                       |
-| BR-ORG-005 | Deleting a company removes its departments/designations only when no employee references them; otherwise deactivate | to do                              | —                       |
-| BR-ORG-006 | An employee's department must belong to their company **and** operate in their location                             | employees module                   | —                       |
+| Id         | Rule                                                                                                                                  | Enforced in                        | Test                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------- |
+| BR-ORG-001 | Short code 2–8 letters/digits, stored upper-case                                                                                      | `domain/company.rules.ts`          | `company.rules.spec.ts`                           |
+| BR-ORG-002 | "Both" ⇄ `location_id = null`                                                                                                         | `domain/company.rules.ts`          | `company.rules.spec.ts`                           |
+| BR-ORG-003 | Company location must exist                                                                                                           | `application/companies.service.ts` | `companies.e2e-spec.ts`                           |
+| BR-ORG-004 | System locations cannot be deleted; a location in use (companies, departments, employees, requisitions, candidates) cannot be deleted | `domain/location.rules.ts`         | `location.rules.spec.ts`, `locations.e2e-spec.ts` |
+| BR-ORG-005 | Deleting a company removes its departments/designations only when no employee references them; otherwise deactivate                   | to do                              | —                                                 |
+| BR-ORG-006 | An employee's department must belong to their company **and** operate in their location                                               | employees module                   | —                                                 |
+| BR-ORG-007 | Location names are unique, ignoring case                                                                                              | `application/locations.service.ts` | `locations.e2e-spec.ts`                           |
+| BR-ORG-008 | Phone country code is "+" and 1–4 digits; spaces removed                                                                              | `domain/location.rules.ts`         | `location.rules.spec.ts`                          |
+| BR-ORG-009 | Seating entries trimmed, blanks dropped, unique ignoring case                                                                         | `domain/location.rules.ts`         | `location.rules.spec.ts`                          |
+| BR-ORG-010 | The template (employee form rules) of a built-in location cannot change                                                               | `domain/location.rules.ts`         | `location.rules.spec.ts`, `locations.e2e-spec.ts` |
+| BR-ORG-011 | Location ids are made by the server from the city (or name): readable, never "Both", suffixed -2, -3 when taken                       | `domain/location.rules.ts`         | `location.rules.spec.ts`                          |
 
 ## 6. Access
 
@@ -55,13 +60,18 @@ erDiagram
 
 ## 7. Endpoints
 
-| Method | Path                                 | Access               |
-| ------ | ------------------------------------ | -------------------- |
-| GET    | `/api/org/companies`                 | SignedIn             |
-| GET    | `/api/org/companies/:id`             | SignedIn             |
-| POST   | `/api/org/companies`                 | admin-companies#add  |
-| PATCH  | `/api/org/companies/:id`             | admin-companies#edit |
-| —      | locations, departments, designations | to do                |
+| Method | Path                      | Access                |
+| ------ | ------------------------- | --------------------- |
+| GET    | `/api/org/companies`      | SignedIn              |
+| GET    | `/api/org/companies/:id`  | SignedIn              |
+| POST   | `/api/org/companies`      | admin-companies#add   |
+| PATCH  | `/api/org/companies/:id`  | admin-companies#edit  |
+| GET    | `/api/org/locations`      | SignedIn              |
+| GET    | `/api/org/locations/:id`  | SignedIn              |
+| POST   | `/api/org/locations`      | admin-settings#add    |
+| PATCH  | `/api/org/locations/:id`  | admin-settings#edit   |
+| DELETE | `/api/org/locations/:id`  | admin-settings#delete |
+| —      | departments, designations | to do                 |
 
 ## 8. Events
 

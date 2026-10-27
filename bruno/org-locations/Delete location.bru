@@ -1,0 +1,27 @@
+meta {
+  name: Delete location
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/org/locations/{{locationId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs System Settings → Delete (Super Admin only by default). Built-in locations return 409 location.system;
+  a location still used by companies, departments, employees, requisitions or candidates returns 409
+  location.in_use with the counts in `details.usage`.
+}
+
+tests {
+  test("deleted (204) — or 409 when built-in or in use", function () {
+    expect([204, 409]).to.include(res.status);
+  });
+}
