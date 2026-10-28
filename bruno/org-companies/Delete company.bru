@@ -1,0 +1,27 @@
+meta {
+  name: Delete company
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/org/companies/{{companyId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Companies → Delete (Super Admin only by default). Also deletes the company's departments and their
+  designations. Returns 409 company.in_use while employees, requisitions or jobs use it — deactivate it instead
+  with "Update company" (status INACTIVE). Run "Create company" first — it fills `companyId`.
+}
+
+tests {
+  test("deleted (204) — or 409 when in use", function () {
+    expect([204, 409]).to.include(res.status);
+  });
+}

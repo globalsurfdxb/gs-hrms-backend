@@ -1,5 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
-import { ApiCookieAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { AuthUser } from '../../../core/auth/auth-user.js';
 import { CurrentUser } from '../../../core/auth/current-user.decorator.js';
 import { ApiErrors } from '../../../core/http/api-docs.js';
@@ -63,5 +70,21 @@ export class CompaniesController {
   @ApiErrors(400, 401, 403, 404, 409)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCompanyDto, @CurrentUser() user: AuthUser) {
     return this.companies.update(id, dto, user);
+  }
+
+  @RequirePermission(FEATURE, 'delete')
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete a company',
+    description:
+      'Needs Companies → Delete (Super Admin by default). Also deletes its departments and their designations. ' +
+      'Refused with 409 company.in_use while employees, requisitions or jobs use the company or any of its ' +
+      'departments or designations (`details.usage` has the counts) — deactivate it instead (PATCH status INACTIVE).',
+  })
+  @ApiNoContentResponse({ description: 'Deleted' })
+  @ApiErrors(400, 401, 403, 404, 409)
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    await this.companies.remove(id, user);
   }
 }
