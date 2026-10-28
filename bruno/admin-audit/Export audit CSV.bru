@@ -1,0 +1,27 @@
+meta {
+  name: Export audit CSV
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/admin/audit/export?module=Organization
+  body: none
+  auth: none
+}
+
+params:query {
+  module: Organization
+}
+
+docs {
+  Needs Audit Logs → View. Same filters as the list, at most 10,000 rows (400 audit.export_too_large).
+  The export itself is recorded as Security · audit.exported.
+}
+
+tests {
+  test("returns CSV", function () {
+    expect(res.status).to.equal(200);
+    expect(res.headers["content-type"]).to.match(/^text\/csv/);
+  });
+}

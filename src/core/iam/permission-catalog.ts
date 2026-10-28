@@ -45,7 +45,7 @@ export const allFeatures = (): string[] =>
   Object.values(PERMISSIONS).flatMap((group) => Object.values(group) as string[]);
 
 /** Read-only screens: View only, never Add/Edit/Delete (frontend `READ_ONLY` labels). */
-const VIEW_ONLY: ReadonlySet<string> = new Set([PERMISSIONS.hiring.reports]);
+const VIEW_ONLY: ReadonlySet<string> = new Set([PERMISSIONS.hiring.reports, PERMISSIONS.administration.audit]);
 
 /** Starting grants for the built-in roles (mirrors the frontend `defaultGrants`). Used by the seed only;
     after that, Super Admin manages grants through the Roles & Permissions screen. */

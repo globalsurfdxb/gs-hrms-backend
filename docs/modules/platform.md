@@ -79,10 +79,19 @@ step conditions.
 Schedules (`lib/reminderRules.ts`): visa/EID/work permit 90/60/30/7; passport 90/30; labour card 60/30/7;
 licences 90/60/30; contract 60/30 (off); other 60/30/7. Admin can toggle; lead times and recipients to become editable.
 
-## Audit — write side done
+## Audit — done
 
-`audit_logs` append-only (trigger). To do: `GET /api/admin/audit` with filters (text, module, user, date range),
-day grouping, CSV export — `administration:admin-audit` (view only).
+`audit_logs` is append-only (database trigger). Write side: `AuditService.record(entry, tx)` from every module.
+Read side (`src/core/audit/`), all `administration:admin-audit` **View** (a read-only screen: no Add/Edit/Delete
+is ever granted):
+
+| Method | Path                       | What                                                                                                                                                                                                                                                                                |
+| ------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/admin/audit`         | Newest first, paged (pageSize ≤ 200). Filters: `q` (actor, module, action, entity), `module`, `action`, `actorId`, `entityType`, `entityId`, `from`/`to` (ISO instants — the client turns day pickers into instants in its timezone). Day grouping is done on the client from `at`. |
+| GET    | `/api/admin/audit/filters` | Distinct modules, actions and actors (latest name) for the dropdowns                                                                                                                                                                                                                |
+| GET    | `/api/admin/audit/export`  | CSV via `shared/security/csv.ts`, same filters, ≤ 10,000 rows (else 400 `audit.export_too_large`). The export is itself audited: `Security · audit.exported` with the filters and row count                                                                                         |
+
+To do: view-access logging for sensitive records (salary, identity documents).
 
 ## Jobs, files, mail, PDF — to do
 

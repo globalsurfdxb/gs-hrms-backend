@@ -1,0 +1,22 @@
+meta {
+  name: Audit filter values
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/admin/audit/filters
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Audit Logs → View. Modules, actions and people for the filter dropdowns.
+}
+
+tests {
+  test("returns filter values", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.modules).to.be.an("array");
+  });
+}
