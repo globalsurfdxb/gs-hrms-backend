@@ -57,8 +57,10 @@ Frontend (separate repo `gs-hrms`, Next.js) is the functional spec. Its mock sto
 
 **Other**
 
-20. Permission feature ids must match the frontend catalogue (`gs-hrms/lib/access.ts`) — add them to
-    `src/core/iam/permission-catalog.ts`.
+20. Permission feature ids must match the frontend catalogue (`gs-hrms/lib/access.ts`). The full catalogue and
+    default grants are ported in `src/core/iam/feature-catalog.ts` and tested against a frontend snapshot
+    (`test/fixtures/README.md`); name the features your routes check in `PERMISSIONS`
+    (`src/core/iam/permission-catalog.ts`).
 21. Schema change → `npm run db:migrate -- --name <what>`; never edit an applied migration; never run
     `prisma migrate reset` or `db push` against a shared database.
 
