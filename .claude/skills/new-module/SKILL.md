@@ -21,8 +21,9 @@ missing or still "Planned" without entities, run the `frontend-to-api` skill fir
    ```
 3. `<name>.module.ts` registers controllers, services and repositories; exports only what `<name>.public.ts` re-exports.
 4. Add the module to `src/app.module.ts` **through its public file**: `import { XModule } from './modules/<name>/<name>.public.js'`.
-5. Add the module's permission features to `src/core/iam/permission-catalog.ts` using the frontend ids from
-   `gs-hrms/lib/access.ts`, and default grants if the frontend gives them by default.
+5. Name the module's permission features in `PERMISSIONS` (`src/core/iam/permission-catalog.ts`). Every frontend
+   feature and its default grants already exist in `src/core/iam/feature-catalog.ts`; if the frontend changed them,
+   port the change and refresh `test/fixtures/frontend-permissions.json` (`test/fixtures/README.md`).
 6. Prisma: follow docs/conventions.md#database. Run `npx prisma validate`, then the `db-migration` skill.
 7. Module `CLAUDE.md` template:
    ```md

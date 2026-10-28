@@ -2,8 +2,11 @@
    Roles & Permissions screen and the API agree:
      - a feature id grants View, e.g.        'administration:admin-companies'
      - `<id>#add|edit|delete` grants the rest, e.g. 'administration:admin-companies#add'
-   Add a module's features here when you build that module (skill: new-endpoint). Pure file — no Nest imports,
-   because the seed script uses it too. */
+   The full catalogue (every module, including ones the backend has not built yet) lives in feature-catalog.ts.
+   PERMISSIONS below names the features the backend's routes check; add a module's features here when you build
+   it (skill: new-endpoint). Pure file — no Nest imports, because the seed script uses it too. */
+
+import { CATALOG, catalogDefaultGrants, SYSTEM_ROLES, type SystemRole } from './feature-catalog.js';
 
 export type PermissionAction = 'view' | 'add' | 'edit' | 'delete';
 export const EXTRA_ACTIONS = ['add', 'edit', 'delete'] as const satisfies readonly PermissionAction[];
@@ -41,33 +44,14 @@ export const permKey = (feature: string, action: PermissionAction) =>
 export const hasPermission = (granted: ReadonlySet<string>, feature: string, action: PermissionAction = 'view') =>
   granted.has(feature) && (action === 'view' || granted.has(permKey(feature, action)));
 
+/** Every feature id in the catalogue. */
 export const allFeatures = (): string[] =>
-  Object.values(PERMISSIONS).flatMap((group) => Object.values(group) as string[]);
+  CATALOG.flatMap((m) => m.categories.flatMap((c) => c.features.map((f) => f.id)));
 
-/** Read-only screens: View only, never Add/Edit/Delete (frontend `READ_ONLY` labels). */
-const VIEW_ONLY: ReadonlySet<string> = new Set([PERMISSIONS.hiring.reports, PERMISSIONS.administration.audit]);
+const isSystemRole = (role: string): role is SystemRole => (SYSTEM_ROLES as string[]).includes(role);
 
 /** Starting grants for the built-in roles (mirrors the frontend `defaultGrants`). Used by the seed only;
-    after that, Super Admin manages grants through the Roles & Permissions screen. */
+    after that, Super Admin manages grants through the Roles & Permissions screen. A custom role starts empty. */
 export function defaultGrants(role: string): string[] {
-  const admin = allFeatures().filter((f) => f.startsWith('administration:'));
-  const hiring = allFeatures().filter((f) => f.startsWith('hiring:'));
-  // Raising a requisition (and deciding one's own Hiring Manager step) — frontend category rank 2.
-  const requisitions = hiring.filter((f) => f.startsWith('hiring:requisitions:'));
-  const grant = (features: string[], actions: readonly PermissionAction[]) =>
-    features.flatMap((f) => [f, ...actions.filter((a) => a !== 'view' && !VIEW_ONLY.has(f)).map((a) => permKey(f, a))]);
-
-  switch (role) {
-    case 'Super Admin':
-      return grant(allFeatures(), EXTRA_ACTIONS);
-    case 'HR':
-      // Administration without Delete; full Hiring — as in the frontend defaults.
-      return [...grant(admin, ['add', 'edit']), ...grant(hiring, EXTRA_ACTIONS)];
-    case 'Office Admin':
-      return [...grant(admin, ['add', 'edit']), ...grant(requisitions, ['add', 'edit'])];
-    case 'Team Lead':
-      return grant(requisitions, ['add', 'edit']);
-    default:
-      return [];
-  }
+  return isSystemRole(role) ? catalogDefaultGrants(role) : [];
 }

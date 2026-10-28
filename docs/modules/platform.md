@@ -36,6 +36,10 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
   payroll, renewals. Add/Edit/Delete imply View. Custom features can be added by Super Admin.
 - **Defaults** (`defaultGrants`): category rank 1–5 vs role rank; HR no Delete in Administration; Office Admin
   never Delete; Team Lead/Employee limited actions on rank ≤ 2.
+- **Done**: the full catalogue (112 features, all modules) and the default grants are ported in
+  `src/core/iam/feature-catalog.ts`; a unit test proves they equal a frontend snapshot, so `/api/auth/me`
+  returns the keys the frontend's `can()` expects. Known frontend bug kept for parity: its `READ_ONLY` regex has
+  a stray backspace after `log`, so "Reminder log" is editable — fix in the frontend, then here.
 - **Data scopes**: Employee=SELF, Team Lead=TEAM (direct reports only), HR/Super Admin=ALL locations,
   Office Admin=own location by default (`defaultScope`, `lib/data.ts`).
 - Endpoints: list catalogue, CRUD roles, set grants (bulk), assign role to employee — `administration:admin-roles`.

@@ -17,7 +17,9 @@ Reference: `src/modules/org/api/companies.controller.ts` and the files it calls.
 
 ## Build, in this order
 
-1. **Permission** — feature in `src/core/iam/permission-catalog.ts` (frontend id) if new.
+1. **Permission** — name the feature in `PERMISSIONS` (`src/core/iam/permission-catalog.ts`). It must already exist
+   in `feature-catalog.ts` (the port of the frontend catalogue); if the frontend added it, port it and refresh the
+   snapshot (`test/fixtures/README.md`).
 2. **Domain** — pure rule/transition in `domain/` + unit test `*.spec.ts` named after the BR id.
 3. **DTO** — `api/dto/<verb>-<entity>.dto.ts`: class-validator on every field, `@ApiProperty` with example.
    No privilege fields (role, status, employeeId of caller, salary) unless that is the endpoint's purpose.

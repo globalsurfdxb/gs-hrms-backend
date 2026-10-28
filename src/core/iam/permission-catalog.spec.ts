@@ -1,4 +1,29 @@
-import { defaultGrants, hasPermission, PERMISSIONS } from './permission-catalog.js';
+import { readFileSync } from 'node:fs';
+import { SYSTEM_ROLES } from './feature-catalog.js';
+import { allFeatures, defaultGrants, hasPermission, PERMISSIONS } from './permission-catalog.js';
+
+/* The backend catalogue must produce exactly the frontend's keys, or screens disappear (or appear) when the
+   frontend switches `can()` to `/api/auth/me` permissions. Snapshot: test/fixtures/README.md. */
+const frontend = JSON.parse(readFileSync('test/fixtures/frontend-permissions.json', 'utf8')) as {
+  features: string[];
+  grants: Record<string, string[]>;
+};
+
+describe('catalogue matches the frontend', () => {
+  it('has the same feature ids', () => {
+    expect([...allFeatures()].sort()).toEqual(frontend.features);
+  });
+
+  it.each(SYSTEM_ROLES)('gives %s the same default grants', (role) => {
+    expect([...defaultGrants(role)].sort()).toEqual(frontend.grants[role]);
+  });
+
+  it('only checks features that exist in the catalogue', () => {
+    const ids = new Set(allFeatures());
+    const used = Object.values(PERMISSIONS).flatMap((group) => Object.values(group) as string[]);
+    expect(used.filter((id) => !ids.has(id))).toEqual([]);
+  });
+});
 
 const companies = PERMISSIONS.administration.companies;
 
@@ -25,7 +50,11 @@ describe('defaultGrants', () => {
   });
 
   it('gives Employee no administration access', () => {
-    expect(defaultGrants('Employee')).toEqual([]);
+    expect(defaultGrants('Employee').some((k) => k.startsWith('administration:'))).toBe(false);
+  });
+
+  it('gives a custom role nothing by default', () => {
+    expect(defaultGrants('Payroll Clerk')).toEqual([]);
   });
 
   it('grants Audit Logs as View only, even to Super Admin (read-only screen)', () => {
