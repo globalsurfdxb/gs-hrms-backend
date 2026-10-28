@@ -15,3 +15,23 @@ export function normaliseShortCode(input: string): string {
 /** BR-ORG-002: the frontend's "Both" means the company operates in every location (stored as null). */
 export const locationIdFromInput = (location: string): string | null => (location === 'Both' ? null : location);
 export const locationIdToOutput = (locationId: string | null): string => locationId ?? 'Both';
+
+/** What references a company, directly or through one of its departments or designations. */
+export interface CompanyUsage {
+  employees: number;
+  requisitions: number;
+  jobs: number;
+}
+
+/** BR-ORG-005: an unused company is deleted with its departments and designations. A company still used by
+    employees or hiring records is refused — the caller deactivates it instead (PATCH status INACTIVE). */
+export function assertCompanyDeletable(usage: CompanyUsage): void {
+  if (Object.values(usage).some((n) => n > 0)) {
+    throw new AppError(
+      'company.in_use',
+      'This company is still used by employees or hiring records. Deactivate it instead.',
+      409,
+      { usage },
+    );
+  }
+}

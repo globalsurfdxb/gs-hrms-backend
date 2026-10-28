@@ -5,7 +5,7 @@ import { AppError, notFound } from '../../../shared/errors/app-error.js';
 import { CompanyResponse } from '../api/dto/company.response.js';
 import type { CreateCompanyDto } from '../api/dto/create-company.dto.js';
 import type { UpdateCompanyDto } from '../api/dto/update-company.dto.js';
-import { locationIdFromInput, normaliseShortCode } from '../domain/company.rules.js';
+import { assertCompanyDeletable, locationIdFromInput, normaliseShortCode } from '../domain/company.rules.js';
 import { CompaniesRepository, type CompanyData } from '../infrastructure/companies.repository.js';
 
 /* Use cases for companies. Orchestrates domain rules and the repository; no HTTP and no Prisma here. */
@@ -51,6 +51,12 @@ export class CompaniesService {
     if (Object.keys(changes).length === 0) return CompanyResponse.from(before);
 
     return CompanyResponse.from(await this.companies.update(id, before, changes, actorOf(user)));
+  }
+
+  async remove(id: string, user: AuthUser): Promise<void> {
+    const before = await this.companies.findById(id);
+    if (!before) throw notFound('company');
+    await this.companies.delete(id, before, actorOf(user), assertCompanyDeletable);
   }
 
   private async checkedLocation(location: string): Promise<string | null> {
