@@ -861,6 +861,770 @@
         ]
       }
     },
+    "/api/org/departments": {
+      "get": {
+        "description": "Any signed-in person. Filter by company and/or location. Each includes its designations.",
+        "operationId": "DepartmentsController_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Departments that operate in this location",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DepartmentResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List departments",
+        "tags": [
+          "Organization · Departments"
+        ]
+      },
+      "post": {
+        "description": "Needs Company Structure → Add (Super Admin, HR, Office Admin by default). Name unique within the company (409 department.name_taken). At least one location, and only the company location unless the company operates in every location. The head must be a current employee of the same company.",
+        "operationId": "DepartmentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDepartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a department",
+        "tags": [
+          "Organization · Departments"
+        ]
+      }
+    },
+    "/api/org/departments/{id}": {
+      "get": {
+        "description": "Any signed-in person.",
+        "operationId": "DepartmentsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one department",
+        "tags": [
+          "Organization · Departments"
+        ]
+      },
+      "patch": {
+        "description": "Needs Company Structure → Edit. Send only the fields that change; `locationIds` replaces the list and `headEmployeeId: null` removes the head. The company cannot change. A location where current employees of the department work cannot be removed (409 department.location_in_use).",
+        "operationId": "DepartmentsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update a department",
+        "tags": [
+          "Organization · Departments"
+        ]
+      },
+      "delete": {
+        "description": "Needs Company Structure → Delete (Super Admin by default). Also deletes its designations. Refused with 409 department.in_use while employees, requisitions or jobs use the department or one of its designations (`details.usage` has the counts).",
+        "operationId": "DepartmentsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Delete a department",
+        "tags": [
+          "Organization · Departments"
+        ]
+      }
+    },
+    "/api/org/designations": {
+      "get": {
+        "description": "Any signed-in person. Filter by department.",
+        "operationId": "DesignationsController_list",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a02",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DesignationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List designations",
+        "tags": [
+          "Organization · Designations"
+        ]
+      },
+      "post": {
+        "description": "Needs Company Structure → Add (Super Admin, HR, Office Admin by default). Title unique within the department, ignoring case (409 designation.title_taken).",
+        "operationId": "DesignationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDesignationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a designation",
+        "tags": [
+          "Organization · Designations"
+        ]
+      }
+    },
+    "/api/org/designations/{id}": {
+      "get": {
+        "description": "Any signed-in person.",
+        "operationId": "DesignationsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one designation",
+        "tags": [
+          "Organization · Designations"
+        ]
+      },
+      "patch": {
+        "description": "Needs Company Structure → Edit. Only the title changes; employees holding it keep it.",
+        "operationId": "DesignationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDesignationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesignationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Rename a designation",
+        "tags": [
+          "Organization · Designations"
+        ]
+      },
+      "delete": {
+        "description": "Needs Company Structure → Delete (Super Admin by default). Refused with 409 designation.in_use while employees, requisitions or jobs use it (`details.usage` has the counts).",
+        "operationId": "DesignationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Delete a designation",
+        "tags": [
+          "Organization · Designations"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -4177,6 +4941,215 @@
             "description": "Employee form rules: UAE (visa, Emirates ID, WPS) or INDIA (Aadhaar, PAN, PF)"
           }
         }
+      },
+      "DepartmentHeadResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-058"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Dev Team Lead"
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "fullName"
+        ]
+      },
+      "DesignationSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "example": "Solutions Architect"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      },
+      "DepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cloud & Infra"
+          },
+          "locationIds": {
+            "example": [
+              "Dubai"
+            ],
+            "description": "Location ids, sorted",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "head": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DepartmentHeadResponse"
+              }
+            ]
+          },
+          "designations": {
+            "description": "Sorted by title",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignationSummaryResponse"
+            }
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "locationIds",
+          "head",
+          "designations",
+          "updatedAt"
+        ]
+      },
+      "CreateDepartmentDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+            "description": "The company it belongs to"
+          },
+          "name": {
+            "type": "string",
+            "example": "Data & AI",
+            "description": "Unique within the company, ignoring case"
+          },
+          "locationIds": {
+            "example": [
+              "Dubai",
+              "Kochi"
+            ],
+            "description": "At least one; only the company location unless the company operates in every location",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "headEmployeeId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+            "description": "A current employee of the same company"
+          }
+        },
+        "required": [
+          "companyId",
+          "name",
+          "locationIds"
+        ]
+      },
+      "UpdateDepartmentDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Data & AI",
+            "description": "Unique within the company, ignoring case"
+          },
+          "locationIds": {
+            "example": [
+              "Dubai",
+              "Kochi"
+            ],
+            "description": "At least one; only the company location unless the company operates in every location",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "headEmployeeId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+            "nullable": true,
+            "description": "A current employee of the same company; null removes the head"
+          }
+        }
+      },
+      "DesignationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "example": "Solutions Architect"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "departmentId",
+          "title",
+          "updatedAt"
+        ]
+      },
+      "CreateDesignationDto": {
+        "type": "object",
+        "properties": {
+          "departmentId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a02",
+            "description": "The department it belongs to"
+          },
+          "title": {
+            "type": "string",
+            "example": "Cloud Engineer",
+            "description": "Unique within the department, ignoring case"
+          }
+        },
+        "required": [
+          "departmentId",
+          "title"
+        ]
+      },
+      "UpdateDesignationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Cloud Engineer",
+            "description": "Unique within the department, ignoring case"
+          }
+        },
+        "required": [
+          "title"
+        ]
       },
       "RefResponse": {
         "type": "object",

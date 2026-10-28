@@ -1,0 +1,33 @@
+meta {
+  name: Update department
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/org/departments/{{departmentId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "headEmployeeId": null
+  }
+}
+
+docs {
+  Needs Company Structure → Edit. Send only the fields that change; `locationIds` replaces the list,
+  `headEmployeeId: null` removes the head. The company cannot change.
+}
+
+tests {
+  test("updated", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.head).to.equal(null);
+  });
+}
