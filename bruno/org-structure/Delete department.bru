@@ -1,0 +1,26 @@
+meta {
+  name: Delete department
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/org/departments/{{departmentId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Company Structure → Delete (Super Admin only by default). Also deletes its designations. Returns 409
+  department.in_use while employees, requisitions or jobs use the department or one of its designations.
+}
+
+tests {
+  test("deleted (204) — or 409 when in use", function () {
+    expect([204, 409]).to.include(res.status);
+  });
+}

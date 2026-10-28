@@ -1,0 +1,26 @@
+meta {
+  name: Delete designation
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/org/designations/{{designationId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Company Structure → Delete (Super Admin only by default). Returns 409 designation.in_use while
+  employees, requisitions or jobs use it.
+}
+
+tests {
+  test("deleted (204) — or 409 when in use", function () {
+    expect([204, 409]).to.include(res.status);
+  });
+}

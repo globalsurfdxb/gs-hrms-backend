@@ -1,0 +1,43 @@
+meta {
+  name: Create department
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/org/departments
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "companyId": "{{deptCompanyId}}",
+    "name": "Bruno Test Department",
+    "locationIds": ["Dubai"]
+  }
+}
+
+script:pre-request {
+  // Names are unique within a company: add a random part so the request can be re-run.
+  req.setBody({ ...req.getBody(), name: `Bruno Test Department ${Math.floor(Math.random() * 99999)}` });
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("departmentId", res.body.id);
+}
+
+docs {
+  Run "List departments" first — it fills `deptCompanyId`.
+  Needs Company Structure → Add (Super Admin, HR, Office Admin). Saves the new id in `departmentId`.
+}
+
+tests {
+  test("created (201) — or 403 for roles without access", function () {
+    expect([201, 403]).to.include(res.status);
+  });
+}

@@ -6,3 +6,7 @@ export { CompaniesService } from './application/companies.service.js';
 export type { CompanyResponse } from './api/dto/company.response.js';
 export { LocationsService } from './application/locations.service.js';
 export type { LocationResponse } from './api/dto/location.response.js';
+export { DepartmentsService } from './application/departments.service.js';
+export type { DepartmentResponse } from './api/dto/department.response.js';
+export { DesignationsService } from './application/designations.service.js';
+export type { DesignationResponse } from './api/dto/designation.response.js';

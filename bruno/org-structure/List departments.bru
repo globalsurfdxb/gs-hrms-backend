@@ -1,0 +1,31 @@
+meta {
+  name: List departments
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/org/departments?locationId=Dubai
+  body: none
+  auth: none
+}
+
+params:query {
+  locationId: Dubai
+}
+
+script:post-response {
+  // The company of the first department is used by "Create department".
+  if (res.status === 200 && res.body.length) bru.setEnvVar("deptCompanyId", res.body[0].companyId);
+}
+
+docs {
+  Any signed-in person. Optional filters: `companyId`, `locationId`. Each department includes its designations.
+}
+
+tests {
+  test("lists departments", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body).to.be.an("array");
+  });
+}
