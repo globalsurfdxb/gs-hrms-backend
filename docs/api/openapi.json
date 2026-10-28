@@ -64,6 +64,347 @@
         ]
       }
     },
+    "/api/admin/audit": {
+      "get": {
+        "description": "Needs Audit Logs → View (Super Admin, HR, Office Admin by default). Newest first, paged. Filters combine; `q` searches the actor, module, action and entity. Group by day on the client from `at`.",
+        "operationId": "AuditLogController_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Text in the actor, module, action or entity",
+            "schema": {
+              "example": "company",
+              "type": "string"
+            }
+          },
+          {
+            "name": "module",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Organization",
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "company.updated",
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Who acted",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "company",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": false,
+            "in": "query",
+            "description": "All events of one record",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From this instant (inclusive)",
+            "schema": {
+              "example": "2026-10-01T00:00:00+04:00",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Up to this instant (inclusive)",
+            "schema": {
+              "example": "2026-10-31T23:59:59.999+04:00",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List audit events",
+        "tags": [
+          "Administration · Audit log"
+        ]
+      }
+    },
+    "/api/admin/audit/filters": {
+      "get": {
+        "description": "Needs Audit Logs → View. The modules, actions and people that appear in the log, for dropdowns.",
+        "operationId": "AuditLogController_filters",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFiltersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Audit filter values",
+        "tags": [
+          "Administration · Audit log"
+        ]
+      }
+    },
+    "/api/admin/audit/export": {
+      "get": {
+        "description": "Needs Audit Logs → View. Same filters as the list, newest first, at most 10000 rows (400 audit.export_too_large — narrow the filters). The export itself is audited (Security · audit.exported).",
+        "operationId": "AuditLogController_export",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Text in the actor, module, action or entity",
+            "schema": {
+              "example": "company",
+              "type": "string"
+            }
+          },
+          {
+            "name": "module",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Organization",
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "company.updated",
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Who acted",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "company",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": false,
+            "in": "query",
+            "description": "All events of one record",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From this instant (inclusive)",
+            "schema": {
+              "example": "2026-10-01T00:00:00+04:00",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Up to this instant (inclusive)",
+            "schema": {
+              "example": "2026-10-31T23:59:59.999+04:00",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Export audit events as CSV",
+        "tags": [
+          "Administration · Audit log"
+        ]
+      }
+    },
     "/api/auth/dev/login": {
       "post": {
         "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.",
@@ -4610,6 +4951,154 @@
           "statusCode",
           "code",
           "message"
+        ]
+      },
+      "AuditActorResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "description": "null for system jobs and failed sign-ins"
+          },
+          "label": {
+            "type": "string",
+            "example": "Dev HR",
+            "description": "Name at the time, \"system\", or the attempted sign-in"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ]
+      },
+      "AuditLogResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1042"
+          },
+          "at": {
+            "type": "string",
+            "example": "2026-10-28T09:15:02.123Z"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AuditActorResponse"
+          },
+          "module": {
+            "type": "string",
+            "example": "Organization"
+          },
+          "action": {
+            "type": "string",
+            "example": "company.updated"
+          },
+          "entityType": {
+            "type": "string",
+            "example": "company"
+          },
+          "entityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "before": {
+            "type": "object",
+            "nullable": true,
+            "example": {
+              "status": "ACTIVE"
+            }
+          },
+          "after": {
+            "type": "object",
+            "nullable": true,
+            "example": {
+              "status": "INACTIVE"
+            }
+          },
+          "ip": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "module",
+          "action",
+          "entityType",
+          "entityId",
+          "before",
+          "after",
+          "ip"
+        ]
+      },
+      "AuditLogListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditLogResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 340
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "AuditFiltersResponse": {
+        "type": "object",
+        "properties": {
+          "modules": {
+            "example": [
+              "Organization",
+              "Security"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "example": [
+              "auth.sign_in",
+              "company.created"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actors": {
+            "description": "People who acted, with their latest name",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditActorResponse"
+            }
+          }
+        },
+        "required": [
+          "modules",
+          "actions",
+          "actors"
         ]
       },
       "DevLoginDto": {

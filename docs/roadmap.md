@@ -27,7 +27,7 @@ Done in the scaffold:
 
 To do:
 
-- [ ] `org`: locations (System Settings), departments, designations — incl. cascade/usage rules from `OrgContext`
+- [x] `org`: locations (System Settings), departments, designations — incl. cascade/usage rules from `OrgContext`
 - [ ] `iam`: roles & permissions API (list/create/rename roles, grant/revoke, custom features) + audit + session revoke on change
 - [ ] `iam`: `ScopedRepository` base and data-scope resolution per role
 - [ ] `core/workflow`: definitions, steps, approver resolvers, conditions, instances, decisions ([ADR-0004](adr/0004-workflow-engine.md))
@@ -36,7 +36,7 @@ To do:
 - [ ] `core/files`: Blob upload (Azurite locally), user-delegation SAS, scan-status gate
 - [ ] `core/mail`: SMTP (Mailpit) locally, Microsoft Graph in Azure, mail log
 - [ ] `core/pdf`: Gotenberg client, HTML template rendering
-- [ ] `/admin/audit` read API with filters and CSV export
+- [x] `/admin/audit` read API with filters and CSV export
 - [ ] `infra/`: Bicep for staging, GitHub OIDC deployment
 - [ ] Frontend: API client generation, `/api` proxy, sign-in switched to `/api/auth/*`
 

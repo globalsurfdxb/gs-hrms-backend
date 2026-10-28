@@ -1,0 +1,28 @@
+meta {
+  name: List audit events
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/admin/audit?module=Organization&pageSize=20
+  body: none
+  auth: none
+}
+
+params:query {
+  module: Organization
+  pageSize: 20
+}
+
+docs {
+  Needs Audit Logs → View (Super Admin, HR, Office Admin). As GS-087 (Employee) this returns 403.
+  Filters: q, module, action, actorId, entityType, entityId, from, to (ISO date-times), page, pageSize (max 200).
+}
+
+tests {
+  test("lists events", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.items).to.be.an("array");
+  });
+}

@@ -27,6 +27,15 @@ describe('defaultGrants', () => {
   it('gives Employee no administration access', () => {
     expect(defaultGrants('Employee')).toEqual([]);
   });
+
+  it('grants Audit Logs as View only, even to Super Admin (read-only screen)', () => {
+    const audit = PERMISSIONS.administration.audit;
+    for (const role of ['Super Admin', 'HR', 'Office Admin']) {
+      const g = new Set(defaultGrants(role));
+      expect(hasPermission(g, audit, 'view')).toBe(true);
+      expect(hasPermission(g, audit, 'edit')).toBe(false);
+    }
+  });
 });
 
 describe('defaultGrants — hiring', () => {
