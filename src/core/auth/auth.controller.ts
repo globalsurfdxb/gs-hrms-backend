@@ -148,6 +148,7 @@ export class AuthController {
   @Get('dev/personas')
   @ApiOperation({ summary: 'List dev personas', description: 'The demo accounts, for the sign-in page.' })
   @ApiOkResponse({ type: [DevPersonaResponse] })
+  @ApiErrors(429)
   devPersonas() {
     return this.auth.devPersonas();
   }
