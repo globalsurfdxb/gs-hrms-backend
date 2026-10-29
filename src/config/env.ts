@@ -30,8 +30,9 @@ export const envSchema = z
     SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(30),
     SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(12),
 
+    /** Persona picker (sign in by employee code, no password). Never in production. */
     AUTH_DEV_LOGIN: bool,
-    /** Shared password of the demo accounts for the email + password form (dev login only — never production). */
+    /** Shared password of the demo accounts for the email + password form (on everywhere until Microsoft sign-in). */
     DEV_LOGIN_PASSWORD: z.string().min(8).default('demo1234'),
     ENTRA_TENANT_ID: z.string().optional(),
     ENTRA_CLIENT_ID: z.string().optional(),
@@ -57,9 +58,7 @@ export const envSchema = z
     if (e.NODE_ENV !== 'production') return;
     if (e.AUTH_DEV_LOGIN)
       ctx.addIssue({ code: 'custom', path: ['AUTH_DEV_LOGIN'], message: 'dev login must be off in production' });
-    for (const k of ['ENTRA_TENANT_ID', 'ENTRA_CLIENT_ID', 'ENTRA_CLIENT_SECRET', 'ENTRA_REDIRECT_URI'] as const) {
-      if (!e[k]) ctx.addIssue({ code: 'custom', path: [k], message: 'required in production' });
-    }
+    // Microsoft sign-in (ENTRA_*) is optional for now: the email + password form is the way in until it is set up.
     if (!e.APP_ORIGIN.startsWith('https://'))
       ctx.addIssue({ code: 'custom', path: ['APP_ORIGIN'], message: 'must be https in production' });
   });
