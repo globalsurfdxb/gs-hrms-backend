@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AuthMethod } from '../../generated/prisma/client.js';
@@ -16,9 +16,13 @@ export interface RequestMeta {
 
 type Account = NonNullable<Awaited<ReturnType<IdentityRepository['findByCode']>>>;
 
-/** Constant-time comparison (hashes first, so different lengths do not leak through timing either). */
-const sameSecret = (a: string, b: string) =>
-  timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
+/** Constant-time comparison of the dev demo password. Only a length mismatch returns early, which reveals nothing
+    useful about a fixed development password. Never used for real credentials (Microsoft handles those). */
+const sameSecret = (given: string, expected: string) => {
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
 
 /* Turns a verified identity (Microsoft, or the dev persona picker) into an HRMS session. Every outcome —
    success, unknown account, inactive account — is written to the audit log under module "Security". */
@@ -67,7 +71,7 @@ export class AuthService {
 
   /** Email + password form, development only: the seeded demo accounts (…@hrms.local) share DEV_LOGIN_PASSWORD.
       Unknown email, wrong password and non-demo accounts get the same answer, so the form reveals nothing. */
-  async devPasswordSignIn(email: string, password: string, meta: RequestMeta): Promise<string> {
+  async demoAccountSignIn(email: string, password: string, meta: RequestMeta): Promise<string> {
     if (!this.devLoginEnabled) throw new AppError('auth.dev_login_disabled', 'Not found', 404);
     const normalised = email.trim().toLowerCase();
     const account = normalised.endsWith(`@${DEMO_EMAIL_DOMAIN}`) ? await this.identities.findByEmail(normalised) : null;

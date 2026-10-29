@@ -140,7 +140,7 @@ export class AuthController {
     @Req() req: HrmsRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = await this.auth.devPasswordSignIn(dto.email, dto.password, metaOf(req));
+    const token = await this.auth.demoAccountSignIn(dto.email, dto.password, metaOf(req));
     this.setSession(res, token);
   }
 
