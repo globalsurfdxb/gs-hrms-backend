@@ -1,0 +1,33 @@
+meta {
+  name: Set role permissions
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/iam/roles/{{roleId}}/permissions
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "permissions": ["administration:admin-companies", "administration:admin-companies#edit"]
+  }
+}
+
+docs {
+  Needs Roles & Permissions → Edit. Replaces the whole set and returns what was granted and revoked. The role's
+  members are signed out so the change applies at once. Not allowed on your own role or the Super Admin role.
+}
+
+tests {
+  test("updated", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.role.permissions).to.include("administration:admin-companies#edit");
+  });
+}
