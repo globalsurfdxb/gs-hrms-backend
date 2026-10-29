@@ -1,0 +1,43 @@
+meta {
+  name: Create role
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/iam/roles
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "name": "Bruno Test Role",
+    "description": "Created from the Bruno collection",
+    "permissions": ["administration:admin-companies"]
+  }
+}
+
+script:pre-request {
+  // Names are unique ignoring case: add a random part so the request can be re-run.
+  req.setBody({ ...req.getBody(), name: `Bruno Test Role ${Math.floor(Math.random() * 99999)}` });
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("roleId", res.body.id);
+}
+
+docs {
+  Needs Roles & Permissions → Add. You can only grant permissions you hold (403 role.grant_exceeds_own).
+  Saves the new id in `roleId`.
+}
+
+tests {
+  test("created", function () {
+    expect(res.status).to.equal(201);
+  });
+}

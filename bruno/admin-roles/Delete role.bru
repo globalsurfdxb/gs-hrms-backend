@@ -1,0 +1,26 @@
+meta {
+  name: Delete role
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/iam/roles/{{roleId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Roles & Permissions → Delete (Super Admin only by default). System roles and roles someone still has
+  cannot be deleted (409).
+}
+
+tests {
+  test("deleted", function () {
+    expect(res.status).to.equal(204);
+  });
+}

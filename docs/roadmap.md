@@ -28,7 +28,8 @@ Done in the scaffold:
 To do:
 
 - [x] `org`: locations (System Settings), departments, designations — incl. cascade/usage rules from `OrgContext`
-- [ ] `iam`: roles & permissions API (list/create/rename roles, grant/revoke, custom features) + audit + session revoke on change
+- [x] `iam`: roles & permissions API (list/create/rename roles, grant/revoke, assign) + audit + session revoke on change
+- [ ] `iam`: custom features (frontend "Add feature") — needs a table
 - [ ] `iam`: `ScopedRepository` base and data-scope resolution per role
 - [ ] `core/workflow`: definitions, steps, approver resolvers, conditions, instances, decisions ([ADR-0004](adr/0004-workflow-engine.md))
 - [ ] `core/jobs`: pg-boss setup, worker process flag, job conventions

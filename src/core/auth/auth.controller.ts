@@ -14,7 +14,7 @@ import type { Env } from '../../config/env.js';
 import { ApiErrors } from '../http/api-docs.js';
 import { Public, SignedIn } from '../iam/access.decorators.js';
 import type { AuthUser, HrmsRequest } from './auth-user.js';
-import { DevLoginDto, DevPersonaResponse, MeResponse } from './auth.dto.js';
+import { DevLoginDto, DevPasswordLoginDto, DevPersonaResponse, MeResponse } from './auth.dto.js';
 import { AuthService, type RequestMeta } from './auth.service.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { EntraProvider, type SsoTransaction } from './providers/entra.provider.js';
@@ -117,6 +117,30 @@ export class AuthController {
   @ApiErrors(400, 403, 404, 429)
   async devLogin(@Body() dto: DevLoginDto, @Req() req: HrmsRequest, @Res({ passthrough: true }) res: Response) {
     const token = await this.auth.devSignIn(dto.employeeCode, metaOf(req));
+    this.setSession(res, token);
+  }
+
+  /** Local development only: the login page's email + password form, for the seeded demo accounts. Public because it
+      is a sign-in; refused (404) wherever dev login is off, which env validation enforces in production. */
+  @Public()
+  @Throttle(STRICT)
+  @Post('dev/password-login')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Dev sign-in with email and password',
+    description:
+      'Local development only (404 elsewhere). Only the seeded demo accounts (…@hrms.local, see GET dev/personas) ' +
+      'with the shared DEV_LOGIN_PASSWORD (default demo1234). Unknown email or wrong password → 401 ' +
+      'auth.invalid_credentials (same answer for both); a deactivated account → 403. Every attempt is audited.',
+  })
+  @ApiNoContentResponse({ description: 'Signed in — session cookie set' })
+  @ApiErrors(400, 401, 403, 404, 429)
+  async devPasswordLogin(
+    @Body() dto: DevPasswordLoginDto,
+    @Req() req: HrmsRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const token = await this.auth.demoAccountSignIn(dto.email, dto.password, metaOf(req));
     this.setSession(res, token);
   }
 

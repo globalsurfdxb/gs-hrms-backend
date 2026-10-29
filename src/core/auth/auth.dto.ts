@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Matches } from 'class-validator';
+import { IsEmail, IsString, Matches, MaxLength } from 'class-validator';
 
 export class DevLoginDto {
   @ApiProperty({ example: 'GS-120', description: 'Employee code of a seeded persona' })
@@ -8,9 +8,22 @@ export class DevLoginDto {
   employeeCode: string;
 }
 
+export class DevPasswordLoginDto {
+  @ApiProperty({ example: 'gs-120@hrms.local', description: 'A seeded demo account' })
+  @IsEmail()
+  @MaxLength(200)
+  email: string;
+
+  @ApiProperty({ example: 'demo1234', description: 'DEV_LOGIN_PASSWORD (backend .env)' })
+  @IsString()
+  @MaxLength(200)
+  password: string;
+}
+
 export class DevPersonaResponse {
   @ApiProperty() employeeCode: string;
   @ApiProperty() fullName: string;
+  @ApiProperty({ example: 'gs-120@hrms.local' }) email: string;
   @ApiProperty() role: string;
 }
 

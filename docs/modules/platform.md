@@ -27,7 +27,7 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
 | GET    | `/api/auth/me`              | SignedIn                         |
 | POST   | `/api/auth/logout`          | SignedIn                         |
 
-## IAM — to do
+## IAM — roles & permissions API done; data scopes and custom features to do
 
 - **Roles**: 5 system roles (Super Admin, HR, Office Admin, Team Lead, Employee) + custom roles.
   System roles cannot be renamed/deleted. Employee has exactly one role.
@@ -42,9 +42,41 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
   a stray backspace after `log`, so "Reminder log" is editable — fix in the frontend, then here.
 - **Data scopes**: Employee=SELF, Team Lead=TEAM (direct reports only), HR/Super Admin=ALL locations,
   Office Admin=own location by default (`defaultScope`, `lib/data.ts`).
-- Endpoints: list catalogue, CRUD roles, set grants (bulk), assign role to employee — `administration:admin-roles`.
-  Every change audited (module `Access`) and the affected employees' sessions revoked.
 - **Never** let anyone change their own role or grants.
+
+### Roles & permissions API (`src/core/iam/`) — done
+
+All `administration:admin-roles` (View for reads; Add / Edit / Delete as listed). Every change is audited in the same
+transaction (module `Access`: `role.created`, `role.updated`, `role.permissions_changed` with granted/revoked
+keys, `role.deleted`, `employee.role_changed`) and ends the sessions it affects, so nobody keeps working with a
+stale grant set.
+
+| Method | Path                                   | Access | What                                                                    |
+| ------ | -------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| GET    | `/api/iam/catalog`                     | view   | Module → category → feature with allowed actions (builds the grid)      |
+| GET    | `/api/iam/roles`, `/api/iam/roles/:id` | view   | Roles with permission keys and member count                             |
+| POST   | `/api/iam/roles`                       | add    | Custom role, optional initial permissions                               |
+| PATCH  | `/api/iam/roles/:id`                   | edit   | Rename (custom only) / description                                      |
+| PUT    | `/api/iam/roles/:id/permissions`       | edit   | Replace the grant set; returns granted/revoked; members' sessions ended |
+| DELETE | `/api/iam/roles/:id`                   | delete | Custom role with no members                                             |
+| PUT    | `/api/iam/employees/:employeeId/role`  | edit   | Give someone another role; their sessions ended                         |
+
+| Id         | Rule                                                                                                      | Enforced in                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| BR-IAM-001 | Role names 2–60 characters, unique ignoring case                                                          | `role.rules.ts`, `roles.service.ts`                      |
+| BR-IAM-002 | Keys exist in the catalogue, the action is allowed for the feature, Add/Edit/Delete need View             | `role.rules.ts`                                          |
+| BR-IAM-003 | Nobody changes their own role or its permissions                                                          | `role.rules.ts`, `roles.service.ts`                      |
+| BR-IAM-004 | You can only grant permissions you hold yourself                                                          | `role.rules.ts` (checked inside the locked transaction)  |
+| BR-IAM-005 | The Super Admin role always has every permission; its grants cannot change                                | `role.rules.ts`                                          |
+| BR-IAM-006 | You can only assign roles whose permissions you hold, to someone whose current role does not exceed yours | `role.rules.ts`                                          |
+| BR-IAM-007 | System roles are never renamed or deleted; a role someone has cannot be deleted                           | `role.rules.ts` (member count in the locked transaction) |
+
+BR-IAM-004 to 006 are not in the frontend: they stop privilege escalation, because HR and Office Admin hold
+Roles → Add/Edit by default. Tests: `role.rules.spec.ts`, `test/admin/roles.e2e-spec.ts`.
+
+To do: **custom features** (the frontend's "Add feature" — needs a table), **data scopes** per role
+(`ScopedRepository`), connecting the frontend Roles & Permissions screen. `npm run db:seed` resets the system
+roles' grants to the defaults.
 
 ## Workflow engine — to do ([ADR-0004](../adr/0004-workflow-engine.md))
 

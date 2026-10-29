@@ -471,6 +471,82 @@
         ]
       }
     },
+    "/api/auth/dev/password-login": {
+      "post": {
+        "description": "Local development only (404 elsewhere). Only the seeded demo accounts (…@hrms.local, see GET dev/personas) with the shared DEV_LOGIN_PASSWORD (default demo1234). Unknown email or wrong password → 401 auth.invalid_credentials (same answer for both); a deactivated account → 403. Every attempt is audited.",
+        "operationId": "AuthController_devPasswordLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevPasswordLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Signed in — session cookie set"
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — slow down",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dev sign-in with email and password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/auth/dev/personas": {
       "get": {
         "description": "Local development only (404 elsewhere).",
@@ -583,6 +659,628 @@
         "summary": "Sign out",
         "tags": [
           "Auth"
+        ]
+      }
+    },
+    "/api/iam/catalog": {
+      "get": {
+        "description": "Needs Roles & Permissions → View. Module → category → feature, with the actions each feature allows. Builds the permission grid; the keys are `<feature>` (View) and `<feature>#add|edit|delete`.",
+        "operationId": "RolesController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogModuleResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Permission catalogue",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      }
+    },
+    "/api/iam/roles": {
+      "get": {
+        "description": "Needs Roles & Permissions → View. System roles first, each with its permission keys and member count.",
+        "operationId": "RolesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List roles",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      },
+      "post": {
+        "description": "Needs Roles & Permissions → Add (Super Admin, HR, Office Admin by default). A custom role, optionally with permissions. Name unique ignoring case (409 role.name_taken). Nobody changes their own role or its permissions (403 role.own_role) or grants what they do not hold (403 role.grant_exceeds_own).",
+        "operationId": "RolesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a role",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      }
+    },
+    "/api/iam/roles/{id}": {
+      "get": {
+        "description": "Needs Roles & Permissions → View.",
+        "operationId": "RolesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one role",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      },
+      "patch": {
+        "description": "Needs Roles & Permissions → Edit. System roles cannot be renamed (409 role.system). Nobody changes their own role or its permissions (403 role.own_role) or grants what they do not hold (403 role.grant_exceeds_own).",
+        "operationId": "RolesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Rename a role or change its description",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      },
+      "delete": {
+        "description": "Needs Roles & Permissions → Delete (Super Admin by default). System roles cannot be deleted (409 role.system); a role someone still has cannot be deleted (409 role.in_use).",
+        "operationId": "RolesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Delete a role",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      }
+    },
+    "/api/iam/roles/{id}/permissions": {
+      "put": {
+        "description": "Needs Roles & Permissions → Edit. Replaces the whole set; the response lists what was granted and revoked. The members’ sessions are ended so the change applies at once (they sign in again). The Super Admin role is fixed (409 role.super_admin_fixed). Unknown keys → 400 role.unknown_permission. Nobody changes their own role or its permissions (403 role.own_role) or grants what they do not hold (403 role.grant_exceeds_own).",
+        "operationId": "RolesController_setPermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRolePermissionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetPermissionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Set a role’s permissions",
+        "tags": [
+          "Administration · Roles & permissions"
+        ]
+      }
+    },
+    "/api/iam/employees/{employeeId}/role": {
+      "put": {
+        "description": "Needs Roles & Permissions → Edit. Not your own role (403 role.own_role); only between roles whose permissions you hold, for someone whose current role does not exceed yours (403 role.assign_exceeds_own). Ends their sessions.",
+        "operationId": "RolesController_assign",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Give an employee a role",
+        "tags": [
+          "Administration · Roles & permissions"
         ]
       }
     },
@@ -5114,6 +5812,25 @@
           "employeeCode"
         ]
       },
+      "DevPasswordLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "gs-120@hrms.local",
+            "description": "A seeded demo account"
+          },
+          "password": {
+            "type": "string",
+            "example": "demo1234",
+            "description": "DEV_LOGIN_PASSWORD (backend .env)"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
       "DevPersonaResponse": {
         "type": "object",
         "properties": {
@@ -5123,6 +5840,10 @@
           "fullName": {
             "type": "string"
           },
+          "email": {
+            "type": "string",
+            "example": "gs-120@hrms.local"
+          },
           "role": {
             "type": "string"
           }
@@ -5130,6 +5851,7 @@
         "required": [
           "employeeCode",
           "fullName",
+          "email",
           "role"
         ]
       },
@@ -5174,6 +5896,259 @@
           "locationId",
           "companyId",
           "permissions"
+        ]
+      },
+      "CatalogFeatureResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "administration:admin-companies"
+          },
+          "label": {
+            "type": "string",
+            "example": "Companies"
+          },
+          "actions": {
+            "type": "array",
+            "description": "Empty = a read-only screen (View only)",
+            "items": {
+              "type": "string",
+              "enum": [
+                "add",
+                "edit",
+                "delete"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "actions"
+        ]
+      },
+      "CatalogCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "admin-organization"
+          },
+          "label": {
+            "type": "string",
+            "example": "Organization"
+          },
+          "rank": {
+            "type": "number",
+            "example": 5,
+            "description": "Lowest built-in role rank given it by default (1 Employee … 5 Super Admin)"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFeatureResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "rank",
+          "features"
+        ]
+      },
+      "CatalogModuleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "administration"
+          },
+          "name": {
+            "type": "string",
+            "example": "Administration"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategoryResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "categories"
+        ]
+      },
+      "RoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "HR"
+          },
+          "description": {
+            "type": "string",
+            "example": "All employees, all locations"
+          },
+          "system": {
+            "type": "boolean",
+            "description": "System roles cannot be renamed or deleted"
+          },
+          "permissions": {
+            "description": "Granted permission keys, sorted",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "memberCount": {
+            "type": "number",
+            "example": 3,
+            "description": "Employees who have this role"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "system",
+          "permissions",
+          "memberCount",
+          "updatedAt"
+        ]
+      },
+      "CreateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Payroll Clerk",
+            "description": "2–60 characters, unique ignoring case"
+          },
+          "description": {
+            "type": "string",
+            "example": "Prepares monthly payroll, no approvals"
+          },
+          "permissions": {
+            "example": [
+              "administration:admin-companies",
+              "administration:admin-companies#edit"
+            ],
+            "description": "Permission keys from GET /iam/catalog: `<feature>` = View, `<feature>#add|edit|delete`. Add/Edit/Delete need View. Defaults to none.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Payroll Officer",
+            "description": "System roles cannot be renamed"
+          },
+          "description": {
+            "type": "string",
+            "example": "Prepares and submits monthly payroll"
+          }
+        }
+      },
+      "SetRolePermissionsDto": {
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "example": [
+              "administration:admin-companies",
+              "administration:admin-companies#edit"
+            ],
+            "description": "The complete new set — it replaces the current one. Permission keys from GET /iam/catalog: `<feature>` = View, `<feature>#add|edit|delete`. Add/Edit/Delete need View.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "permissions"
+        ]
+      },
+      "SetPermissionsResponse": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleResponse"
+          },
+          "granted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "revoked": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sessionsRevoked": {
+            "type": "number",
+            "example": 4,
+            "description": "Sessions of the role’s members that were ended (they sign in again)"
+          }
+        },
+        "required": [
+          "role",
+          "granted",
+          "revoked",
+          "sessionsRevoked"
+        ]
+      },
+      "AssignRoleDto": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a09"
+          }
+        },
+        "required": [
+          "roleId"
+        ]
+      },
+      "AssignRoleResponse": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "example": "Team Lead"
+          },
+          "sessionsRevoked": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "employeeId",
+          "role",
+          "sessionsRevoked"
         ]
       },
       "CompanyResponse": {

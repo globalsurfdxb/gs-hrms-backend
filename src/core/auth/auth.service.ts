@@ -1,10 +1,11 @@
+import { timingSafeEqual } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AuthMethod } from '../../generated/prisma/client.js';
 import type { Env } from '../../config/env.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { AuditService } from '../audit/audit.service.js';
-import { IdentityRepository } from './identity.repository.js';
+import { DEMO_EMAIL_DOMAIN, IdentityRepository } from './identity.repository.js';
 import type { VerifiedIdentity } from './providers/entra.provider.js';
 import { SessionService } from './session/session.service.js';
 
@@ -14,6 +15,14 @@ export interface RequestMeta {
 }
 
 type Account = NonNullable<Awaited<ReturnType<IdentityRepository['findByCode']>>>;
+
+/** Constant-time comparison of the dev demo password. Only a length mismatch returns early, which reveals nothing
+    useful about a fixed development password. Never used for real credentials (Microsoft handles those). */
+const sameSecret = (given: string, expected: string) => {
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
 
 /* Turns a verified identity (Microsoft, or the dev persona picker) into an HRMS session. Every outcome —
    success, unknown account, inactive account — is written to the audit log under module "Security". */
@@ -60,10 +69,31 @@ export class AuthService {
     return this.openSession(account, 'DEV', employeeCode, meta);
   }
 
+  /** Email + password form, development only: the seeded demo accounts (…@hrms.local) share DEV_LOGIN_PASSWORD.
+      Unknown email, wrong password and non-demo accounts get the same answer, so the form reveals nothing. */
+  async demoAccountSignIn(email: string, password: string, meta: RequestMeta): Promise<string> {
+    if (!this.devLoginEnabled) throw new AppError('auth.dev_login_disabled', 'Not found', 404);
+    const normalised = email.trim().toLowerCase();
+    const account = normalised.endsWith(`@${DEMO_EMAIL_DOMAIN}`) ? await this.identities.findByEmail(normalised) : null;
+    if (!account || !sameSecret(password, this.config.get('DEV_LOGIN_PASSWORD', { infer: true }))) {
+      await this.audit.record({
+        actor: { id: null, label: normalised },
+        module: 'Security',
+        action: 'auth.sign_in_failed',
+        entityType: 'employee',
+        entityId: account?.id,
+        after: { reason: 'bad_credentials', method: 'DEV' },
+        ip: meta.ip,
+      });
+      throw new AppError('auth.invalid_credentials', 'Email or password is incorrect', 401);
+    }
+    return this.openSession(account, 'DEV', normalised, meta);
+  }
+
   async devPersonas() {
     if (!this.devLoginEnabled) throw new AppError('auth.dev_login_disabled', 'Not found', 404);
     const rows = await this.identities.devPersonas();
-    return rows.map((r) => ({ employeeCode: r.employeeCode, fullName: r.fullName, role: r.role.name }));
+    return rows.map((r) => ({ employeeCode: r.employeeCode, fullName: r.fullName, email: r.email, role: r.role.name }));
   }
 
   async signOut(sessionId: string, actor: { employeeId: string; fullName: string }, meta: RequestMeta) {

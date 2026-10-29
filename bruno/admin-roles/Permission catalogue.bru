@@ -1,0 +1,22 @@
+meta {
+  name: Permission catalogue
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/iam/catalog
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Roles & Permissions → View. Module → category → feature with the actions each allows.
+}
+
+tests {
+  test("returns 7 modules", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.length(7);
+  });
+}

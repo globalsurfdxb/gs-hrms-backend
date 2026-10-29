@@ -10,6 +10,9 @@ const ACCOUNT = {
   employmentStatus: true,
 } as const;
 
+/** Seeded demo accounts (prisma/seed.ts) use this email domain; only they can use the dev sign-in forms. */
+export const DEMO_EMAIL_DOMAIN = 'hrms.local';
+
 /* Reads the employee table for sign-in only. Core may not import modules, so auth keeps its own narrow queries
    instead of calling the employees module. */
 @Injectable()
@@ -32,6 +35,11 @@ export class IdentityRepository {
     return this.prisma.employee.findUnique({ where: { employeeCode }, select: ACCOUNT });
   }
 
+  /** Emails are stored lower-case. */
+  findByEmail(email: string) {
+    return this.prisma.employee.findUnique({ where: { email: email.toLowerCase() }, select: ACCOUNT });
+  }
+
   linkEntraObjectId(employeeId: string, oid: string) {
     return this.prisma.employee.update({ where: { id: employeeId }, data: { entraObjectId: oid }, select: ACCOUNT });
   }
@@ -39,8 +47,8 @@ export class IdentityRepository {
   /** Seeded people for the dev persona picker (one per role). */
   devPersonas() {
     return this.prisma.employee.findMany({
-      where: { employmentStatus: { not: 'INACTIVE' } },
-      select: { employeeCode: true, fullName: true, role: { select: { name: true } } },
+      where: { employmentStatus: { not: 'INACTIVE' }, email: { endsWith: `@${DEMO_EMAIL_DOMAIN}` } },
+      select: { employeeCode: true, fullName: true, email: true, role: { select: { name: true } } },
       orderBy: { employeeCode: 'asc' },
       take: 50,
     });

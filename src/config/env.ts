@@ -31,6 +31,8 @@ export const envSchema = z
     SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(12),
 
     AUTH_DEV_LOGIN: bool,
+    /** Shared password of the demo accounts for the email + password form (dev login only — never production). */
+    DEV_LOGIN_PASSWORD: z.string().min(8).default('demo1234'),
     ENTRA_TENANT_ID: z.string().optional(),
     ENTRA_CLIENT_ID: z.string().optional(),
     ENTRA_CLIENT_SECRET: z.string().optional(),

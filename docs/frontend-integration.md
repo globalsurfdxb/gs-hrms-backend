@@ -26,13 +26,14 @@ Generate the frontend client from it rather than writing types by hand, e.g. wit
 
 ## Sign-in
 
-| Situation     | Frontend does                                                                                    |
-| ------------- | ------------------------------------------------------------------------------------------------ |
-| Production    | "Continue with Microsoft" → `window.location = '/api/auth/login?returnTo=/dashboard'`            |
-| Local / tests | Persona picker → `GET /api/auth/dev/personas`, then `POST /api/auth/dev/login {employeeCode}`    |
-| On load       | `GET /api/auth/me` → user, role, `permissions[]` (frontend catalogue keys). 401 → go to `/login` |
-| Sign out      | `POST /api/auth/logout`                                                                          |
-| SSO error     | backend redirects to `/login?error=sso_failed\|sso_expired\|no_access`                           |
+| Situation     | Frontend does                                                                                                                                                                                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production    | "Continue with Microsoft" → `window.location = '/api/auth/login?returnTo=/dashboard'`                                                                                                                                                                            |
+| Local / tests | Persona picker → `GET /api/auth/dev/personas`, then `POST /api/auth/dev/login {employeeCode}`                                                                                                                                                                    |
+| Local (form)  | Email + password → `POST /api/auth/dev/password-login`: seeded demo accounts (`…@hrms.local`, listed by `dev/personas`) with `DEV_LOGIN_PASSWORD` (default `demo1234`). 401 `auth.invalid_credentials` for wrong email or password. Dev only — 404 in production |
+| On load       | `GET /api/auth/me` → user, role, `permissions[]` (frontend catalogue keys). 401 → go to `/login`                                                                                                                                                                 |
+| Sign out      | `POST /api/auth/logout`                                                                                                                                                                                                                                          |
+| SSO error     | backend redirects to `/login?error=sso_failed\|sso_expired\|no_access`                                                                                                                                                                                           |
 
 Use `permissions[]` from `/me` to drive the frontend's `can()` checks instead of the persona table. The backend
 enforces the same rules regardless.

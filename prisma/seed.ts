@@ -57,7 +57,7 @@ const COMPANIES = [
     locationId: null,
     established: '2015',
     website: 'www.gs-it.ae',
-    description: 'Parent entity.',
+    description: 'Managed IT services, cloud infrastructure and network engineering — the parent entity.',
   },
   {
     shortCode: 'GSD',
@@ -65,7 +65,7 @@ const COMPANIES = [
     locationId: 'Dubai',
     established: '2019',
     website: 'www.gsdigital.ae',
-    description: '',
+    description: 'Digital marketing, e-commerce platforms and software solutions.',
   },
   {
     shortCode: 'GSAV',
@@ -73,7 +73,7 @@ const COMPANIES = [
     locationId: 'Dubai',
     established: '2017',
     website: 'www.gsav.ae',
-    description: '',
+    description: 'Audio-visual systems integration and event technology.',
   },
   {
     shortCode: 'GSS',
@@ -81,17 +81,28 @@ const COMPANIES = [
     locationId: null,
     established: '2021',
     website: 'www.gssecurity.ae',
-    description: '',
+    description: 'Security systems, CCTV and access control solutions.',
   },
 ];
 
-/** [company, department, locations, designations] */
+/** [company, department, locations, designations] — the frontend's master data (gs-hrms lib/data.ts DEPARTMENTS and
+    DESIGNATIONS), so the screens show the same structure once they read it from the API. Heads are not seeded:
+    they are frontend-only names until the employees module exists. */
 const STRUCTURE: [string, string, string[], string[]][] = [
-  ['GSIT', 'Management & Administration', ['Dubai', 'Kochi'], ['General Manager']],
-  ['GSIT', 'HR', ['Dubai', 'Kochi'], ['HR Executive']],
+  ['GSIT', 'Management & Administration', ['Dubai', 'Kochi'], ['General Manager', 'Admin Manager', 'Admin Executive']],
+  ['GSIT', 'HR', ['Dubai', 'Kochi'], ['HR Manager', 'HR Executive']],
+  ['GSIT', 'Sales', ['Dubai'], ['Account Manager', 'Senior Sales Executive']],
   ['GSIT', 'Cloud & Infra', ['Dubai'], ['Solutions Architect']],
+  ['GSIT', 'Network Engineering', ['Dubai'], ['Network Engineer']],
   ['GSIT', 'Procurement', ['Dubai'], ['Procurement Officer']],
+  ['GSIT', 'Managed Services', ['Kochi'], ['Support Lead', 'Support Engineer']],
+  ['GSIT', 'Finance', ['Kochi'], ['Accounts Executive']],
+  ['GSD', 'Management & Administration', ['Dubai'], ['Admin Executive']],
   ['GSD', 'Sales', ['Dubai'], ['Account Manager']],
+  ['GSAV', 'Management & Administration', ['Dubai'], ['Admin Executive']],
+  ['GSAV', 'Sales', ['Dubai'], ['Senior Sales Executive', 'Account Manager']],
+  ['GSS', 'Management & Administration', ['Dubai', 'Kochi'], ['Admin Manager', 'Admin Executive']],
+  ['GSS', 'HR', ['Dubai', 'Kochi'], []],
 ];
 
 /** Fictional people. Codes and roles match the frontend personas; names and emails do not belong to anyone. */
