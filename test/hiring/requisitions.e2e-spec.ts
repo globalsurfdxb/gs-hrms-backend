@@ -82,9 +82,9 @@ describe('Requisitions API', () => {
     expect(approved.body.status).toBe('APPROVED');
     expect(approved.body.steps[2]).toMatchObject({ status: 'APPROVED', note: 'Go' });
 
-    const actions = (await prisma.auditLog.findMany({ where: { entityType: 'requisition', entityId: r.id } })).map(
-      (a) => a.action,
-    );
+    const actions = (
+      await prisma.auditLog.findMany({ where: { entityType: 'requisition', entityId: r.id }, orderBy: { id: 'asc' } })
+    ).map((a) => a.action);
     expect(actions).toEqual([
       'requisition.created',
       'requisition.submitted',
