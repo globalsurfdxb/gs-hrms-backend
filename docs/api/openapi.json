@@ -473,7 +473,7 @@
     },
     "/api/auth/dev/password-login": {
       "post": {
-        "description": "Local development only (404 elsewhere). Only the seeded demo accounts (…@hrms.local, see GET dev/personas) with the shared DEV_LOGIN_PASSWORD (default demo1234). Unknown email or wrong password → 401 auth.invalid_credentials (same answer for both); a deactivated account → 403. Every attempt is audited.",
+        "description": "Only the seeded demo accounts (…@hrms.local, see GET dev/personas) with the shared DEV_LOGIN_PASSWORD (default demo1234). Unknown email or wrong password → 401 auth.invalid_credentials (same answer for both); a deactivated account → 403. Every attempt is audited.",
         "operationId": "AuthController_devPasswordLogin",
         "parameters": [],
         "requestBody": {
@@ -520,16 +520,6 @@
               }
             }
           },
-          "404": {
-            "description": "Not found — or the caller is not allowed to know it exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "429": {
             "description": "Too many requests — slow down",
             "content": {
@@ -541,7 +531,7 @@
             }
           }
         },
-        "summary": "Dev sign-in with email and password",
+        "summary": "Sign in with email and password (demo accounts)",
         "tags": [
           "Auth"
         ]
@@ -549,7 +539,7 @@
     },
     "/api/auth/dev/personas": {
       "get": {
-        "description": "Local development only (404 elsewhere).",
+        "description": "The demo accounts, for the sign-in page.",
         "operationId": "AuthController_devPersonas",
         "parameters": [],
         "responses": {
@@ -566,8 +556,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not found — or the caller is not allowed to know it exists",
+          "429": {
+            "description": "Too many requests — slow down",
             "content": {
               "application/json": {
                 "schema": {

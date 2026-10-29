@@ -69,10 +69,10 @@ export class AuthService {
     return this.openSession(account, 'DEV', employeeCode, meta);
   }
 
-  /** Email + password form, development only: the seeded demo accounts (…@hrms.local) share DEV_LOGIN_PASSWORD.
-      Unknown email, wrong password and non-demo accounts get the same answer, so the form reveals nothing. */
+  /** Email + password form, on everywhere (production included) until Microsoft sign-in is set up: the seeded demo
+      accounts (…@hrms.local) share DEV_LOGIN_PASSWORD. Unknown email, wrong password and non-demo accounts get the
+      same answer, so the form reveals nothing. */
   async demoAccountSignIn(email: string, password: string, meta: RequestMeta): Promise<string> {
-    if (!this.devLoginEnabled) throw new AppError('auth.dev_login_disabled', 'Not found', 404);
     const normalised = email.trim().toLowerCase();
     const account = normalised.endsWith(`@${DEMO_EMAIL_DOMAIN}`) ? await this.identities.findByEmail(normalised) : null;
     if (!account || !sameSecret(password, this.config.get('DEV_LOGIN_PASSWORD', { infer: true }))) {
@@ -90,8 +90,8 @@ export class AuthService {
     return this.openSession(account, 'DEV', normalised, meta);
   }
 
+  /** The demo accounts, for the sign-in page. */
   async devPersonas() {
-    if (!this.devLoginEnabled) throw new AppError('auth.dev_login_disabled', 'Not found', 404);
     const rows = await this.identities.devPersonas();
     return rows.map((r) => ({ employeeCode: r.employeeCode, fullName: r.fullName, email: r.email, role: r.role.name }));
   }
