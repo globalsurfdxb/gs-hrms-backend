@@ -2,28 +2,35 @@
 
 Spec: `docs/modules/hiring.md` — read it first (built step by step, plan in §11). Flow: `flow/src/08-hiring.html`.
 Frontend sources (`gs-hrms`): `lib/hiringStore.ts` (every mutation), `lib/hiringTypes.ts`, `lib/hiringAccess.ts`,
-`lib/hiringLetters.ts`, `lib/hiringMail.ts`, `lib/hiringHandoff.ts`, `components/hiring/HiringForms.tsx` (validation),
-`app/hiring/**`, `app/careers/**`, `app/offer/respond/[token]`, `app/my/interviews`, `app/my/referrals`.
+`lib/hiringLetters.ts`, `lib/hiringMail.ts`, `lib/hiringHandoff.ts`, `lib/hiringDocs.ts` (pre-offer documents),
+`components/hiring/HiringForms.tsx` (validation), `components/hiring/DocCollection.tsx`, `app/hiring/**`,
+`app/careers/**`, `app/offer/respond/[token]`, `app/offer/documents/[token]`, `app/my/interviews`, `app/my/referrals`.
 Before each step, check the frontend for changes since the commit noted in the spec and update spec + flow.
 
 ## Rules specific to this module
 
 - Permissions: `PERMISSIONS.hiring.*` (frontend ids `hiring:requisitions:*`, `hiring:recruiting:*`,
   `hiring:reports:*`). Defaults: Super Admin + HR full; Team Lead + Office Admin requisitions only; Employee none.
+  The frontend added Talent Acquisition Manager (all hiring, no delete) and Recruiter (Recruiting only) on 29 Oct —
+  not in the backend catalogue yet (spec Q21, step 3.1).
 - State machines (in `domain/`): requisition, job, application stage/exit, interview, offer — spec §4.
   The frontend store does not guard most status changes; enforce the transitions the UI shows, not the store's.
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step
   deciders per BR-HIR-002; panelists → their interviews; referrers → their referrals.
-- Jobs (step 2): only Jobs permission holders (HR, Super Admin) reach them, and they see every job. Title, company,
+- Jobs (step 2): only Jobs permission holders reach them; today they see every job. Step 3.1 narrows Recruiter and
+  Team Lead to their own jobs (recruiter or hiring manager, BR-HIR-022) and moves recruiter choice to the Talent
+  Acquisition Manager (BR-HIR-021). Title, company,
   department, location, positions, budget and hiring manager are read from the requisition — never copy them.
   Every job change writes a `JobEvent` (History tab, append-only by trigger) and an audit row in one transaction.
 - Candidates (step 3): Candidates → View holders see every candidate and application. Duplicate = same email or
   last-9 phone digits → 409 `candidate.duplicate` with `details.candidateId`. Applications only to OPEN jobs. Pipeline
   rules live in `domain/application.rules.ts`; a SENT offer blocks exits and leaving OFFER (`offerSent`, wired to
   offers in step 5). Notes and stage history are append-only by trigger.
-- Salary (current/expected/offered) only for Jobs → View holders + that job's hiring manager — omit the fields
+- Salary (current/expected/offered) only for full hiring access + that job's hiring manager and recruiter — omit the fields
   otherwise; never in audit amounts or logs (spec Q8); a view of a record with salary writes an audit row.
-- Public routes (careers, offer link) live in their own controllers with `@Public()` + reason; never reveal
+- Pre-offer documents (step 5a) gate offer creation (VERIFIED or WAIVED); their files are identity documents —
+  private Blob, scanned, short-lived download links, audited.
+- Public routes (careers, offer link, documents link) live in their own controllers with `@Public()` + reason; never reveal
   whether a person is already on file. Offer tokens are 256-bit, stored hashed.
 - Letter HTML is rendered by the server from the sanitised template — never accepted from the client.
 - Audit module name: `Hiring`. Business rules BR-HIR-001… with unit tests named after the id.

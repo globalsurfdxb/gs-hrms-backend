@@ -6,42 +6,66 @@
 
 ## Frontend sources
 
-`lib/auth.ts`, `lib/guard.ts`, `lib/nav.ts`, `lib/access.ts`, `app/admin/roles`, `lib/workflow.ts`,
+`lib/api.ts`, `lib/auth.ts`, `lib/guard.ts`, `lib/nav.ts`, `lib/access.ts`, `lib/rolesApi.ts`, `app/login`,
+`app/admin/roles`, `lib/workflow.ts`,
 `app/admin/workflow`, `lib/notifications.ts`, `components/notifications/*`, `app/admin/notifications`,
 `lib/reminderRules.ts`, `app/admin/reminders`, `lib/employeeStore.ts` (`logAudit`), `lib/activity.ts`, `app/admin/audit`.
 
-**What the frontend fakes:** no password/SSO check; the permission matrix is never enforced (`can()` unused);
-custom roles are lost on reload and never assigned to users; workflow chains are display labels; notification
-rules and workflow toggles are not read by anything; email is never sent.
+**Connected to this API** (frontend `82bcda4` + `ca8bbd9`, 2026-10-29): sign-in, the session and Roles &
+Permissions. `lib/api.ts` calls `/api/*` on the app's own origin (the Next dev server proxies to the backend;
+Front Door in Azure), so the httpOnly cookie and the Origin check work. A 401 outside `/auth/*` sends the user back
+to sign-in. Builds with no backend (`NEXT_PUBLIC_HRMS_API=off`) keep a browser-only demo session on mock data.
+
+**What the frontend still fakes:** "Continue with Microsoft" only shows a notice (it does not call
+`/api/auth/login`); `can()` and the menus still use the frontend's own role defaults, not `/api/auth/me`
+permissions; a role the frontend does not know (any custom role) is treated as Employee on screen; custom
+features ("Add feature") are disabled when connected; nobody can be given a role from the UI yet; workflow chains are
+display labels; notification rules and workflow toggles are not read by anything; email is never sent.
 
 ## Auth & sessions — done
 
 See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
 
-| Method | Path                        | Access                           |
-| ------ | --------------------------- | -------------------------------- |
-| GET    | `/api/auth/login?returnTo=` | Public — redirects to Microsoft  |
-| GET    | `/api/auth/callback`        | Public — Entra redirect URI      |
-| POST   | `/api/auth/dev/login`       | Public, dev only (404 otherwise) |
-| GET    | `/api/auth/dev/personas`    | Public, dev only                 |
-| GET    | `/api/auth/me`              | SignedIn                         |
-| POST   | `/api/auth/logout`          | SignedIn                         |
+| Method | Path                           | Access                                                                                                                                                           |
+| ------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/auth/login?returnTo=`    | Public — redirects to Microsoft                                                                                                                                  |
+| GET    | `/api/auth/callback`           | Public — Entra redirect URI                                                                                                                                      |
+| POST   | `/api/auth/dev/login`          | Public, dev only (404 otherwise)                                                                                                                                 |
+| POST   | `/api/auth/dev/password-login` | Public — the login page's email + password form; demo accounts (`…@hrms.local`) only, shared `DEV_LOGIN_PASSWORD`; on in every environment until Entra is set up |
+| GET    | `/api/auth/dev/personas`       | Public — the demo accounts listed on the login page                                                                                                              |
+| GET    | `/api/auth/me`                 | SignedIn                                                                                                                                                         |
+| POST   | `/api/auth/logout`             | SignedIn                                                                                                                                                         |
 
 ## IAM — roles & permissions API done; data scopes and custom features to do
 
 - **Roles**: 5 system roles (Super Admin, HR, Office Admin, Team Lead, Employee) + custom roles.
   System roles cannot be renamed/deleted. Employee has exactly one role.
+- **Changed in the frontend (`8609a8e`, 2026-10-29) — to port**: two more system roles, **Talent Acquisition
+  Manager** (demo GS-155, GS IT · HR, reports to GS-120) and **Recruiter** (demo GS-156, reports to GS-155). Order:
+  Super Admin, HR, Office Admin, Talent Acquisition Manager, Team Lead, Recruiter, Employee.
+
+  | Role                       | Rank | Areas / Home scopes | Default grants                                                                                               |
+  | -------------------------- | ---- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+  | Talent Acquisition Manager | 2    | home · `my`, `team` | Every Hiring category, all actions except Delete; elsewhere like Team Lead (rank ≤ 2, no Delete)             |
+  | Recruiter                  | 1    | home · `my`         | Hiring → **Recruiting** category only, all actions except Delete; elsewhere like Employee (rank 1, Add only) |
+
+  Data scope: the manager sees all of Hiring and their direct reports; a Recruiter sees only the jobs assigned to
+  them (and those jobs' candidates, interviews and offers) — see `hiring.md`.
+
 - **Permission catalogue**: Module → Category → Feature, keys `<feature>` / `<feature>#add|edit|delete`
   (`lib/access.ts`). Modules: administration (common), employee, hiring, leave-attendance, asset-management,
   payroll, renewals. Add/Edit/Delete imply View. Custom features can be added by Super Admin.
 - **Defaults** (`defaultGrants`): category rank 1–5 vs role rank; HR no Delete in Administration; Office Admin
   never Delete; Team Lead/Employee limited actions on rank ≤ 2.
+- **Drift found 2026-10-30**: the frontend catalogue has `employee:team:requests` (Team → Requests, `/team/requests`)
+  which is missing from `feature-catalog.ts` and the snapshot — Team Lead and Super Admin should get it by default.
 - **Done**: the full catalogue (112 features, all modules) and the default grants are ported in
   `src/core/iam/feature-catalog.ts`; a unit test proves they equal a frontend snapshot, so `/api/auth/me`
   returns the keys the frontend's `can()` expects. Known frontend bug kept for parity: its `READ_ONLY` regex has
   a stray backspace after `log`, so "Reminder log" is editable — fix in the frontend, then here.
 - **Data scopes**: Employee=SELF, Team Lead=TEAM (direct reports only), HR/Super Admin=ALL locations,
-  Office Admin=own location by default (`defaultScope`, `lib/data.ts`).
+  Office Admin=own location by default (`defaultScope`, `lib/data.ts`). Talent Acquisition Manager=TEAM outside
+  Hiring; Recruiter=SELF outside Hiring (inside Hiring: assigned jobs only).
 - **Never** let anyone change their own role or grants.
 
 ### Roles & permissions API (`src/core/iam/`) — done
@@ -74,9 +98,15 @@ stale grant set.
 BR-IAM-004 to 006 are not in the frontend: they stop privilege escalation, because HR and Office Admin hold
 Roles → Add/Edit by default. Tests: `role.rules.spec.ts`, `test/admin/roles.e2e-spec.ts`.
 
-To do: **custom features** (the frontend's "Add feature" — needs a table), **data scopes** per role
-(`ScopedRepository`), connecting the frontend Roles & Permissions screen. `npm run db:seed` resets the system
-roles' grants to the defaults.
+The frontend Roles & Permissions screen is **connected** (frontend `82bcda4`): it reads `GET /iam/catalog` and
+`GET /iam/roles`, saves each permission click with `PUT /iam/roles/:id/permissions` (whole set, queued per role,
+rolled back to the server's set when refused), and uses `POST`/`PATCH`/`DELETE /iam/roles`. Its role page,
+Compare view (up to 4 roles), **Duplicate** and **"copy an existing role"** in the three-step Add role popup are all
+client-side — they end in a normal `POST /iam/roles` with the copied keys, so BR-IAM-004 still applies.
+
+To do: **custom features** (the frontend's "Add feature" — needs a table; disabled while connected), **data scopes**
+per role (`ScopedRepository`), the **two Talent Acquisition roles**, a UI for `PUT /iam/employees/:id/role`.
+`npm run db:seed` resets the system roles' grants to the defaults.
 
 ## Workflow engine — to do ([ADR-0004](../adr/0004-workflow-engine.md))
 
