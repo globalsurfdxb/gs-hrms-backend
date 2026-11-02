@@ -161,7 +161,8 @@ describe('Departments and designations API', () => {
       .set('Origin', ORIGIN)
       .send({ locationIds: ['Kochi'] })
       .expect(409);
-    expect(res.body).toMatchObject({ code: 'department.location_in_use', details: { staffByLocation: { Dubai: 1 } } });
+    // Seeded in GS IT / HR, Dubai: Dev HR, Dev TA Manager, Dev Recruiter.
+    expect(res.body).toMatchObject({ code: 'department.location_in_use', details: { staffByLocation: { Dubai: 3 } } });
   });
 
   it.each(['employee', 'teamLead'] as const)('forbids %s from adding departments or designations', async (who) => {

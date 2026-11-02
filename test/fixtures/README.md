@@ -3,7 +3,7 @@
 ## `frontend-permissions.json`
 
 A snapshot of the frontend permission catalogue (`gs-hrms` `lib/access.ts`): every feature id and the default
-grants of the five built-in roles. `src/core/iam/permission-catalog.spec.ts` checks that the backend catalogue
+grants of the seven built-in roles. `src/core/iam/permission-catalog.spec.ts` checks that the backend catalogue
 (`src/core/iam/feature-catalog.ts`) produces exactly the same keys, so `/api/auth/me` returns the permissions
 the frontend expects.
 

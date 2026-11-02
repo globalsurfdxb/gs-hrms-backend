@@ -10,9 +10,10 @@ Before each step, check the frontend for changes since the commit noted in the s
 ## Rules specific to this module
 
 - Permissions: `PERMISSIONS.hiring.*` (frontend ids `hiring:requisitions:*`, `hiring:recruiting:*`,
-  `hiring:reports:*`). Defaults: Super Admin + HR full; Team Lead + Office Admin requisitions only; Employee none.
-  The frontend added Talent Acquisition Manager (all hiring, no delete) and Recruiter (Recruiting only) on 29 Oct —
-  not in the backend catalogue yet (spec Q21, step 3.1).
+  `hiring:reports:*`). Defaults: Super Admin + HR full; Talent Acquisition Manager all hiring, no delete; Recruiter
+  Recruiting only, no delete; Team Lead + Office Admin requisitions only; Employee none. Decide by permission, never by
+  role name or designation (Q21). A Recruiter's Jobs/Candidates View is NOT "see everything" — narrow it per record
+  (BR-HIR-022, step 3.1c).
 - State machines (in `domain/`): requisition, job, application stage/exit, interview, offer — spec §4.
   The frontend store does not guard most status changes; enforce the transitions the UI shows, not the store's.
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step

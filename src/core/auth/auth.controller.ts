@@ -111,7 +111,8 @@ export class AuthController {
     summary: 'Dev sign-in as a seeded persona',
     description:
       'Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in ' +
-      'Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.',
+      'Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-155 Talent Acquisition Manager · ' +
+      'GS-058 Team Lead · GS-156 Recruiter · GS-087 Employee.',
   })
   @ApiNoContentResponse({ description: 'Signed in — session cookie set' })
   @ApiErrors(400, 403, 404, 429)

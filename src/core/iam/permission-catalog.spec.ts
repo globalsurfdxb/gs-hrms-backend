@@ -68,7 +68,7 @@ describe('defaultGrants', () => {
 });
 
 describe('defaultGrants — hiring', () => {
-  const { requisitions, requisitionApprovals, jobs, candidates, offers, reports } = PERMISSIONS.hiring;
+  const { requisitions, requisitionApprovals, jobs, candidates, interviews, offers, reports } = PERMISSIONS.hiring;
 
   it('gives Super Admin and HR full hiring access', () => {
     for (const role of ['Super Admin', 'HR']) {
@@ -94,6 +94,39 @@ describe('defaultGrants — hiring', () => {
       expect(hasPermission(g, candidates)).toBe(false);
       expect(hasPermission(g, reports)).toBe(false);
     }
+  });
+
+  it('gives the Talent Acquisition Manager all of Hiring without delete', () => {
+    const g = new Set(defaultGrants('Talent Acquisition Manager'));
+    for (const f of [requisitions, requisitionApprovals, jobs, candidates, interviews, offers]) {
+      expect(hasPermission(g, f, 'edit')).toBe(true);
+      expect(hasPermission(g, f, 'delete')).toBe(false);
+    }
+    expect(hasPermission(g, reports)).toBe(true);
+  });
+
+  it('gives the Recruiter Recruiting only, without delete', () => {
+    const g = new Set(defaultGrants('Recruiter'));
+    for (const f of [jobs, candidates, interviews, offers]) {
+      expect(hasPermission(g, f, 'edit')).toBe(true);
+      expect(hasPermission(g, f, 'delete')).toBe(false);
+    }
+    expect(hasPermission(g, requisitions)).toBe(false);
+    expect(hasPermission(g, requisitionApprovals)).toBe(false);
+    expect(hasPermission(g, reports)).toBe(false);
+  });
+
+  it('gives the Talent Acquisition roles no Operations or Administration access', () => {
+    for (const role of ['Talent Acquisition Manager', 'Recruiter']) {
+      const g = defaultGrants(role);
+      expect(g.some((k) => k.startsWith('administration:') || k.startsWith('employee:ops:'))).toBe(false);
+    }
+  });
+
+  it('gives the Talent Acquisition Manager the Team area, not the Recruiter', () => {
+    const team = 'employee:team:directory';
+    expect(defaultGrants('Talent Acquisition Manager')).toContain(team);
+    expect(defaultGrants('Recruiter')).not.toContain(team);
   });
 
   it('gives Employee no hiring access', () => {

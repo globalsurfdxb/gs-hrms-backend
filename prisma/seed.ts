@@ -15,7 +15,12 @@ const ROLES = [
   { name: 'Super Admin', description: 'Every module' },
   { name: 'HR', description: 'Directory, onboarding, offboarding, visa, documents, requests' },
   { name: 'Office Admin', description: 'Org structure, files, requests, document expiry' },
+  {
+    name: 'Talent Acquisition Manager',
+    description: 'Hiring Management in full (chooses the recruiter for new jobs), own workspace and direct reports',
+  },
   { name: 'Team Lead', description: 'Own workspace and direct reports' },
+  { name: 'Recruiter', description: 'Recruiting for the jobs assigned to them, and own workspace' },
   { name: 'Employee', description: 'Own workspace only' },
 ];
 
@@ -90,7 +95,7 @@ const COMPANIES = [
     they are frontend-only names until the employees module exists. */
 const STRUCTURE: [string, string, string[], string[]][] = [
   ['GSIT', 'Management & Administration', ['Dubai', 'Kochi'], ['General Manager', 'Admin Manager', 'Admin Executive']],
-  ['GSIT', 'HR', ['Dubai', 'Kochi'], ['HR Manager', 'HR Executive']],
+  ['GSIT', 'HR', ['Dubai', 'Kochi'], ['HR Manager', 'HR Executive', 'Talent Acquisition Manager', 'Recruiter']],
   ['GSIT', 'Sales', ['Dubai'], ['Account Manager', 'Senior Sales Executive']],
   ['GSIT', 'Cloud & Infra', ['Dubai'], ['Solutions Architect']],
   ['GSIT', 'Network Engineering', ['Dubai'], ['Network Engineer']],
@@ -125,6 +130,24 @@ const PEOPLE = [
     dept: 'Procurement',
     title: 'Procurement Officer',
     manager: 'GS-120',
+  },
+  {
+    code: 'GS-155',
+    name: 'Dev TA Manager',
+    role: 'Talent Acquisition Manager',
+    co: 'GSIT',
+    dept: 'HR',
+    title: 'Talent Acquisition Manager',
+    manager: 'GS-120',
+  },
+  {
+    code: 'GS-156',
+    name: 'Dev Recruiter',
+    role: 'Recruiter',
+    co: 'GSIT',
+    dept: 'HR',
+    title: 'Recruiter',
+    manager: 'GS-155',
   },
   {
     code: 'GS-058',

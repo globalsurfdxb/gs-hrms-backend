@@ -68,7 +68,7 @@ describe('Roles & permissions API', () => {
       m.categories.flatMap((c) => c.features),
     );
     expect(res.body).toHaveLength(7);
-    expect(features).toHaveLength(112);
+    expect(features).toHaveLength(113);
     expect(features).toContainEqual({ id: COMPANIES, label: 'Companies', actions: ['add', 'edit', 'delete'] });
   });
 

@@ -407,7 +407,7 @@
     },
     "/api/auth/dev/login": {
       "post": {
-        "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.",
+        "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-155 Talent Acquisition Manager · GS-058 Team Lead · GS-156 Recruiter · GS-087 Employee.",
         "operationId": "AuthController_devLogin",
         "parameters": [],
         "requestBody": {
