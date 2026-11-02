@@ -1,0 +1,33 @@
+meta {
+  name: Requisition form scope
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/hiring/requisitions/scope
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Requisitions → Add. What the "New requisition" form may offer you (BR-HIR-019).
+
+  - Full hiring access (GS-120 Super Admin, GS-119 HR, GS-155 TA Manager): `restricted: false` — choose any active
+    company, department and hiring manager.
+  - Otherwise (GS-058 Team Lead, GS-101 Office Admin): `restricted: true` — your own department first, then the
+    departments you head, each with its company and locations; `hiringManager` is you. Leave `hiringManagerId` out
+    when raising; another department or hiring manager is 403.
+
+  As GS-087 (Employee) or GS-156 (Recruiter) this returns 403.
+}
+
+tests {
+  test("scope (200) — or 403 without Requisitions → Add", function () {
+    expect([200, 403]).to.include(res.status);
+    if (res.status === 200) {
+      expect(res.body.restricted).to.be.a("boolean");
+      expect(res.body.departments).to.be.an("array");
+    }
+  });
+}

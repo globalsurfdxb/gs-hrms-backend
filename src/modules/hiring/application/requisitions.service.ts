@@ -7,7 +7,9 @@ import { dateOfDay, dayOf, todayIn } from '../../../shared/time/calendar-day.js'
 import type { CreateRequisitionDto } from '../api/dto/create-requisition.dto.js';
 import type { DecideRequisitionDto } from '../api/dto/decide-requisition.dto.js';
 import type { ListRequisitionsQuery } from '../api/dto/list-requisitions.query.js';
+import { person } from '../api/dto/common.response.js';
 import { RequisitionListResponse, RequisitionResponse } from '../api/dto/requisition.response.js';
+import type { RequisitionScopeResponse } from '../api/dto/requisition-scope.response.js';
 import type { UpdateRequisitionDto } from '../api/dto/update-requisition.dto.js';
 import {
   assertEditable,
@@ -21,6 +23,7 @@ import {
   type StatusAction,
   type Step,
 } from '../domain/requisition.rules.js';
+import { checkScopedRequest, type RequesterScope } from '../domain/requester-scope.js';
 import {
   chainSummary,
   RequisitionsRepository,
@@ -60,7 +63,30 @@ export class RequisitionsService {
     return RequisitionResponse.from(await this.visible(id, user), viewerOf(user));
   }
 
+  /** BR-HIR-019: what the requisition form may offer the caller. */
+  async scope(user: AuthUser): Promise<RequisitionScopeResponse> {
+    if (seesAll(user)) return { restricted: false, hiringManager: null, departments: [], defaultLocationId: null };
+    const s = await this.requisitions.requesterScope(user.employeeId);
+    if (!s) return { restricted: true, hiringManager: null, departments: [], defaultLocationId: null };
+    const departments = s.departments.map((d) => ({
+      id: d.id,
+      name: d.name,
+      company: d.company,
+      locations: d.locations.length ? d.locations.map((l) => l.location) : [s.location],
+    }));
+    const first = departments[0];
+    const defaultLocationId = !first
+      ? s.location.id
+      : first.locations.some((l) => l.id === s.location.id)
+        ? s.location.id
+        : first.locations[0].id;
+    return { restricted: true, hiringManager: person(s.me), departments, defaultLocationId };
+  }
+
   async create(dto: CreateRequisitionDto, user: AuthUser): Promise<RequisitionResponse> {
+    // BR-HIR-019: without full hiring access the requester is the hiring manager.
+    const hiringManagerId = dto.hiringManagerId ?? (seesAll(user) ? undefined : user.employeeId);
+    if (!hiringManagerId) throw new AppError('requisition.hiring_manager_required', 'Choose the hiring manager');
     const draft: RequisitionData = {
       title: dto.title.trim(),
       companyId: dto.companyId,
@@ -75,10 +101,10 @@ export class RequisitionsService {
       budgetMax: dto.budgetMax,
       currency: '',
       targetStart: dateOfDay(dto.targetStart),
-      hiringManagerId: dto.hiringManagerId,
+      hiringManagerId,
       justification: dto.justification.trim(),
     };
-    const data = await this.checked(draft);
+    const data = await this.checked(draft, user);
     const chain = dto.submit ? this.submitChain(user.employeeId, data.hiringManagerId) : null;
     const created = await this.requisitions.create(data, chain, actorOf(user));
     return RequisitionResponse.from(created, viewerOf(user));
@@ -118,7 +144,7 @@ export class RequisitionsService {
     }
     if (next.reason !== 'REPLACEMENT') next.replacesEmployeeId = null;
 
-    const data = await this.checked(next);
+    const data = await this.checked(next, user, current);
     const changes = diff(current, data);
     if (Object.keys(changes).length === 0) return RequisitionResponse.from(before, viewerOf(user));
     return RequisitionResponse.from(
@@ -131,7 +157,8 @@ export class RequisitionsService {
   async submit(id: string, user: AuthUser): Promise<RequisitionResponse> {
     const before = await this.editable(id, user);
     // The stored values are checked again: a rejected requisition may have a start date that has since passed.
-    await this.checked(dataOf(before));
+    const stored = dataOf(before);
+    await this.checked(stored, user, stored);
     const chain = this.submitChain(user.employeeId, before.hiringManager.id);
     assertTransition(before.status, chain.status);
     const saved = await this.requisitions.saveChain(
@@ -199,12 +226,26 @@ export class RequisitionsService {
     return r;
   }
 
+  private async requesterScopeOf(user: AuthUser): Promise<RequesterScope> {
+    const s = await this.requisitions.requesterScope(user.employeeId);
+    return {
+      employeeId: user.employeeId,
+      ownLocationId: s?.location.id ?? '',
+      departments: (s?.departments ?? []).map((d) => ({
+        id: d.id,
+        companyId: d.company.id,
+        locationIds: d.locations.map((l) => l.location.id),
+      })),
+    };
+  }
+
   private submitChain(submitterId: string, hiringManagerId: string): { status: 'PENDING_APPROVAL'; steps: Step[] } {
     return { status: 'PENDING_APPROVAL', steps: stepsForSubmit(submitterId, hiringManagerId, new Date()) };
   }
 
-  /** Checks every reference and BR-HIR-003; returns the data with the location's currency. */
-  private async checked(d: RequisitionData): Promise<RequisitionData> {
+  /** Checks every reference, BR-HIR-003 and (without full access) BR-HIR-019; returns the data with the location's
+      currency. `before` is the stored requisition on an edit or a submit. */
+  private async checked(d: RequisitionData, user: AuthUser, before?: RequisitionData): Promise<RequisitionData> {
     const [location, company, department, designation, manager, replaced] = await Promise.all([
       this.requisitions.location(d.locationId),
       this.requisitions.company(d.companyId),
@@ -219,6 +260,10 @@ export class RequisitionsService {
     }
     if (!department || department.companyId !== d.companyId) {
       throw new AppError('requisition.department_mismatch', 'The department does not belong to that company');
+    }
+    if (!seesAll(user)) {
+      const deptLocations = department.locations.map((l) => l.locationId);
+      checkScopedRequest(await this.requesterScopeOf(user), d, deptLocations, before);
     }
     if (d.designationId && designation?.departmentId !== d.departmentId) {
       throw new AppError('requisition.designation_mismatch', 'The designation does not belong to that department');

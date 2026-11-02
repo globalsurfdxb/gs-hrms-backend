@@ -11,14 +11,19 @@ Before each step, check the frontend for changes since the commit noted in the s
 
 - Permissions: `PERMISSIONS.hiring.*` (frontend ids `hiring:requisitions:*`, `hiring:recruiting:*`,
   `hiring:reports:*`). Defaults: Super Admin + HR full; Talent Acquisition Manager all hiring, no delete; Recruiter
-  Recruiting only, no delete; Team Lead + Office Admin requisitions only; Employee none. Decide by permission, never by
-  role name or designation (Q21). Full hiring access = Jobs → View AND Requisitions → View (`hasFullHiringAccess` in
+  Recruiting only, no delete; Team Lead + Office Admin requisitions only; Employee none. Decide access by permission,
+  never by role name (Q21/Q22) — the one exception is the recruiter hand-over, which finds the TA team by designation
+  title like the frontend (BR-HIR-021, below). Full hiring access = Jobs → View AND Requisitions → View (`hasFullHiringAccess` in
   `application/hiring-access.ts`, Q22). Anyone else works on their own jobs only (BR-HIR-022): every read and write
   of jobs, applications and candidates goes through `job-scope.where.ts` in the repository; another record is a 404.
 - State machines (in `domain/`): requisition, job, application stage/exit, interview, offer — spec §4.
   The frontend store does not guard most status changes; enforce the transitions the UI shows, not the store's.
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step
   deciders per BR-HIR-002; panelists → their interviews; referrers → their referrals.
+- Raising requisitions (BR-HIR-019, `domain/requester-scope.ts`): without full access only for their own department
+  (`employees.department_id`) or one they head (`departments.head_employee_id`), in a location the department works
+  in, with themselves as hiring manager. On an edit only a change of department, location or hiring manager is
+  checked, so one HR raised for them elsewhere stays editable. `GET /hiring/requisitions/scope` feeds the form.
 - Jobs (step 2): only Jobs permission holders reach them; without full access only their own jobs (recruiter or
   hiring manager). Create and status need full access. Recruiter hand-over (BR-HIR-021, `domain/recruiter.rules.ts`):
   the TA Manager and the TA team are found by **designation title**, as the frontend does (Q21) — a job created by

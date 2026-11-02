@@ -2848,7 +2848,7 @@
         ]
       },
       "post": {
-        "description": "Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step is approved automatically when you are the hiring manager). The hiring manager must hold Requisition approvals → Edit. Currency follows the location. Rules BR-HIR-003.",
+        "description": "Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step is approved automatically when you are the hiring manager). The hiring manager must hold Requisition approvals → Edit. Currency follows the location. Rules BR-HIR-003. Without full hiring access (Team Lead) only for your own department or one you head, in a location it works in, with you as the hiring manager (BR-HIR-019; see GET /hiring/requisitions/scope): another department or hiring manager is 403.",
         "operationId": "RequisitionsController_create",
         "parameters": [],
         "requestBody": {
@@ -2909,6 +2909,54 @@
           }
         ],
         "summary": "Raise a requisition",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
+    "/api/hiring/requisitions/scope": {
+      "get": {
+        "description": "Needs Requisitions → Add. With full hiring access (Super Admin, HR, Talent Acquisition Manager) restricted=false: choose any active company, department and hiring manager. Otherwise (Team Lead, Office Admin by default) restricted=true: only your own department and the departments you head, each with its company and the locations it works in; you are the hiring manager (BR-HIR-019).",
+        "operationId": "RequisitionsController_scope",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionScopeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "What the requisition form may offer you",
         "tags": [
           "Hiring · Requisitions"
         ]
@@ -2991,7 +3039,7 @@
         ]
       },
       "patch": {
-        "description": "Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted.",
+        "description": "Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted. Without full hiring access the department can only move to one in your scope, the location must be one the department works in, and the hiring manager cannot change (BR-HIR-019).",
         "operationId": "RequisitionsController_update",
         "parameters": [
           {
@@ -7081,6 +7129,72 @@
           "pageSize"
         ]
       },
+      "RequesterDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cloud & Infra"
+          },
+          "company": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "locations": {
+            "description": "Locations to choose from (id e.g. Dubai). Show a picker only when there is more than one.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "company",
+          "locations"
+        ]
+      },
+      "RequisitionScopeResponse": {
+        "type": "object",
+        "properties": {
+          "restricted": {
+            "type": "boolean",
+            "description": "true = no full hiring access (Team Lead by default): company and department come from `departments`, the location from that department, and the caller is the hiring manager. false = every active company, department and hiring manager may be chosen; `departments` is empty."
+          },
+          "hiringManager": {
+            "nullable": true,
+            "description": "The fixed hiring manager (the caller) when restricted; null otherwise",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "departments": {
+            "description": "Their own department first, then the departments they head. Empty when restricted means none is set up.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequesterDepartmentResponse"
+            }
+          },
+          "defaultLocationId": {
+            "type": "string",
+            "nullable": true,
+            "example": "Dubai",
+            "description": "Location to preselect: the caller’s own when the department works there"
+          }
+        },
+        "required": [
+          "restricted",
+          "hiringManager",
+          "departments",
+          "defaultLocationId"
+        ]
+      },
       "CreateRequisitionDto": {
         "type": "object",
         "properties": {
@@ -7153,7 +7267,7 @@
           "hiringManagerId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
-            "description": "An active employee"
+            "description": "An active employee with Requisition approvals → Edit. Required with full hiring access; without it (Team Lead) leave it out — you are the hiring manager (BR-HIR-019), and anyone else is refused."
           },
           "justification": {
             "type": "string",
@@ -7176,7 +7290,6 @@
           "budgetMin",
           "budgetMax",
           "targetStart",
-          "hiringManagerId",
           "justification"
         ]
       },
@@ -7252,7 +7365,7 @@
           "hiringManagerId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
-            "description": "An active employee"
+            "description": "An active employee with Requisition approvals → Edit. Required with full hiring access; without it (Team Lead) leave it out — you are the hiring manager (BR-HIR-019), and anyone else is refused."
           },
           "justification": {
             "type": "string",

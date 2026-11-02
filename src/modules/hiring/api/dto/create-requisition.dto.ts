@@ -81,9 +81,15 @@ export class CreateRequisitionDto {
   @Matches(DAY, { message: 'targetStart must be YYYY-MM-DD' })
   targetStart: string;
 
-  @ApiProperty({ example: '0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05', description: 'An active employee' })
+  @ApiPropertyOptional({
+    example: '0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05',
+    description:
+      'An active employee with Requisition approvals → Edit. Required with full hiring access; without it (Team ' +
+      'Lead) leave it out — you are the hiring manager (BR-HIR-019), and anyone else is refused.',
+  })
+  @IsOptional()
   @IsUUID()
-  hiringManagerId: string;
+  hiringManagerId?: string;
 
   @ApiProperty({ example: 'Two new managed-network clients from January need on-site support.' })
   @IsString()

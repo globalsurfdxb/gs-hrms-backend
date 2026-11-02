@@ -10,6 +10,7 @@ import { CreateRequisitionDto } from './dto/create-requisition.dto.js';
 import { DecideRequisitionDto } from './dto/decide-requisition.dto.js';
 import { ListRequisitionsQuery } from './dto/list-requisitions.query.js';
 import { RequisitionListResponse, RequisitionResponse } from './dto/requisition.response.js';
+import { RequisitionScopeResponse } from './dto/requisition-scope.response.js';
 import { UpdateRequisitionDto } from './dto/update-requisition.dto.js';
 
 const FEATURE = PERMISSIONS.hiring.requisitions;
@@ -38,6 +39,23 @@ export class RequisitionsController {
     return this.requisitions.list(query, user);
   }
 
+  // Declared before ':id' so "scope" is not read as an id.
+  @RequirePermission(FEATURE, 'add')
+  @Get('scope')
+  @ApiOperation({
+    summary: 'What the requisition form may offer you',
+    description:
+      'Needs Requisitions → Add. With full hiring access (Super Admin, HR, Talent Acquisition Manager) restricted=false: ' +
+      'choose any active company, department and hiring manager. Otherwise (Team Lead, Office Admin by default) ' +
+      'restricted=true: only your own department and the departments you head, each with its company and the ' +
+      'locations it works in; you are the hiring manager (BR-HIR-019).',
+  })
+  @ApiOkResponse({ type: RequisitionScopeResponse })
+  @ApiErrors(401, 403)
+  scope(@CurrentUser() user: AuthUser) {
+    return this.requisitions.scope(user);
+  }
+
   @RequirePermission(FEATURE)
   @Get(':id')
   @ApiOperation({ summary: 'Get one requisition', description: `Needs Requisitions → View. ${WHO_SEES}` })
@@ -55,7 +73,9 @@ export class RequisitionsController {
       'Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with ' +
       'submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step ' +
       'is approved automatically when you are the hiring manager). The hiring manager must hold Requisition ' +
-      'approvals → Edit. Currency follows the location. Rules BR-HIR-003.',
+      'approvals → Edit. Currency follows the location. Rules BR-HIR-003. Without full hiring access (Team Lead) ' +
+      'only for your own department or one you head, in a location it works in, with you as the hiring manager ' +
+      '(BR-HIR-019; see GET /hiring/requisitions/scope): another department or hiring manager is 403.',
   })
   @ApiCreatedResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403)
@@ -69,7 +89,9 @@ export class RequisitionsController {
     summary: 'Edit a requisition',
     description:
       'Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or ' +
-      'REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted.',
+      'REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until ' +
+      'resubmitted. Without full hiring access the department can only move to one in your scope, the location ' +
+      'must be one the department works in, and the hiring manager cannot change (BR-HIR-019).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403, 404, 409)
