@@ -10,9 +10,11 @@ import { JobDetailResponse, JobListResponse, JobResponse } from '../api/dto/job.
 import type { ListJobsQuery } from '../api/dto/list-jobs.query.js';
 import { assertCanCreateJob, checkJobInput, jobHistory, jobStatusAfter, type JobAction } from '../domain/job.rules.js';
 import { JobsRepository } from '../infrastructure/jobs.repository.js';
+import { assertFullHiringAccess, hasFullHiringAccess, hiringScopeOf } from './hiring-access.js';
 
-/* Use cases for jobs (spec docs/modules/hiring.md, step 2). Jobs are recruiting work: every route needs a Jobs
-   permission (HR, Super Admin by default) and such users see every job, so there is no per-record scope yet. */
+/* Use cases for jobs (spec docs/modules/hiring.md, step 2). Every route needs a Jobs permission. Full hiring access
+   sees every job and runs it (create, status, recruiter); anyone else sees their own jobs only (BR-HIR-022) — another
+   job is a 404. */
 @Injectable()
 export class JobsService {
   constructor(private readonly jobs: JobsRepository) {}
@@ -21,6 +23,7 @@ export class JobsService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 50;
     const { items, total } = await this.jobs.list(
+      hiringScopeOf(user),
       { status: query.status, locationId: query.locationId, recruiterId: query.recruiterId },
       page,
       pageSize,
@@ -30,11 +33,12 @@ export class JobsService {
   }
 
   async get(id: string, user: AuthUser): Promise<JobDetailResponse> {
-    return JobDetailResponse.fromDetail(await this.found(id), viewerOf(user));
+    return JobDetailResponse.fromDetail(await this.found(id, user), viewerOf(user));
   }
 
   /** BR-HIR-005: open a job from an approved requisition. */
   async create(requisitionId: string, dto: CreateJobDto, user: AuthUser): Promise<JobDetailResponse> {
+    assertFullHiringAccess(user);
     const req = await this.jobs.requisition(requisitionId);
     if (!req) throw notFound('requisition');
     assertCanCreateJob({ status: req.status, hasJob: !!req.job });
@@ -86,7 +90,8 @@ export class JobsService {
 
   /** BR-HIR-006: open, hold, resume, close or reopen. */
   async changeStatus(id: string, action: JobAction, user: AuthUser): Promise<JobDetailResponse> {
-    const before = await this.found(id);
+    const before = await this.found(id, user);
+    assertFullHiringAccess(user);
     const { status, verb } = jobStatusAfter(action, {
       status: before.status,
       filled: before.filled,
@@ -102,8 +107,10 @@ export class JobsService {
     return JobDetailResponse.fromDetail(job, viewerOf(user));
   }
 
+  /** Full access for now; step 3.1d moves the choice to the Talent Acquisition Manager (BR-HIR-021). */
   async changeRecruiter(id: string, dto: ChangeRecruiterDto, user: AuthUser): Promise<JobDetailResponse> {
-    const before = await this.found(id);
+    const before = await this.found(id, user);
+    assertFullHiringAccess(user);
     if (before.recruiter.id === dto.recruiterId) return JobDetailResponse.fromDetail(before, viewerOf(user));
     const active = await this.jobs.activeEmployees([dto.recruiterId]);
     const name = active.get(dto.recruiterId);
@@ -123,8 +130,8 @@ export class JobsService {
     return JobDetailResponse.fromDetail(job, viewerOf(user));
   }
 
-  private async found(id: string) {
-    const job = await this.jobs.findById(id);
+  private async found(id: string, user: AuthUser) {
+    const job = await this.jobs.findVisible(id, hiringScopeOf(user));
     if (!job) throw notFound('job');
     return job;
   }
@@ -132,4 +139,7 @@ export class JobsService {
 
 const invalidRecruiter = () => new AppError('job.invalid_recruiter', 'The recruiter must be an active employee');
 
-const viewerOf = (user: AuthUser) => ({ canEdit: hasPermission(user.permissions, PERMISSIONS.hiring.jobs, 'edit') });
+/** Status actions and the recruiter choice are offered to full access only (frontend `canManage`). */
+const viewerOf = (user: AuthUser) => ({
+  canEdit: hasFullHiringAccess(user) && hasPermission(user.permissions, PERMISSIONS.hiring.jobs, 'edit'),
+});

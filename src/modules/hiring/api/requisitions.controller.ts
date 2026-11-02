@@ -16,8 +16,9 @@ const FEATURE = PERMISSIONS.hiring.requisitions;
 const APPROVALS = PERMISSIONS.hiring.requisitionApprovals;
 
 const WHO_SEES =
-  'HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step ' +
-  'they decide, and those they already decided. Anything else is 404.';
+  'Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every ' +
+  'requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), ' +
+  'those waiting on a step they decide, and those they already decided. Anything else is 404.';
 
 @ApiTags('Hiring · Requisitions')
 @ApiCookieAuth()
@@ -114,7 +115,8 @@ export class RequisitionsController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'Put an approved requisition on hold',
-    description: 'Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED → ON_HOLD (BR-HIR-004).',
+    description:
+      'Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). APPROVED → ON_HOLD (BR-HIR-004).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403, 404, 409)
@@ -127,7 +129,8 @@ export class RequisitionsController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'Resume a requisition on hold',
-    description: 'Needs Requisitions → Edit and recruiting access (HR, Super Admin). ON_HOLD → APPROVED (BR-HIR-004).',
+    description:
+      'Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). ON_HOLD → APPROVED (BR-HIR-004).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403, 404, 409)
@@ -141,7 +144,7 @@ export class RequisitionsController {
   @ApiOperation({
     summary: 'Close a requisition',
     description:
-      'Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED or ON_HOLD → CLOSED, final (BR-HIR-004).',
+      'Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). APPROVED or ON_HOLD → CLOSED, final (BR-HIR-004).',
   })
   @ApiOkResponse({ type: RequisitionResponse })
   @ApiErrors(400, 401, 403, 404, 409)

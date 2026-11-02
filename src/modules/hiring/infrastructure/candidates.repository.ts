@@ -5,7 +5,9 @@ import type { ApplicationStage, CandidateSource, Prisma } from '../../../generat
 import { conflict } from '../../../shared/errors/app-error.js';
 import { appliedHistory } from '../domain/application.rules.js';
 import { APPLICATION_SUMMARY, STAGE_HISTORY } from './applications.repository.js';
+import type { HiringScope } from '../domain/job-scope.js';
 import { candidateSearch } from './candidate-search.js';
+import { applicationInScope, candidateInScope } from './job-scope.where.js';
 import { PERSON } from './requisitions.repository.js';
 
 export interface CandidateData {
@@ -81,10 +83,24 @@ const CANDIDATE_DETAIL = {
 export type CandidateRecord = Prisma.CandidateGetPayload<{ select: typeof CANDIDATE }>;
 export type CandidateDetailRecord = Prisma.CandidateGetPayload<{ select: typeof CANDIDATE_DETAIL }>;
 
+/* A candidate as the caller may see them: without full hiring access, only their applications on the caller's own
+   jobs are included (BR-HIR-022) — applications to other teams' jobs are not theirs to read. */
+const listSelect = (scope: HiringScope) =>
+  ({
+    ...CANDIDATE,
+    applications: { ...CANDIDATE.applications, where: applicationInScope(scope) },
+  }) satisfies Prisma.CandidateSelect;
+
+const detailSelect = (scope: HiringScope) =>
+  ({
+    ...CANDIDATE_DETAIL,
+    applications: { ...CANDIDATE_DETAIL.applications, where: applicationInScope(scope) },
+  }) satisfies Prisma.CandidateSelect;
+
 const AUDIT = { module: 'Hiring', entityType: 'candidate' } as const;
 
-/* The only place the hiring module touches Prisma for candidates. Candidates → View holders see every candidate,
-   so there is no per-record scope yet (panelists and referrers arrive in step 4). Writes run in a transaction with
+/* The only place the hiring module touches Prisma for candidates. Full hiring access sees every candidate; anyone
+   else only candidates on their own jobs (BR-HIR-022; panelists and referrers arrive in step 4). Writes run in a transaction with
    their audit row; salary amounts never go into the audit log (spec Q8). */
 @Injectable()
 export class CandidatesRepository {
@@ -93,13 +109,16 @@ export class CandidatesRepository {
     private readonly audit: AuditService,
   ) {}
 
-  async list(filter: CandidateFilter, page: number, pageSize: number) {
+  async list(scope: HiringScope, filter: CandidateFilter, page: number, pageSize: number) {
+    // Job and stage filters look only at applications the caller may see, so they reveal nothing about other jobs.
     const app: Prisma.ApplicationWhereInput = {
+      ...applicationInScope(scope),
       ...(filter.jobId && { jobId: filter.jobId }),
       ...(filter.stage && { stage: filter.stage, exit: null }),
     };
     const where: Prisma.CandidateWhereInput = {
       AND: [
+        candidateInScope(scope),
         filter.q ? candidateSearch(filter.q) : {},
         filter.jobId || filter.stage ? { applications: { some: app } } : {},
         filter.source ? { source: filter.source } : {},
@@ -110,7 +129,7 @@ export class CandidatesRepository {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.candidate.findMany({
         where,
-        select: CANDIDATE,
+        select: listSelect(scope),
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -120,8 +139,17 @@ export class CandidatesRepository {
     return { items, total };
   }
 
-  findById(id: string) {
-    return this.prisma.candidate.findUnique({ where: { id }, select: CANDIDATE_DETAIL });
+  /** A candidate the caller may see (BR-HIR-022), or null. */
+  findVisible(id: string, scope: HiringScope) {
+    return this.prisma.candidate.findFirst({
+      where: { AND: [{ id }, candidateInScope(scope)] },
+      select: detailSelect(scope),
+    });
+  }
+
+  isVisible(id: string, scope: HiringScope): Promise<boolean> {
+    if (scope.all) return Promise.resolve(true);
+    return this.prisma.candidate.count({ where: { AND: [{ id }, candidateInScope(scope)] } }).then((n) => n > 0);
   }
 
   /** Candidates with the same email or phone key (BR-HIR-007). */
@@ -152,7 +180,7 @@ export class CandidatesRepository {
   /* ---------------------------------------------------------------- writes */
 
   /** Adds the candidate with their consent time, the first note and, when jobId is given, the application. */
-  create(data: CandidateData, note: string | null, jobId: string | null, actor: AuditActor) {
+  create(data: CandidateData, note: string | null, jobId: string | null, actor: AuditActor, scope: HiringScope) {
     return this.prisma.$transaction(async (tx) => {
       const { id } = await tx.candidate
         .create({
@@ -181,11 +209,11 @@ export class CandidatesRepository {
         },
         tx,
       );
-      return tx.candidate.findUniqueOrThrow({ where: { id }, select: CANDIDATE_DETAIL });
+      return tx.candidate.findUniqueOrThrow({ where: { id }, select: detailSelect(scope) });
     });
   }
 
-  setTags(before: CandidateDetailRecord, tags: string[], actor: AuditActor) {
+  setTags(before: CandidateDetailRecord, tags: string[], actor: AuditActor, scope: HiringScope) {
     return this.prisma.$transaction(async (tx) => {
       await tx.candidate.update({ where: { id: before.id }, data: { tags } });
       await this.audit.record(
@@ -199,11 +227,11 @@ export class CandidatesRepository {
         },
         tx,
       );
-      return tx.candidate.findUniqueOrThrow({ where: { id: before.id }, select: CANDIDATE_DETAIL });
+      return tx.candidate.findUniqueOrThrow({ where: { id: before.id }, select: detailSelect(scope) });
     });
   }
 
-  addNote(candidateId: string, text: string, actor: AuditActor) {
+  addNote(candidateId: string, text: string, actor: AuditActor, scope: HiringScope) {
     return this.prisma.$transaction(async (tx) => {
       const { id } = await tx.candidateNote.create({
         data: { candidateId, text, authorId: actor.id! },
@@ -215,7 +243,7 @@ export class CandidatesRepository {
         { ...AUDIT, actor, action: 'candidate.note_added', entityId: candidateId, after: { noteId: id } },
         tx,
       );
-      return tx.candidate.findUniqueOrThrow({ where: { id: candidateId }, select: CANDIDATE_DETAIL });
+      return tx.candidate.findUniqueOrThrow({ where: { id: candidateId }, select: detailSelect(scope) });
     });
   }
 

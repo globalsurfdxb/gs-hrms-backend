@@ -38,6 +38,9 @@ docs {
   through "Hiring · Requisitions" first (raise with submit, then decide as HR GS-119 and Super Admin GS-120).
   Recruiter and panel must be active employees (this uses `reqHiringManagerId` for both).
   `publish: true` opens the job now. Saves the new id in `jobId`.
+
+  Full hiring access only (Super Admin, HR, Talent Acquisition Manager): a Recruiter gets 403
+  hiring.full_access_required.
 }
 
 tests {

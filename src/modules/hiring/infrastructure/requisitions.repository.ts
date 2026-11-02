@@ -237,6 +237,8 @@ export class RequisitionsRepository {
       OR: [
         { hiringManagerId: me },
         { createdById: me },
+        // BR-HIR-022: the requisition behind a job they recruit for.
+        { job: { recruiterId: me } },
         // Approvers see what waits on their step, and what they already decided.
         ...(scope.decidableLabels.length
           ? [
