@@ -136,7 +136,43 @@ export class RequisitionsRepository {
   }
 
   department(id: string) {
-    return this.prisma.department.findUnique({ where: { id }, select: { id: true, companyId: true } });
+    return this.prisma.department.findUnique({
+      where: { id },
+      select: { id: true, companyId: true, locations: { select: { locationId: true } } },
+    });
+  }
+
+  /** BR-HIR-019: the requester's own department (first) and the departments they head, in active companies. */
+  async requesterScope(employeeId: string) {
+    const me = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        departmentId: true,
+        location: { select: { id: true, name: true } },
+      },
+    });
+    if (!me) return null;
+    const mine: Prisma.DepartmentWhereInput[] = [{ headEmployeeId: employeeId }];
+    if (me.departmentId) mine.push({ id: me.departmentId });
+    const departments = await this.prisma.department.findMany({
+      where: { OR: mine, company: { status: 'ACTIVE' } },
+      select: {
+        id: true,
+        name: true,
+        company: { select: { id: true, name: true } },
+        locations: { select: { location: { select: { id: true, name: true } } }, orderBy: { locationId: 'asc' } },
+      },
+      orderBy: [{ company: { name: 'asc' } }, { name: 'asc' }],
+    });
+    const own = departments.filter((d) => d.id === me.departmentId);
+    return {
+      me: { id: me.id, employeeCode: me.employeeCode, fullName: me.fullName },
+      location: me.location,
+      departments: [...own, ...departments.filter((d) => d.id !== me.departmentId)],
+    };
   }
 
   designation(id: string) {
