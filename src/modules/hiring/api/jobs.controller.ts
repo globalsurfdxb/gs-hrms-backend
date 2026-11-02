@@ -8,7 +8,7 @@ import { PERMISSIONS } from '../../../core/iam/permission-catalog.js';
 import { JobsService } from '../application/jobs.service.js';
 import { ChangeRecruiterDto } from './dto/change-recruiter.dto.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
-import { JobDetailResponse, JobListResponse } from './dto/job.response.js';
+import { JobDetailResponse, JobListResponse, RecruiterPoolResponse } from './dto/job.response.js';
 import { ListJobsQuery } from './dto/list-jobs.query.js';
 
 const FEATURE = PERMISSIONS.hiring.jobs;
@@ -30,12 +30,31 @@ export class JobsController {
   @Get('jobs')
   @ApiOperation({
     summary: 'List jobs',
-    description: `Needs Jobs → View. ${SCOPE} Newest first. Filters: status, location, recruiter.`,
+    description:
+      `Needs Jobs → View. ${SCOPE} Newest first. Filters: status, location, recruiter, and awaitingRecruiter=true ` +
+      'for jobs the Talent Acquisition Manager has yet to give a recruiter (BR-HIR-021).',
   })
   @ApiOkResponse({ type: JobListResponse })
   @ApiErrors(400, 401, 403)
   list(@Query() query: ListJobsQuery, @CurrentUser() user: AuthUser) {
     return this.jobs.list(query, user);
+  }
+
+  @RequirePermission(FEATURE)
+  @Get('recruiters')
+  @ApiOperation({
+    summary: 'Talent Acquisition Manager and recruiter pool',
+    description:
+      'Needs Jobs → View. For the job form and the "Choose recruiter" drawer (BR-HIR-021): the Talent Acquisition ' +
+      'Manager (the active employee with that designation, as the frontend finds them), whether a job you create ' +
+      'now is handed to them (then leave the recruiter out), and the Talent Acquisition team (active Recruiters and ' +
+      'the TA Manager, by designation) to choose from. With no TA Manager the pool is empty and any active employee ' +
+      'may be the recruiter.',
+  })
+  @ApiOkResponse({ type: RecruiterPoolResponse })
+  @ApiErrors(401, 403)
+  recruiters(@CurrentUser() user: AuthUser) {
+    return this.jobs.recruiters(user);
   }
 
   @RequirePermission(FEATURE)
@@ -58,7 +77,11 @@ export class JobsController {
       'Needs Jobs → Add and full hiring access (Super Admin, HR, Talent Acquisition Manager by default; 403 ' +
       'hiring.full_access_required otherwise). Only from an APPROVED requisition that has no job yet (409 ' +
       'otherwise). Title, company, department, location, positions, budget and hiring manager come from the ' +
-      'requisition. Recruiter and interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005).',
+      'requisition. Interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005). ' +
+      'Recruiter (BR-HIR-021): with a Talent Acquisition Manager in place, a job created by anyone but them or a ' +
+      'Super Admin is handed to them with no recruiter — sending recruiterId then is 400 job.recruiter_chosen_by_ta; ' +
+      'otherwise recruiterId is required (400 job.recruiter_required), from the Talent Acquisition team once there ' +
+      'is one. See GET /hiring/recruiters.',
   })
   @ApiCreatedResponse({ type: JobDetailResponse })
   @ApiErrors(400, 401, 403, 404, 409)
@@ -134,11 +157,13 @@ export class JobsController {
   @RequirePermission(FEATURE, 'edit')
   @Put('jobs/:id/recruiter')
   @ApiOperation({
-    summary: 'Change the recruiter of a job',
+    summary: 'Choose or change the recruiter of a job',
     description:
-      'Needs Jobs → Edit and full hiring access (403 hiring.full_access_required otherwise; step 3.1d moves this to ' +
-      'the Talent Acquisition Manager). The new recruiter must be an active employee; the change is added to the job ' +
-      'history. Another person’s job is 404 for own-jobs users.',
+      'Needs Jobs → Edit, and (BR-HIR-021) the caller must be a Super Admin, a Talent Acquisition Manager (by role ' +
+      'or designation) or the TA Manager the job was handed to; on a job with no TA Manager, full hiring access ' +
+      'also may (403 job.recruiter_not_allowed otherwise). With a TA Manager in place the recruiter must be on the ' +
+      'Talent Acquisition team, otherwise any active employee (400 job.invalid_recruiter). Added to the job history. ' +
+      'Another person’s job is 404 for own-jobs users.',
   })
   @ApiOkResponse({ type: JobDetailResponse })
   @ApiErrors(400, 401, 403, 404, 409)

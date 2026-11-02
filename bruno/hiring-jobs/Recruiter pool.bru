@@ -1,0 +1,31 @@
+meta {
+  name: Recruiter pool
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/hiring/recruiters
+  body: none
+  auth: none
+}
+
+script:post-response {
+  const rec = (res.body.pool || []).find((p) => p.designation === "Recruiter");
+  if (rec) bru.setEnvVar("recruiterId", rec.id);
+}
+
+docs {
+  Needs Jobs → View. BR-HIR-021: the Talent Acquisition Manager (active employee with that designation — GS-155 in
+  the seed), whether a job you create now is handed to them (`handsOver`: true for HR, false for the TA Manager and
+  Super Admin), and the Talent Acquisition team to choose the recruiter from. Saves the first Recruiter in
+  `recruiterId` for "Change job recruiter".
+}
+
+tests {
+  test("pool returned", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.pool).to.be.an("array");
+    expect(res.body).to.have.property("handsOver");
+  });
+}

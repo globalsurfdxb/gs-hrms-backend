@@ -21,10 +21,9 @@ describe('Own jobs (BR-HIR-022)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     w = await hiringWorld(app);
-    mine = await w.job();
-    other = await w.job();
-    // HR hands one job to the Recruiter; the other stays with HR.
-    await w.send('hr', 'put', `/jobs/${mine.id}/recruiter`, { recruiterId: w.id.recruiter }).expect(200);
+    // The TA Manager gives one job to the Recruiter and keeps the other.
+    mine = await w.job(true, 'recruiter');
+    other = await w.job(true, 'taManager');
 
     const a = await w.send('hr', 'post', '/candidates', { ...w.candidate(), jobId: mine.id }).expect(201);
     mineApp = a.body.applications[0].id;

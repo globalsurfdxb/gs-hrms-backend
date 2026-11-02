@@ -3533,7 +3533,7 @@
     },
     "/api/hiring/jobs": {
       "get": {
-        "description": "Needs Jobs → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404. Newest first. Filters: status, location, recruiter.",
+        "description": "Needs Jobs → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404. Newest first. Filters: status, location, recruiter, and awaitingRecruiter=true for jobs the Talent Acquisition Manager has yet to give a recruiter (BR-HIR-021).",
         "operationId": "JobsController_list",
         "parameters": [
           {
@@ -3568,6 +3568,16 @@
             "schema": {
               "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
               "type": "string"
+            }
+          },
+          {
+            "name": "awaitingRecruiter",
+            "required": false,
+            "in": "query",
+            "description": "Only jobs waiting for the Talent Acquisition Manager to choose a recruiter (BR-HIR-021)",
+            "schema": {
+              "example": true,
+              "type": "boolean"
             }
           },
           {
@@ -3640,6 +3650,54 @@
           }
         ],
         "summary": "List jobs",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
+    "/api/hiring/recruiters": {
+      "get": {
+        "description": "Needs Jobs → View. For the job form and the \"Choose recruiter\" drawer (BR-HIR-021): the Talent Acquisition Manager (the active employee with that designation, as the frontend finds them), whether a job you create now is handed to them (then leave the recruiter out), and the Talent Acquisition team (active Recruiters and the TA Manager, by designation) to choose from. With no TA Manager the pool is empty and any active employee may be the recruiter.",
+        "operationId": "JobsController_recruiters",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecruiterPoolResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Talent Acquisition Manager and recruiter pool",
         "tags": [
           "Hiring · Jobs"
         ]
@@ -3724,7 +3782,7 @@
     },
     "/api/hiring/requisitions/{id}/job": {
       "post": {
-        "description": "Needs Jobs → Add and full hiring access (Super Admin, HR, Talent Acquisition Manager by default; 403 hiring.full_access_required otherwise). Only from an APPROVED requisition that has no job yet (409 otherwise). Title, company, department, location, positions, budget and hiring manager come from the requisition. Recruiter and interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005).",
+        "description": "Needs Jobs → Add and full hiring access (Super Admin, HR, Talent Acquisition Manager by default; 403 hiring.full_access_required otherwise). Only from an APPROVED requisition that has no job yet (409 otherwise). Title, company, department, location, positions, budget and hiring manager come from the requisition. Interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005). Recruiter (BR-HIR-021): with a Talent Acquisition Manager in place, a job created by anyone but them or a Super Admin is handed to them with no recruiter — sending recruiterId then is 400 job.recruiter_chosen_by_ta; otherwise recruiterId is required (400 job.recruiter_required), from the Talent Acquisition team once there is one. See GET /hiring/recruiters.",
         "operationId": "JobsController_create",
         "parameters": [
           {
@@ -4256,7 +4314,7 @@
     },
     "/api/hiring/jobs/{id}/recruiter": {
       "put": {
-        "description": "Needs Jobs → Edit and full hiring access (403 hiring.full_access_required otherwise; step 3.1d moves this to the Talent Acquisition Manager). The new recruiter must be an active employee; the change is added to the job history. Another person’s job is 404 for own-jobs users.",
+        "description": "Needs Jobs → Edit, and (BR-HIR-021) the caller must be a Super Admin, a Talent Acquisition Manager (by role or designation) or the TA Manager the job was handed to; on a job with no TA Manager, full hiring access also may (403 job.recruiter_not_allowed otherwise). With a TA Manager in place the recruiter must be on the Talent Acquisition team, otherwise any active employee (400 job.invalid_recruiter). Added to the job history. Another person’s job is 404 for own-jobs users.",
         "operationId": "JobsController_changeRecruiter",
         "parameters": [
           {
@@ -4345,7 +4403,7 @@
             "cookie": []
           }
         ],
-        "summary": "Change the recruiter of a job",
+        "summary": "Choose or change the recruiter of a job",
         "tags": [
           "Hiring · Jobs"
         ]
@@ -7258,7 +7316,7 @@
           },
           "canChangeRecruiter": {
             "type": "boolean",
-            "description": "Change the recruiter (Jobs → Edit)"
+            "description": "Choose or change the recruiter (Jobs → Edit and BR-HIR-021: Super Admin, a Talent Acquisition Manager, or full hiring access on a job with no TA Manager)"
           }
         },
         "required": [
@@ -7334,7 +7392,24 @@
             "$ref": "#/components/schemas/PersonRefResponse"
           },
           "recruiter": {
-            "$ref": "#/components/schemas/PersonRefResponse"
+            "nullable": true,
+            "description": "Null while the Talent Acquisition Manager has yet to choose (BR-HIR-021)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager the job was handed to; null if there was none when it was made",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
           },
           "description": {
             "type": "string"
@@ -7413,6 +7488,7 @@
           "budgetMax",
           "hiringManager",
           "recruiter",
+          "taManager",
           "description",
           "skills",
           "expMin",
@@ -7455,6 +7531,64 @@
           "total",
           "page",
           "pageSize"
+        ]
+      },
+      "RecruiterOptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-058"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dev Team Lead"
+          },
+          "designation": {
+            "type": "object",
+            "example": "Recruiter",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "name",
+          "designation"
+        ]
+      },
+      "RecruiterPoolResponse": {
+        "type": "object",
+        "properties": {
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager (active employee with that designation); null if there is none",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "handsOver": {
+            "type": "boolean",
+            "description": "A job you create now is handed to the TA Manager — leave the recruiter out of the job form"
+          },
+          "pool": {
+            "description": "The Talent Acquisition team (Recruiters and the TA Manager). Empty when there is no TA Manager: then any active employee may be chosen.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruiterOptionResponse"
+            }
+          }
+        },
+        "required": [
+          "taManager",
+          "handsOver",
+          "pool"
         ]
       },
       "JobEventResponse": {
@@ -7552,7 +7686,24 @@
             "$ref": "#/components/schemas/PersonRefResponse"
           },
           "recruiter": {
-            "$ref": "#/components/schemas/PersonRefResponse"
+            "nullable": true,
+            "description": "Null while the Talent Acquisition Manager has yet to choose (BR-HIR-021)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager the job was handed to; null if there was none when it was made",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
           },
           "description": {
             "type": "string"
@@ -7638,6 +7789,7 @@
           "budgetMax",
           "hiringManager",
           "recruiter",
+          "taManager",
           "description",
           "skills",
           "expMin",
@@ -7708,7 +7860,7 @@
           "recruiterId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
-            "description": "An active employee who runs this job"
+            "description": "Who runs this job (BR-HIR-021). Leave it out when the job is handed to the Talent Acquisition Manager (GET /hiring/recruiters → handsOver); otherwise required — from the Talent Acquisition team once there is one, else any active employee."
           },
           "referralEligible": {
             "type": "boolean",
@@ -7732,7 +7884,6 @@
           "expMin",
           "expMax",
           "panelIds",
-          "recruiterId",
           "closingDate"
         ]
       },
@@ -7742,7 +7893,7 @@
           "recruiterId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
-            "description": "An active employee"
+            "description": "An active employee; from the Talent Acquisition team once there is one (GET /hiring/recruiters)"
           }
         },
         "required": [

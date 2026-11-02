@@ -4,6 +4,7 @@ import { PrismaService } from '../../../core/database/prisma.service.js';
 import type { JobStatus, Prisma } from '../../../generated/prisma/client.js';
 import { conflict } from '../../../shared/errors/app-error.js';
 import type { HiringScope } from '../domain/job-scope.js';
+import { RECRUITER_TITLE, TA_MANAGER_TITLE } from '../domain/recruiter.rules.js';
 import { jobInScope } from './job-scope.where.js';
 import { PERSON } from './requisitions.repository.js';
 
@@ -17,7 +18,9 @@ export interface JobData {
   qualifications: string;
   referralEligible: boolean;
   closingDate: Date;
-  recruiterId: string;
+  /** Null while the job waits for its TA Manager to choose (BR-HIR-021). */
+  recruiterId: string | null;
+  taManagerId: string | null;
   status: JobStatus;
 }
 
@@ -25,6 +28,8 @@ export interface JobFilter {
   status?: JobStatus;
   locationId?: string;
   recruiterId?: string;
+  /** Jobs still waiting for the TA Manager to choose a recruiter. */
+  awaitingRecruiter?: boolean;
 }
 
 const JOB = {
@@ -43,6 +48,7 @@ const JOB = {
   updatedAt: true,
   designation: { select: { id: true, title: true } },
   recruiter: PERSON,
+  taManager: PERSON,
   createdBy: PERSON,
   panel: { select: { employee: PERSON }, orderBy: { employee: { fullName: 'asc' } } },
   // Read from the requisition: it cannot change once approved.
@@ -91,6 +97,7 @@ export class JobsRepository {
         {
           ...(filter.status && { status: filter.status }),
           ...(filter.recruiterId && { recruiterId: filter.recruiterId }),
+          ...(filter.awaitingRecruiter && { recruiterId: null }),
           ...(filter.locationId && { requisition: { locationId: filter.locationId } }),
         },
       ],
@@ -132,6 +139,42 @@ export class JobsRepository {
     return this.prisma.designation.findUnique({ where: { id }, select: { id: true, departmentId: true } });
   }
 
+  /** BR-HIR-021: the Talent Acquisition Manager — the active employee with that designation (frontend
+      `talentManager`). With more than one, the longest-serving, so the choice is stable. */
+  talentManager() {
+    return this.prisma.employee.findFirst({
+      where: { employmentStatus: 'ACTIVE', designation: { title: TA_MANAGER_TITLE } },
+      select: PERSON.select,
+      orderBy: [{ dateOfJoining: 'asc' }, { employeeCode: 'asc' }],
+    });
+  }
+
+  /** The Talent Acquisition team: active Recruiters and TA Managers, by designation (frontend `recruiterPool`). */
+  recruiterPool() {
+    return this.prisma.employee.findMany({
+      where: { employmentStatus: 'ACTIVE', designation: { title: { in: [RECRUITER_TITLE, TA_MANAGER_TITLE] } } },
+      select: { ...PERSON.select, designation: { select: { title: true } } },
+      orderBy: { fullName: 'asc' },
+    });
+  }
+
+  /** An employee's designation title (null without one or when unknown). */
+  async designationOf(employeeId: string): Promise<string | null> {
+    const e = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { designation: { select: { title: true } } },
+    });
+    return e?.designation?.title ?? null;
+  }
+
+  /** An ACTIVE employee who could be chosen as a recruiter, with their designation, or null. */
+  activeEmployee(id: string) {
+    return this.prisma.employee.findFirst({
+      where: { id, employmentStatus: 'ACTIVE' },
+      select: { id: true, fullName: true, designation: { select: { title: true } } },
+    });
+  }
+
   /** Of the given ids, those that are ACTIVE employees (recruiter and panel must be). */
   async activeEmployees(ids: string[]): Promise<Map<string, string>> {
     const rows = await this.prisma.employee.findMany({
@@ -141,13 +184,24 @@ export class JobsRepository {
     return new Map(rows.map((r) => [r.id, r.fullName]));
   }
 
-  create(data: JobData, panelIds: string[], history: string, actor: AuditActor) {
+  /** Creates the job with its History lines (oldest first) and audit rows; a hand-over (BR-HIR-021) is audited too. */
+  create(data: JobData, panelIds: string[], history: string[], actor: AuditActor) {
     return this.prisma.$transaction(async (tx) => {
       const { id, code } = await tx.job.create({
         data: { ...data, createdById: actor.id!, panel: { create: panelIds.map((employeeId) => ({ employeeId })) } },
         select: { id: true, code: true },
       });
-      await tx.jobEvent.create({ data: { jobId: id, actorId: actor.id, actorLabel: actor.label, text: history } });
+      // One millisecond apart, so the History tab keeps their order.
+      const now = Date.now();
+      await tx.jobEvent.createMany({
+        data: history.map((text, i) => ({
+          jobId: id,
+          actorId: actor.id,
+          actorLabel: actor.label,
+          text,
+          at: new Date(now + i),
+        })),
+      });
       await this.audit.record(
         {
           ...AUDIT,
@@ -158,6 +212,12 @@ export class JobsRepository {
         },
         tx,
       );
+      if (!data.recruiterId && data.taManagerId) {
+        await this.audit.record(
+          { ...AUDIT, actor, action: 'job.handed_over', entityId: id, after: { taManagerId: data.taManagerId } },
+          tx,
+        );
+      }
       return tx.job.findUniqueOrThrow({ where: { id }, select: JOB_DETAIL });
     });
   }

@@ -57,6 +57,7 @@ model Employee {
   requisitionsRaised      Requisition[]     @relation("RequisitionCreatedBy")
   requisitionStepsDecided RequisitionStep[] @relation("RequisitionStepDecidedBy")
   jobsRecruiting          Job[]             @relation("JobRecruiter")
+  jobsHandedOver          Job[]             @relation("JobTaManager")
   jobsCreated             Job[]             @relation("JobCreatedBy")
   jobPanels               JobPanelMember[]  @relation("JobPanel")
   jobEvents               JobEvent[]        @relation("JobEventActor")
