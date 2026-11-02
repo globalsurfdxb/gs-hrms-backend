@@ -4,7 +4,9 @@ import { PrismaService } from '../../../core/database/prisma.service.js';
 import type { ApplicationExit, ApplicationStage, CandidateSource, Prisma } from '../../../generated/prisma/client.js';
 import { conflict } from '../../../shared/errors/app-error.js';
 import { appliedHistory, type PipelineChange } from '../domain/application.rules.js';
+import type { HiringScope } from '../domain/job-scope.js';
 import { candidateSearch } from './candidate-search.js';
+import { applicationInScope, jobInScope } from './job-scope.where.js';
 
 /** An application as candidate pages list it. `updatedAt` = when it last changed stage (only pipeline moves update
     an application). */
@@ -22,6 +24,7 @@ export const APPLICATION_SUMMARY = {
       id: true,
       code: true,
       status: true,
+      recruiterId: true,
       requisition: { select: { title: true, hiringManagerId: true } },
     },
   },
@@ -116,17 +119,22 @@ export class ApplicationsRepository {
     return { items, total };
   }
 
-  findById(id: string) {
-    return this.prisma.application.findUnique({ where: { id }, select: APPLICATION_DETAIL });
+  /** An application on a job the caller may see (BR-HIR-022), or null. */
+  findVisible(id: string, scope: HiringScope) {
+    return this.prisma.application.findFirst({
+      where: { AND: [{ id }, applicationInScope(scope)] },
+      select: APPLICATION_DETAIL,
+    });
   }
 
-  /** The job an application would go to, with what the rules and the location need. */
-  job(id: string) {
-    return this.prisma.job.findUnique({
-      where: { id },
+  /** A job the caller may see (BR-HIR-022) with what the pipeline rules and the location need, or null. */
+  job(id: string, scope: HiringScope) {
+    return this.prisma.job.findFirst({
+      where: { AND: [{ id }, jobInScope(scope)] },
       select: {
         id: true,
         status: true,
+        recruiterId: true,
         requisition: { select: { locationId: true, hiringManagerId: true, location: { select: { currency: true } } } },
       },
     });

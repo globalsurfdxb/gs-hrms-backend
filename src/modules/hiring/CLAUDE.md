@@ -10,20 +10,24 @@ Before each step, check the frontend for changes since the commit noted in the s
 ## Rules specific to this module
 
 - Permissions: `PERMISSIONS.hiring.*` (frontend ids `hiring:requisitions:*`, `hiring:recruiting:*`,
-  `hiring:reports:*`). Defaults: Super Admin + HR full; Team Lead + Office Admin requisitions only; Employee none.
-  The frontend added Talent Acquisition Manager (all hiring, no delete) and Recruiter (Recruiting only) on 29 Oct —
-  not in the backend catalogue yet (spec Q21, step 3.1).
+  `hiring:reports:*`). Defaults: Super Admin + HR full; Talent Acquisition Manager all hiring, no delete; Recruiter
+  Recruiting only, no delete; Team Lead + Office Admin requisitions only; Employee none. Decide by permission, never by
+  role name or designation (Q21). Full hiring access = Jobs → View AND Requisitions → View (`hasFullHiringAccess` in
+  `application/hiring-access.ts`, Q22). Anyone else works on their own jobs only (BR-HIR-022): every read and write
+  of jobs, applications and candidates goes through `job-scope.where.ts` in the repository; another record is a 404.
 - State machines (in `domain/`): requisition, job, application stage/exit, interview, offer — spec §4.
   The frontend store does not guard most status changes; enforce the transitions the UI shows, not the store's.
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step
   deciders per BR-HIR-002; panelists → their interviews; referrers → their referrals.
-- Jobs (step 2): only Jobs permission holders reach them; today they see every job. Step 3.1 narrows Recruiter and
-  Team Lead to their own jobs (recruiter or hiring manager, BR-HIR-022) and moves recruiter choice to the Talent
-  Acquisition Manager (BR-HIR-021). Title, company,
+- Jobs (step 2): only Jobs permission holders reach them; without full access only their own jobs (recruiter or
+  hiring manager). Create, status and recruiter choice need full access (step 3.1d moves recruiter choice to the
+  Talent Acquisition Manager, BR-HIR-021). Title, company,
   department, location, positions, budget and hiring manager are read from the requisition — never copy them.
   Every job change writes a `JobEvent` (History tab, append-only by trigger) and an audit row in one transaction.
-- Candidates (step 3): Candidates → View holders see every candidate and application. Duplicate = same email or
-  last-9 phone digits → 409 `candidate.duplicate` with `details.candidateId`. Applications only to OPEN jobs. Pipeline
+- Candidates (step 3): full access sees every candidate; others only candidates on their own jobs, with only those
+  applications, and must add new ones onto one of their jobs. Duplicate = same email or last-9 phone digits → 409
+  `candidate.duplicate` with `details.candidateId` — no details (and no match in `/duplicates`) when the caller may not
+  see that candidate. Applications only to OPEN jobs. Pipeline
   rules live in `domain/application.rules.ts`; a SENT offer blocks exits and leaving OFFER (`offerSent`, wired to
   offers in step 5). Notes and stage history are append-only by trigger.
 - Salary (current/expected/offered) only for full hiring access + that job's hiring manager and recruiter — omit the fields

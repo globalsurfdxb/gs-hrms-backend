@@ -38,7 +38,7 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
 
 ## IAM — roles & permissions API done; data scopes and custom features to do
 
-- **Roles**: 5 system roles (Super Admin, HR, Office Admin, Team Lead, Employee) + custom roles.
+- **Roles**: 7 system roles (Super Admin, HR, Office Admin, Talent Acquisition Manager, Team Lead, Recruiter, Employee) + custom roles.
   System roles cannot be renamed/deleted. Employee has exactly one role.
 - **Changed in the frontend (`8609a8e`, 2026-10-29) — to port**: two more system roles, **Talent Acquisition
   Manager** (demo GS-155, GS IT · HR, reports to GS-120) and **Recruiter** (demo GS-156, reports to GS-155). Order:

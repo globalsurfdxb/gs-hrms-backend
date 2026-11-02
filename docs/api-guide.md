@@ -39,13 +39,15 @@ Every endpoint shows:
 2. Body: `{ "employeeCode": "GS-120" }` → **Execute**. You should get **204**.
 3. Now every other **Try it out** in this browser tab is signed in as that person.
 
-| Code   | Role         | Good for testing                                       |
-| ------ | ------------ | ------------------------------------------------------ |
-| GS-120 | Super Admin  | everything                                             |
-| GS-119 | HR           | HR screens; cannot delete in Administration            |
-| GS-101 | Office Admin | admin screens without delete                           |
-| GS-058 | Team Lead    | own team only                                          |
-| GS-087 | Employee     | own data only — use it to check that access is refused |
+| Code   | Role                       | Good for testing                                       |
+| ------ | -------------------------- | ------------------------------------------------------ |
+| GS-120 | Super Admin                | everything                                             |
+| GS-119 | HR                         | HR screens; cannot delete in Administration            |
+| GS-101 | Office Admin               | admin screens without delete                           |
+| GS-155 | Talent Acquisition Manager | all of Hiring, no delete                               |
+| GS-058 | Team Lead                  | own team only                                          |
+| GS-156 | Recruiter                  | Recruiting only (jobs, candidates, interviews, offers) |
+| GS-087 | Employee                   | own data only — use it to check that access is refused |
 
 To switch role, run the sign-in again with another code.
 

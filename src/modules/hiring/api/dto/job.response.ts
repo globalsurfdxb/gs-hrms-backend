@@ -6,8 +6,8 @@ import { MoneyResponse, PersonRefResponse, person, RefResponse } from './common.
 import { EMPLOYMENT_TYPES } from './create-requisition.dto.js';
 import { JOB_STATUSES } from './list-jobs.query.js';
 
-/* Explicit response shapes. Never return Prisma records directly. Budget is shown: only recruiting users
-   (Jobs → View: HR, Super Admin) reach these routes. */
+/* Explicit response shapes. Never return Prisma records directly. Budget is shown: only Jobs → View holders reach
+   these routes, and without full hiring access only for their own jobs (BR-HIR-022). */
 
 export class JobRequisitionRefResponse {
   @ApiProperty() id: string;

@@ -18,16 +18,18 @@ import {
   type PipelineState,
 } from '../domain/application.rules.js';
 import { ApplicationsRepository, type ApplicationDetailRecord } from '../infrastructure/applications.repository.js';
+import { hiringScopeOf } from './hiring-access.js';
 
 /* Use cases for the pipeline (spec docs/modules/hiring.md, step 3, BR-HIR-009). No HTTP and no Prisma here.
-   Candidates → View holders see every application; moving needs Candidates → Edit (checked by the route). */
+   Full hiring access sees every application; anyone else only those on their own jobs (BR-HIR-022) — another is a
+   404. Moving needs Candidates → Edit (checked by the route). */
 @Injectable()
 export class ApplicationsService {
   constructor(private readonly applications: ApplicationsRepository) {}
 
   /** A job's pipeline, for the board and the list. */
   async forJob(jobId: string, query: ListApplicationsQuery, user: AuthUser): Promise<ApplicationListResponse> {
-    if (!(await this.applications.job(jobId))) throw notFound('job');
+    if (!(await this.applications.job(jobId, hiringScopeOf(user)))) throw notFound('job');
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 50;
     const { items, total } = await this.applications.forJob(
@@ -51,11 +53,11 @@ export class ApplicationsService {
   }
 
   async get(id: string, user: AuthUser): Promise<ApplicationDetailResponse> {
-    return ApplicationDetailResponse.fromDetail(await this.found(id), viewerOf(user));
+    return ApplicationDetailResponse.fromDetail(await this.found(id, user), viewerOf(user));
   }
 
   async move(id: string, dto: MoveApplicationDto, user: AuthUser): Promise<ApplicationDetailResponse> {
-    const before = await this.found(id);
+    const before = await this.found(id, user);
     return this.apply(
       before,
       moveStage(await this.stateOf(before), dto.stage, dto.note ?? null),
@@ -65,13 +67,13 @@ export class ApplicationsService {
   }
 
   async exit(id: string, dto: ExitApplicationDto, user: AuthUser): Promise<ApplicationDetailResponse> {
-    const before = await this.found(id);
+    const before = await this.found(id, user);
     const change = exitApplication(await this.stateOf(before), dto.exit, dto.reason ?? null, dto.note ?? null);
     return this.apply(before, change, 'application.exited', user);
   }
 
   async reopen(id: string, user: AuthUser): Promise<ApplicationDetailResponse> {
-    const before = await this.found(id);
+    const before = await this.found(id, user);
     return this.apply(before, reopenApplication(await this.stateOf(before)), 'application.reopened', user);
   }
 
@@ -98,8 +100,8 @@ export class ApplicationsService {
     };
   }
 
-  private async found(id: string): Promise<ApplicationDetailRecord> {
-    const a = await this.applications.findById(id);
+  private async found(id: string, user: AuthUser): Promise<ApplicationDetailRecord> {
+    const a = await this.applications.findVisible(id, hiringScopeOf(user));
     if (!a) throw notFound('application');
     return a;
   }

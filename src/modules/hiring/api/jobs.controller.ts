@@ -12,7 +12,13 @@ import { JobDetailResponse, JobListResponse } from './dto/job.response.js';
 import { ListJobsQuery } from './dto/list-jobs.query.js';
 
 const FEATURE = PERMISSIONS.hiring.jobs;
-const STATUS_NOTE = 'FILLED is set by the system when every position is filled — never through these routes.';
+const STATUS_NOTE =
+  'Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every ' +
+  'position is filled — never through these routes.';
+/** BR-HIR-022, shared by the read routes. */
+const SCOPE =
+  'With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every ' +
+  'job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404.';
 
 @ApiTags('Hiring · Jobs')
 @ApiCookieAuth()
@@ -24,8 +30,7 @@ export class JobsController {
   @Get('jobs')
   @ApiOperation({
     summary: 'List jobs',
-    description:
-      'Needs Jobs → View (HR, Super Admin by default). Every job, newest first. Filters: status, location, recruiter.',
+    description: `Needs Jobs → View. ${SCOPE} Newest first. Filters: status, location, recruiter.`,
   })
   @ApiOkResponse({ type: JobListResponse })
   @ApiErrors(400, 401, 403)
@@ -37,7 +42,7 @@ export class JobsController {
   @Get('jobs/:id')
   @ApiOperation({
     summary: 'Get one job with its history',
-    description: 'Needs Jobs → View (HR, Super Admin by default).',
+    description: `Needs Jobs → View. ${SCOPE}`,
   })
   @ApiOkResponse({ type: JobDetailResponse })
   @ApiErrors(400, 401, 403, 404)
@@ -50,7 +55,8 @@ export class JobsController {
   @ApiOperation({
     summary: 'Create the job for an approved requisition',
     description:
-      'Needs Jobs → Add (HR, Super Admin by default). Only from an APPROVED requisition that has no job yet (409 ' +
+      'Needs Jobs → Add and full hiring access (Super Admin, HR, Talent Acquisition Manager by default; 403 ' +
+      'hiring.full_access_required otherwise). Only from an APPROVED requisition that has no job yet (409 ' +
       'otherwise). Title, company, department, location, positions, budget and hiring manager come from the ' +
       'requisition. Recruiter and interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005).',
   })
@@ -130,7 +136,9 @@ export class JobsController {
   @ApiOperation({
     summary: 'Change the recruiter of a job',
     description:
-      'Needs Jobs → Edit. The new recruiter must be an active employee; the change is added to the job history.',
+      'Needs Jobs → Edit and full hiring access (403 hiring.full_access_required otherwise; step 3.1d moves this to ' +
+      'the Talent Acquisition Manager). The new recruiter must be an active employee; the change is added to the job ' +
+      'history. Another person’s job is 404 for own-jobs users.',
   })
   @ApiOkResponse({ type: JobDetailResponse })
   @ApiErrors(400, 401, 403, 404, 409)

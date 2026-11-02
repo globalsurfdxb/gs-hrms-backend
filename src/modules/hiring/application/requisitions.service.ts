@@ -28,6 +28,7 @@ import {
   type RequisitionRecord,
   type RequisitionScope,
 } from '../infrastructure/requisitions.repository.js';
+import { hasFullHiringAccess } from './hiring-access.js';
 
 const STATUS_AUDIT: Record<StatusAction, string> = {
   hold: 'requisition.held',
@@ -254,14 +255,15 @@ export class RequisitionsService {
   }
 }
 
-/** Recruiting users (Jobs → View: HR, Super Admin by default) see and manage every requisition. */
-const seesAll = (user: AuthUser) => hasPermission(user.permissions, PERMISSIONS.hiring.jobs);
+/** Full hiring access (see hiring-access.ts) sees and manages every requisition. */
+const seesAll = hasFullHiringAccess;
 
 const viewerOf = (user: AuthUser) => ({
   employeeId: user.employeeId,
   roleName: user.roleName,
   seesAll: seesAll(user),
-  canAddJob: hasPermission(user.permissions, PERMISSIONS.hiring.jobs, 'add'),
+  // Creating a job is for full hiring access only (frontend: level === 'full').
+  canAddJob: seesAll(user) && hasPermission(user.permissions, PERMISSIONS.hiring.jobs, 'add'),
 });
 
 const scopeOf = (user: AuthUser): RequisitionScope => ({

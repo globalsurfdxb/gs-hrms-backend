@@ -3,6 +3,8 @@ import { AuditService, type AuditActor } from '../../../core/audit/audit.service
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import type { JobStatus, Prisma } from '../../../generated/prisma/client.js';
 import { conflict } from '../../../shared/errors/app-error.js';
+import type { HiringScope } from '../domain/job-scope.js';
+import { jobInScope } from './job-scope.where.js';
 import { PERSON } from './requisitions.repository.js';
 
 export interface JobData {
@@ -72,7 +74,8 @@ export type JobDetailRecord = Prisma.JobGetPayload<{ select: typeof JOB_DETAIL }
 
 const AUDIT = { module: 'Hiring', entityType: 'job' } as const;
 
-/* The only place the hiring module touches Prisma for jobs. Every change writes a History event (shown to users)
+/* The only place the hiring module touches Prisma for jobs. Reads are narrowed to the caller's jobs unless they have
+   full hiring access (BR-HIR-022). Every change writes a History event (shown to users)
    and an audit row (append-only trail) in the same transaction, guarded against concurrent edits. */
 @Injectable()
 export class JobsRepository {
@@ -81,11 +84,16 @@ export class JobsRepository {
     private readonly audit: AuditService,
   ) {}
 
-  async list(filter: JobFilter, page: number, pageSize: number) {
+  async list(scope: HiringScope, filter: JobFilter, page: number, pageSize: number) {
     const where: Prisma.JobWhereInput = {
-      ...(filter.status && { status: filter.status }),
-      ...(filter.recruiterId && { recruiterId: filter.recruiterId }),
-      ...(filter.locationId && { requisition: { locationId: filter.locationId } }),
+      AND: [
+        jobInScope(scope),
+        {
+          ...(filter.status && { status: filter.status }),
+          ...(filter.recruiterId && { recruiterId: filter.recruiterId }),
+          ...(filter.locationId && { requisition: { locationId: filter.locationId } }),
+        },
+      ],
     };
     const [items, total] = await this.prisma.$transaction([
       this.prisma.job.findMany({
@@ -100,8 +108,9 @@ export class JobsRepository {
     return { items, total };
   }
 
-  findById(id: string) {
-    return this.prisma.job.findUnique({ where: { id }, select: JOB_DETAIL });
+  /** A job the caller may see (BR-HIR-022), or null. */
+  findVisible(id: string, scope: HiringScope) {
+    return this.prisma.job.findFirst({ where: { AND: [{ id }, jobInScope(scope)] }, select: JOB_DETAIL });
   }
 
   /** The requisition a job would be created from. */
