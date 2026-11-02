@@ -39,7 +39,9 @@ flowchart LR
   <table>
     <tr><th>Role</th><th>Sees</th><th>Typical work</th></tr>
     <tr><td><span class="chip c-emp">Employee</span></td><td>My Space only</td><td>Own profile, leave, attendance, requests, payslips, claims, documents</td></tr>
-    <tr><td><span class="chip c-lead">Team Lead</span></td><td>My Space + Team</td><td>Approves direct reports' leave and requests; raises job requisitions; interviews</td></tr>
+    <tr><td><span class="chip c-lead">Team Lead</span></td><td>My Space + Team</td><td>Approves direct reports' leave and requests; raises job requisitions for their own departments; interviews</td></tr>
+    <tr><td><span class="chip c-hr">Talent Acquisition Manager</span></td><td>My Space + Team + all of Hiring</td><td>Receives every new job, chooses its recruiter, runs candidates, interviews, offers and hiring reports</td></tr>
+    <tr><td><span class="chip c-hr">Recruiter</span></td><td>My Space + Hiring (own jobs)</td><td>Candidates, interviews and offers for the jobs assigned to them</td></tr>
     <tr><td><span class="chip c-hr">HR</span></td><td>My Space + Organization + Operations + Reports + Administration</td><td>Onboarding, offboarding, visas, hiring, leave operations, approvals</td></tr>
     <tr><td><span class="chip c-admin">Office Admin</span></td><td>Same as HR</td><td>Company structure, files, document expiry, requests (cannot delete)</td></tr>
     <tr><td><span class="chip c-admin">Super Admin</span></td><td>Everything</td><td>Roles &amp; permissions, final approvals, system settings</td></tr>

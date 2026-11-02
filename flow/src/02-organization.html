@@ -7,7 +7,7 @@
   <div class="meta">
     <b>Used by</b><div><span class="chip c-admin">Super Admin</span> <span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> edit · everyone reads (dropdowns)</div>
     <b>Frontend</b><div><code>/admin/companies</code>, <code>/admin/structure</code>, <code>/admin/settings</code> (locations), <code>context/OrgContext.tsx</code></div>
-    <b>Backend</b><div>Phase 0 — Companies API done (reference module); locations, departments, designations next</div>
+    <b>Backend</b><div>Phase 0 — companies, locations, departments and designations built and connected to the frontend</div>
   </div>
 
   <h2>In short</h2>
@@ -63,12 +63,31 @@ flowchart TD
     <li>Every change is recorded in the audit log (module "Organization").</li>
   </ol>
 
+  <h2>A new designation asked for on a requisition</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart TD
+  A(["Team Lead / HR raises a requisition<br/>with a NEW designation title"]) --> B["Requisition goes through its approvals"]
+  B --> C{"Fully approved?"}
+  C -- "Rejected / withdrawn" --> N["No designation is added"]
+  C -- Yes --> D{"Department already has<br/>this title?"}
+  D -- Yes --> U["Existing designation is used"]
+  D -- No --> E["Designation added to the department<br/>+ audit log"]
+  class A lead
+  class B,C,D sys
+  class N bad
+  class U,E good
+    </pre>
+    <figcaption>The requisition side of this flow is in chapter 8 (Hiring).</figcaption>
+  </figure>
+
   <div class="callout gap">
     <h3>Not in the frontend yet</h3>
     <ul>
-      <li>Changes are kept only in the browser and are lost on refresh.</li>
-      <li>Removing a company also removes its departments and designations, even if employees still use them.
-        Backend rule: block or deactivate instead of deleting when records are in use.</li>
+      <li>Without a backend (hosted preview) changes are kept only in the browser and are lost on refresh.</li>
+      <li>A department head cannot be chosen yet: the picker waits for the employee directory to be connected.</li>
+      <li>A company's founding year can be set but not cleared.</li>
+      <li>A designation from an approved requisition is only added in the browser; the server must add it when the requisition is fully approved.</li>
       <li>Employees store company/department/designation as <b>names</b>; the backend uses ids, so renaming is safe.</li>
     </ul>
   </div>

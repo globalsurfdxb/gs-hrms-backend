@@ -2,55 +2,96 @@
   <div class="kicker">Employee Management</div>
   <h1>5 · Onboarding</h1>
   <p class="lead">How a new joiner becomes an employee in the system — either typed in by HR or carried over from an
-  accepted job offer.</p>
+  accepted job offer, with the joiner filling in their own details through a private joining form.</p>
 
   <div class="meta">
-    <b>Used by</b><div><span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> · approvals by <span class="chip c-lead">Manager</span> <span class="chip c-hr">HR</span></div>
-    <b>Frontend</b><div><code>/onboarding</code> (10-step wizard), <code>/onboarding?hire=&lt;offerId&gt;</code>, <code>lib/hiringHandoff.ts</code>, <code>lib/workflow.ts</code></div>
+    <b>Used by</b><div><span class="chip c-hr">HR</span> <span class="chip c-admin">Office Admin</span> <span class="chip c-admin">Super Admin</span> · joining form by <span class="chip c-cand">New joiner</span> · approval by <span class="chip c-hr">HR</span></div>
+    <b>Frontend</b><div><code>/onboarding</code> (list + 10-step wizard), <code>/onboarding?hire=&lt;offerId&gt;</code>, <code>/onboarding/form/[token]</code> (joining form, no sign-in), <code>lib/hiringHandoff.ts</code>, <code>lib/onboardingForms.ts</code>, <code>lib/payroll.ts</code>, <code>lib/workflow.ts</code></div>
     <b>Backend</b><div>Phase 1</div>
   </div>
 
   <h2>In short</h2>
   <ol class="short">
-    <li>HR fills a <b>10-step form</b> for the new joiner — or starts from an <b>accepted job offer</b>, which fills most of it.</li>
-    <li>The form can be saved as a draft at any time and finished later.</li>
-    <li>On submit, the employee record is created with status <b>Onboarding</b> and goes for approval (manager, then HR).</li>
-    <li>After approval the employee becomes <b>Active</b> and payroll is notified.</li>
+    <li>HR starts an onboarding by hand or from an <b>accepted job offer</b>, which fills most of the form.</li>
+    <li>HR can send the joiner a private <b>joining form</b> link; the joiner fills in their personal, identity, bank and family details, and the wizard is filled from it.</li>
+    <li>The wizard <b>saves automatically</b>; unfinished onboardings appear under <i>In progress</i> and can be resumed or discarded.</li>
+    <li>On submit the employee is created with status <b>Onboarding</b>. HR then <b>approves</b> it or <b>sends it back</b> with a note.</li>
+    <li>After approval, payroll is told to set up the salary.</li>
   </ol>
 
   <h2>The flow</h2>
   <figure>
     <pre class="mermaid">
 flowchart TD
-  S1(["HR: New joiner"]):::hr --> W
-  S2(["Hiring: offer accepted →<br/>'Start onboarding'"]):::hr --> PF["Form pre-filled from the offer:<br/>name, job, joining date, salary"]:::sys
+  S1(["HR: New onboarding"]):::hr --> W
+  S2(["Hiring: offer accepted →<br/>'Start onboarding'"]):::hr --> PF["Form pre-filled from the offer:<br/>name, job, joining date, salary,<br/>documents collected before the offer"]:::sys
+  S2 -. "Candidate backed out" .-> BO["Offer closed as declined,<br/>position reopened, draft removed"]:::bad
   PF --> W["10-step wizard<br/>each step checked before the next"]:::hr
-  W -. "Save draft any time" .-> DR[("Draft<br/>(per HR user, per offer)")]:::sys
+  W -. "Send joining form" .-> JF["Joiner fills their own details<br/>(private link, no sign-in)"]:::cand
+  JF -- "submitted" --> W
+  W -. "Saves automatically" .-> DR[("Draft — In progress<br/>resume or discard")]:::sys
   W --> SUB["Review & submit"]:::hr
-  SUB --> EMP["Employee created<br/>status: ONBOARDING"]:::sys
-  EMP --> AP1["Manager review"]:::lead
-  AP1 --> AP2["HR approval"]:::hr
-  AP2 --> ACT["Status: ACTIVE<br/>Payroll notified"]:::good
-  AP1 -- reject --> RJ["Back to HR to correct"]:::bad
-  AP2 -- reject --> RJ
+  SUB --> EMP["Employee created<br/>status: ONBOARDING<br/>request: Pending approval"]:::sys
+  EMP --> AP["HR: Review & approve"]:::hr
+  AP -- "Approve" --> OK["Approved<br/>payroll and HR told"]:::good
+  AP -- "Send back (note)" --> SB["Sent back:<br/>HR fixes, sends again"]:::bad
+  SB --> AP
   EMP -.-> HM["Hiring: candidate marked Hired,<br/>welcome email"]:::sys
     </pre>
   </figure>
 
+  <h2>The joining form</h2>
+  <figure>
+    <pre class="mermaid">
+flowchart LR
+  A(["HR: Send joining form"]):::hr --> B["To company mailbox,<br/>copy to personal email,<br/>due date before joining"]:::hr
+  A -. "Skip email" .-> L["Link created and copied<br/>to share another way"]:::hr
+  B --> C["Sent"]:::sys
+  L --> C
+  C --> D["Joiner opens link<br/>HR is told"]:::cand
+  D --> E["Fills in details<br/>saved as they type"]:::cand
+  E --> F["Submits<br/>form closes"]:::cand
+  F --> G["HR, Office Admin,<br/>Super Admin told"]:::sys
+  G --> H["Wizard filled from the form"]:::hr
+    </pre>
+  </figure>
+  <ul>
+    <li>One form per joiner. Sending again keeps the same link and what they already typed.</li>
+    <li>The joiner must give names, date of birth, nationality, contacts, address, identity numbers, bank details (account number typed twice), PF for Kochi, one emergency contact, a passport-size photo, and tick the declaration.</li>
+    <li>Documents HR already collected before the offer letter are not asked for again.</li>
+    <li>The email uses the <i>Joining form</i> template under Hiring → Operations → Email templates.</li>
+  </ul>
+
   <h2>The 10 steps</h2>
   <table>
     <tr><th>#</th><th>Step</th><th>Dubai</th><th>Kochi</th></tr>
-    <tr><td>1</td><td>Personal</td><td colspan="2">Name, gender, date of birth, nationality, contact, addresses</td></tr>
+    <tr><td>1</td><td>Personal</td><td>Full name (as per passport), gender, date of birth, nationality, contact, addresses</td><td>Same, plus first / middle / last name</td></tr>
     <tr><td>2</td><td>Employment</td><td colspan="2">Company → department → designation (filtered by company and location), manager, joining date, type, system role. Probation ends 6 months after joining. Suggested work email <code>firstname@gs-it.ae</code></td></tr>
-    <tr><td>3</td><td>Identity</td><td>Passport, visa, Emirates ID, labour card</td><td>Passport, Aadhaar, PAN</td></tr>
+    <tr><td>3</td><td>Identity</td><td>Passport (required), visa, Emirates ID, labour card</td><td>Passport (optional), Aadhaar + name as per Aadhaar, PAN + name as per PAN</td></tr>
     <tr><td>4</td><td>Emergency contacts</td><td>Local (UAE) + home country</td><td>Primary + alternate</td></tr>
-    <tr><td>5</td><td>Experience &amp; education</td><td colspan="2">Previous jobs, qualifications</td></tr>
-    <tr><td>6</td><td>Family</td><td colspan="2">Name, relationship, occupation</td></tr>
-    <tr><td>7</td><td>Bank &amp; PF</td><td>IBAN (checked), WPS / bank transfer</td><td>Account + IFSC, UAN, bank transfer / cheque</td></tr>
-    <tr><td>8</td><td>Salary</td><td>Basic, transport, accommodation</td><td>Basic, HRA, allowances, EPF and other deductions</td></tr>
-    <tr><td>9</td><td>Documents</td><td colspan="2">Required documents for the country, with expiry dates and reminder settings (90/60/30/7 days; employee, HR, manager)</td></tr>
+    <tr><td>5</td><td>Experience &amp; education</td><td colspan="2">Previous jobs and qualifications, each with an optional letter or certificate</td></tr>
+    <tr><td>6</td><td>Family</td><td colspan="2">Name, relationship, occupation, date of birth</td></tr>
+    <tr><td>7</td><td>Bank &amp; PF</td><td>IBAN (checked), WPS / bank transfer</td><td>Account (typed twice) + IFSC + branch name; PF: already enrolled? → UAN and its linked mobile, previous PF member ID, EPS eligibility</td></tr>
+    <tr><td>8</td><td>Salary</td><td>Basic, transport, accommodation. Shows unemployment insurance, pension for UAE nationals (11 % deducted) and gratuity</td><td>Basic, HRA, allowances. Works out EPF, ESI, professional tax (deducted), employer PF / pension / ESI, gratuity and monthly CTC</td></tr>
+    <tr><td>9</td><td>Documents</td><td colspan="2">Required documents for the country, with expiry dates, optional details (passport / Aadhaar numbers, certificate) and reminder settings (90/60/30/7 days; employee, HR, manager)</td></tr>
     <tr><td>10</td><td>Assets &amp; approval</td><td colspan="2">Laptop, monitor, phone, access card, SIM, headset, software licence — then submit</td></tr>
   </table>
+
+  <h2>Approval</h2>
+  <figure>
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> PendingApproval: HR submits the wizard
+  PendingApproval --> Approved: HR approves
+  PendingApproval --> SentBack: HR sends back with a note
+  SentBack --> PendingApproval: HR sends for approval again
+  Approved --> [*]: payroll told
+    </pre>
+  </figure>
+  <p>HR, Office Admin or Super Admin opens <b>Review &amp; approve</b>, sees who is joining (code, role, position,
+  location, joining date, work email) and approves — or sends it back, which needs a note on what to fix. Both
+  decisions are recorded in the audit log.</p>
 
   <h2>UAE visa tracker (Dubai hires)</h2>
   <p>While the visa is being processed, HR ticks off <b>20 stages in 5 groups</b>:
@@ -62,14 +103,19 @@ flowchart TD
     <li>Salary lines are matched: Housing → Accommodation, Transport → Transportation. Kochi offers are yearly, so amounts are divided by 12.</li>
     <li>Employment type: Full-time → Permanent, Contract → Contract, Intern → Probation.</li>
     <li>The offer must be <b>Accepted</b> and not already used for an employee.</li>
+    <li>Documents collected and verified before the offer letter, and the background-verification referral, are shown so nobody asks for them again.</li>
+    <li>If the candidate backs out after accepting, HR closes the offer as declined with a reason; the position reopens.</li>
   </ul>
 
   <div class="callout gap">
     <h3>Not in the frontend yet — decisions needed</h3>
     <ul>
-      <li>Nothing moves a joiner from <b>Onboarding</b> to <b>Active</b>; the approval chain is only displayed. The lead must confirm the chain.</li>
+      <li>Approval is a single HR step. The <i>Manager review</i> in the configured chain is shown but not enforced, and approval does not move the joiner from <b>Onboarding</b> to <b>Active</b>. The lead must confirm the chain.</li>
+      <li>Nothing stops the HR user who submitted an onboarding from approving it.</li>
+      <li>The joining-form link never expires and the due date is not enforced — the backend must expire it.</li>
+      <li>Statutory salary figures are indicative; payroll must confirm the rates before the first pay run.</li>
       <li>The visa tracker, asset choices and reminder settings live only in the draft and are never saved to the employee.</li>
-      <li>Document uploads in the wizard are placeholders.</li>
+      <li>Uploaded files (wizard and joining form) are recorded by name only.</li>
     </ul>
   </div>
 </section>

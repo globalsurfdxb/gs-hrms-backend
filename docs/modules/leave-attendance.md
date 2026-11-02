@@ -54,3 +54,11 @@ Two implementations sharing a sessionStorage ledger (`la.ledger.v1`):
 Employee: own; Team Lead: direct reports + items routed to them; HR/Admin: organisation & operations;
 Super Admin only: companies, roles, biometric devices, integrations. Approver is never the requester or someone
 reporting to them.
+
+**Approvals inbox** (`la-home.js`): tabs All / Leave / Attendance / Overtime with counts, filters (department,
+request type, search) and **bulk approve** of selected items after a confirmation (no bulk reject). Items with
+a rule exception or category mismatch are **skipped** and left for individual review ("Approve as exception").
+→ a bulk-approve endpoint that re-checks approver, exception and mismatch per item server-side and returns
+per-item results (approved / skipped + reason). Items routed to an external approver are listed read-only. **Reportees**: Direct reports vs Whole team
+(indirect reports), filter by department and status today (In / Out) — the "team" scope must support both
+direct and transitive reporting lines.
