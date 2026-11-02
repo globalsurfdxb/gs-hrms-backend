@@ -90,5 +90,7 @@ export const jobHistory = {
     `Job created from ${requisitionCode} as ${JOB_STATUS_LABEL[status]}`,
   status: (from: JobStatus, to: JobStatus) =>
     `Status changed from ${JOB_STATUS_LABEL[from]} to ${JOB_STATUS_LABEL[to]}`,
-  recruiter: (from: string, to: string) => `Recruiter changed from ${from} to ${to}`,
+  recruiter: (from: string | null, to: string) =>
+    from ? `Recruiter changed from ${from} to ${to}` : `${to} chosen as the recruiter`,
+  handedOver: (taManager: string) => `Handed to ${taManager} (Talent Acquisition Manager) to choose the recruiter`,
 };

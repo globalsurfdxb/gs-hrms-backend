@@ -7,8 +7,8 @@ import { createTestApp, ORIGIN, PERSONA, signInAs } from '../app.js';
 type Agent = Awaited<ReturnType<typeof signInAs>>;
 type Who = keyof typeof PERSONA;
 
-/* Jobs (hiring step 2): created from an approved requisition, status along the state diagram, recruiter changes,
-   History tab, and access for HR / Super Admin only. */
+/* Jobs (hiring step 2): created from an approved requisition, status along the state diagram, recruiter hand-over
+   to the Talent Acquisition Manager (BR-HIR-021; the seed has one, GS-155), History tab, and access. */
 describe('Jobs API', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
@@ -26,7 +26,6 @@ describe('Jobs API', () => {
     expMax: 6,
     qualifications: 'CCNA or higher',
     panelIds: [id.teamLead],
-    recruiterId: id.hr,
     closingDate: future(30),
     ...patch,
   });
@@ -101,12 +100,16 @@ describe('Jobs API', () => {
       skills: ['Cisco', 'SD-WAN'],
       requisition: { id: req.id, code: req.code },
       hiringManager: { id: id.teamLead },
-      recruiter: { id: id.hr },
+      recruiter: null,
+      taManager: { id: id.taManager },
       budgetMax: { amount: '12000.00', currency: 'AED' },
       designation: { id: ref.designationId },
-      viewer: { actions: ['open'], canChangeRecruiter: true },
+      viewer: { actions: ['open'], canChangeRecruiter: false },
     });
-    expect(job.history.map((h: { text: string }) => h.text)).toEqual([`Job created from ${req.code} as Draft`]);
+    expect(job.history.map((h: { text: string }) => h.text)).toEqual([
+      `Job created from ${req.code} as Draft`,
+      'Handed to Dev TA Manager (Talent Acquisition Manager) to choose the recruiter',
+    ]);
 
     const after = await as.hr.get(`/api/hiring/requisitions/${req.id}`).expect(200);
     expect(after.body).toMatchObject({
@@ -117,7 +120,7 @@ describe('Jobs API', () => {
     const again = await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(409);
     expect(again.body.code).toBe('job.already_exists');
     const audit = await prisma.auditLog.findMany({ where: { entityType: 'job', entityId: job.id } });
-    expect(audit.map((a) => a.action)).toEqual(['job.created']);
+    expect(audit.map((a) => a.action).sort()).toEqual(['job.created', 'job.handed_over']);
   });
 
   it('refuses a requisition that is not approved, or unknown', async () => {
@@ -144,7 +147,6 @@ describe('Jobs API', () => {
     const req = await approvedRequisition();
     const code = async (patch: Record<string, unknown>) =>
       (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody(patch)).expect(400)).body.code;
-    expect(await code({ recruiterId: randomUUID() })).toBe('job.invalid_recruiter');
     expect(await code({ panelIds: [id.teamLead, randomUUID()] })).toBe('job.invalid_panel');
     expect(await code({ expMin: 6, expMax: 2 })).toBe('job.invalid_experience');
     expect(await code({ designationId: ref.otherDesignationId })).toBe('job.designation_mismatch');
@@ -165,6 +167,7 @@ describe('Jobs API', () => {
     const reopened = await send('hr', 'post', `/jobs/${job.id}/reopen`).expect(200);
     expect(reopened.body.history.map((h: { text: string }) => h.text)).toEqual([
       `Job created from ${req.code} as Open`,
+      'Handed to Dev TA Manager (Talent Acquisition Manager) to choose the recruiter',
       'Status changed from Open to On Hold',
       'Status changed from On Hold to Open',
       'Status changed from Open to Closed',
@@ -185,23 +188,93 @@ describe('Jobs API', () => {
     await expect(prisma.jobEvent.updateMany({ where, data: { text: 'rewritten' } })).rejects.toThrow(/append-only/);
     await expect(prisma.jobEvent.deleteMany({ where })).rejects.toThrow(/append-only/);
     await expect(prisma.job.delete({ where: { id: job.id } })).rejects.toThrow();
-    expect(await prisma.jobEvent.count({ where })).toBe(1);
+    expect(await prisma.jobEvent.count({ where })).toBe(2);
   });
 
-  it('changes the recruiter and records it', async () => {
+  it('hands a job made by HR to the TA Manager, who chooses the recruiter from the team (BR-HIR-021)', async () => {
     const req = await approvedRequisition();
     const job = (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(201)).body;
-    const changed = await send('hr', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.officeAdmin }).expect(200);
-    expect(changed.body.recruiter.id).toBe(id.officeAdmin);
-    expect(changed.body.history.at(-1).text).toBe('Recruiter changed from Dev HR to Dev Office Admin');
+    expect(job).toMatchObject({ recruiter: null, taManager: { id: id.taManager } });
 
-    const same = await send('hr', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.officeAdmin }).expect(200);
-    expect(same.body.history).toHaveLength(2);
-    await send('hr', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: randomUUID() }).expect(400);
+    const waiting = await as.taManager.get('/api/hiring/jobs?awaitingRecruiter=true&pageSize=100').expect(200);
+    expect(waiting.body.items.map((j: { id: string }) => j.id)).toContain(job.id);
+    expect(waiting.body.items.every((j: { recruiter: unknown }) => j.recruiter === null)).toBe(true);
 
-    const list = await as.hr.get(`/api/hiring/jobs?recruiterId=${id.officeAdmin}&status=DRAFT`).expect(200);
-    expect(list.body.items.map((j: { id: string }) => j.id)).toContain(job.id);
-    expect(list.body.items.every((j: { recruiter: { id: string } }) => j.recruiter.id === id.officeAdmin)).toBe(true);
+    const hr = await send('hr', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.recruiter }).expect(403);
+    expect(hr.body.code).toBe('job.recruiter_not_allowed');
+    const outsider = await send('taManager', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.hr }).expect(400);
+    expect(outsider.body.code).toBe('job.invalid_recruiter');
+    await send('taManager', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: randomUUID() }).expect(400);
+
+    const chosen = await send('taManager', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.recruiter });
+    expect(chosen.status).toBe(200);
+    expect(chosen.body).toMatchObject({ recruiter: { id: id.recruiter }, viewer: { canChangeRecruiter: true } });
+    expect(chosen.body.history.at(-1).text).toBe('Dev Recruiter chosen as the recruiter');
+
+    const same = await send('taManager', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.recruiter });
+    expect(same.body.history).toHaveLength(3);
+    const changed = await send('superAdmin', 'put', `/jobs/${job.id}/recruiter`, { recruiterId: id.taManager });
+    expect(changed.status).toBe(200);
+    expect(changed.body.history.at(-1).text).toBe('Recruiter changed from Dev Recruiter to Dev TA Manager');
+
+    const audit = await prisma.auditLog.findMany({ where: { entityType: 'job', entityId: job.id } });
+    expect(audit.map((a) => a.action).sort()).toEqual([
+      'job.created',
+      'job.handed_over',
+      'job.recruiter_changed',
+      'job.recruiter_chosen',
+    ]);
+
+    const byRecruiter = await as.hr.get(`/api/hiring/jobs?recruiterId=${id.taManager}&pageSize=100`).expect(200);
+    expect(byRecruiter.body.items.map((j: { id: string }) => j.id)).toContain(job.id);
+  });
+
+  it('refuses a recruiter on a handed-over job, and requires one when the TA Manager creates it', async () => {
+    const req = await approvedRequisition();
+    const sent = await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody({ recruiterId: id.recruiter }));
+    expect(sent.status).toBe(400);
+    expect(sent.body.code).toBe('job.recruiter_chosen_by_ta');
+
+    const none = await send('taManager', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(400);
+    expect(none.body.code).toBe('job.recruiter_required');
+    const outsider = await send('taManager', 'post', `/requisitions/${req.id}/job`, jobBody({ recruiterId: id.hr }));
+    expect(outsider.body.code).toBe('job.invalid_recruiter');
+
+    const job = await send('taManager', 'post', `/requisitions/${req.id}/job`, jobBody({ recruiterId: id.recruiter }));
+    expect(job.status).toBe(201);
+    expect(job.body).toMatchObject({ recruiter: { id: id.recruiter }, taManager: { id: id.taManager } });
+    expect(job.body.history).toHaveLength(1);
+
+    const other = await approvedRequisition();
+    const bySa = await send(
+      'superAdmin',
+      'post',
+      `/requisitions/${other.id}/job`,
+      jobBody({ recruiterId: id.recruiter }),
+    );
+    expect(bySa.status).toBe(201);
+    expect(bySa.body.history).toHaveLength(1);
+  });
+
+  it('keeps a job without a recruiter tied to a TA Manager in the database', async () => {
+    const req = await approvedRequisition();
+    const job = (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(201)).body;
+    await expect(prisma.job.update({ where: { id: job.id }, data: { taManagerId: null } })).rejects.toThrow(
+      /jobs_recruiter_or_ta_manager_chk/,
+    );
+  });
+
+  it('tells the job form who the TA Manager is, whether a new job goes to them, and the team to choose from', async () => {
+    const hr = await as.hr.get('/api/hiring/recruiters').expect(200);
+    expect(hr.body).toMatchObject({ taManager: { id: id.taManager }, handsOver: true });
+    const pool = hr.body.pool.map((p: { id: string }) => p.id);
+    expect(pool).toEqual(expect.arrayContaining([id.taManager, id.recruiter]));
+    expect(pool).not.toContain(id.hr);
+    expect((await as.taManager.get('/api/hiring/recruiters').expect(200)).body.handsOver).toBe(false);
+    expect((await as.superAdmin.get('/api/hiring/recruiters').expect(200)).body.handsOver).toBe(false);
+    for (const who of ['teamLead', 'officeAdmin', 'employee'] as Who[]) {
+      await as[who].get('/api/hiring/recruiters').expect(403);
+    }
   });
 
   it.each(['teamLead', 'officeAdmin', 'employee'] as Who[])('gives %s no access to jobs', async (who) => {

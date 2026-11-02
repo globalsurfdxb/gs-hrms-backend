@@ -20,8 +20,10 @@ Before each step, check the frontend for changes since the commit noted in the s
 - Record-level access, in the repository query: Team Lead → requisitions they manage or raised; requisition step
   deciders per BR-HIR-002; panelists → their interviews; referrers → their referrals.
 - Jobs (step 2): only Jobs permission holders reach them; without full access only their own jobs (recruiter or
-  hiring manager). Create, status and recruiter choice need full access (step 3.1d moves recruiter choice to the
-  Talent Acquisition Manager, BR-HIR-021). Title, company,
+  hiring manager). Create and status need full access. Recruiter hand-over (BR-HIR-021, `domain/recruiter.rules.ts`):
+  the TA Manager and the TA team are found by **designation title**, as the frontend does (Q21) — a job created by
+  anyone but the TA Manager or a Super Admin is saved with `taManagerId` and no recruiter; only Super Admin / a TA
+  Manager (or full access on a job with no TA Manager) chooses. Title, company,
   department, location, positions, budget and hiring manager are read from the requisition — never copy them.
   Every job change writes a `JobEvent` (History tab, append-only by trigger) and an audit row in one transaction.
 - Candidates (step 3): full access sees every candidate; others only candidates on their own jobs, with only those

@@ -16,18 +16,21 @@ headers {
 
 body:json {
   {
-    "recruiterId": "{{reqHiringManagerId}}"
+    "recruiterId": "{{recruiterId}}"
   }
 }
 
 docs {
-  Needs Jobs → Edit. Must be an active employee. Adds "Recruiter changed from … to …" to the History tab
-  (no change when it is already the recruiter).
+  Needs Jobs → Edit. BR-HIR-021: sign in as the Talent Acquisition Manager (GS-155) or Super Admin — HR gets 403
+  job.recruiter_not_allowed on a job handed to the TA Manager. Run "Recruiter pool" first: it saves a Recruiter
+  from the Talent Acquisition team in `recruiterId` (anyone else is 400 job.invalid_recruiter).
+  Adds "… chosen as the recruiter" or "Recruiter changed from … to …" to the History tab (no change when it is
+  already the recruiter).
 }
 
 tests {
   test("updated", function () {
     expect(res.status).to.equal(200);
-    expect(res.body.recruiter.id).to.equal(bru.getEnvVar("reqHiringManagerId"));
+    expect(res.body.recruiter.id).to.equal(bru.getEnvVar("recruiterId"));
   });
 }

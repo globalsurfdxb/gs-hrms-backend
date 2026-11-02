@@ -64,9 +64,16 @@ export class CreateJobDto {
   @IsUUID('all', { each: true })
   panelIds: string[];
 
-  @ApiProperty({ example: '0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06', description: 'An active employee who runs this job' })
+  @ApiPropertyOptional({
+    example: '0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06',
+    description:
+      'Who runs this job (BR-HIR-021). Leave it out when the job is handed to the Talent Acquisition Manager ' +
+      '(GET /hiring/recruiters → handsOver); otherwise required — from the Talent Acquisition team once there is one, ' +
+      'else any active employee.',
+  })
+  @IsOptional()
   @IsUUID()
-  recruiterId: string;
+  recruiterId?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export const JOB_STATUSES = ['DRAFT', 'OPEN', 'ON_HOLD', 'CLOSED', 'FILLED'] as const;
 
@@ -20,6 +20,15 @@ export class ListJobsQuery {
   @IsOptional()
   @IsUUID()
   recruiterId?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Only jobs waiting for the Talent Acquisition Manager to choose a recruiter (BR-HIR-021)',
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === 'true' ? true : value === 'false' ? false : value))
+  @IsBoolean()
+  awaitingRecruiter?: boolean;
 
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

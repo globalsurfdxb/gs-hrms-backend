@@ -9,6 +9,12 @@ import { JOB_STATUSES } from './list-jobs.query.js';
 /* Explicit response shapes. Never return Prisma records directly. Budget is shown: only Jobs → View holders reach
    these routes, and without full hiring access only for their own jobs (BR-HIR-022). */
 
+/** What the caller may do: status actions (full access) and the recruiter choice for a given job (BR-HIR-021). */
+export interface JobViewer {
+  canEdit: boolean;
+  canChooseRecruiter: (j: { taManager: { id: string } | null }) => boolean;
+}
+
 export class JobRequisitionRefResponse {
   @ApiProperty() id: string;
   @ApiProperty({ example: 'REQ-0001' }) code: string;
@@ -28,7 +34,12 @@ export class JobViewerResponse {
     description: 'Status actions allowed now (empty for FILLED)',
   })
   actions: JobAction[];
-  @ApiProperty({ description: 'Change the recruiter (Jobs → Edit)' }) canChangeRecruiter: boolean;
+  @ApiProperty({
+    description:
+      'Choose or change the recruiter (Jobs → Edit and BR-HIR-021: Super Admin, a Talent Acquisition Manager, or full ' +
+      'hiring access on a job with no TA Manager)',
+  })
+  canChangeRecruiter: boolean;
 }
 
 export class JobResponse {
@@ -47,7 +58,18 @@ export class JobResponse {
   @ApiProperty({ type: MoneyResponse }) budgetMin: MoneyResponse;
   @ApiProperty({ type: MoneyResponse }) budgetMax: MoneyResponse;
   @ApiProperty({ type: PersonRefResponse }) hiringManager: PersonRefResponse;
-  @ApiProperty({ type: PersonRefResponse }) recruiter: PersonRefResponse;
+  @ApiProperty({
+    type: PersonRefResponse,
+    nullable: true,
+    description: 'Null while the Talent Acquisition Manager has yet to choose (BR-HIR-021)',
+  })
+  recruiter: PersonRefResponse | null;
+  @ApiProperty({
+    type: PersonRefResponse,
+    nullable: true,
+    description: 'The Talent Acquisition Manager the job was handed to; null if there was none when it was made',
+  })
+  taManager: PersonRefResponse | null;
   @ApiProperty() description: string;
   @ApiProperty({ type: [String], example: ['Cisco', 'SD-WAN'] }) skills: string[];
   @ApiProperty({ example: 2 }) expMin: number;
@@ -62,7 +84,7 @@ export class JobResponse {
   @ApiProperty() updatedAt: string;
   @ApiProperty({ type: JobViewerResponse }) viewer: JobViewerResponse;
 
-  static from(this: void, j: JobRecord, viewer: { canEdit: boolean }): JobResponse {
+  static from(this: void, j: JobRecord, viewer: JobViewer): JobResponse {
     const r = j.requisition;
     return {
       id: j.id,
@@ -79,7 +101,8 @@ export class JobResponse {
       budgetMin: { amount: r.budgetMin.toFixed(2), currency: r.currency },
       budgetMax: { amount: r.budgetMax.toFixed(2), currency: r.currency },
       hiringManager: person(r.hiringManager),
-      recruiter: person(j.recruiter),
+      recruiter: j.recruiter ? person(j.recruiter) : null,
+      taManager: j.taManager ? person(j.taManager) : null,
       description: j.description,
       skills: j.skills,
       expMin: j.expMin,
@@ -96,7 +119,7 @@ export class JobResponse {
         actions: viewer.canEdit
           ? allowedJobActions({ status: j.status, filled: j.filled, positions: r.positions })
           : [],
-        canChangeRecruiter: viewer.canEdit,
+        canChangeRecruiter: viewer.canChooseRecruiter(j),
       },
     };
   }
@@ -106,7 +129,7 @@ export class JobResponse {
 export class JobDetailResponse extends JobResponse {
   @ApiProperty({ type: [JobEventResponse], description: 'Oldest first' }) history: JobEventResponse[];
 
-  static fromDetail(this: void, j: JobDetailRecord, viewer: { canEdit: boolean }): JobDetailResponse {
+  static fromDetail(this: void, j: JobDetailRecord, viewer: JobViewer): JobDetailResponse {
     return {
       ...JobResponse.from(j, viewer),
       history: j.events.map((e) => ({ id: e.id, at: e.at.toISOString(), by: e.actorLabel, text: e.text })),
@@ -119,4 +142,42 @@ export class JobListResponse {
   @ApiProperty({ example: 12 }) total: number;
   @ApiProperty({ example: 1 }) page: number;
   @ApiProperty({ example: 50 }) pageSize: number;
+}
+
+export class RecruiterOptionResponse extends PersonRefResponse {
+  @ApiProperty({ example: 'Recruiter', nullable: true }) designation: string | null;
+}
+
+/** BR-HIR-021: who a new job goes to and who may run it. */
+export class RecruiterPoolResponse {
+  @ApiProperty({
+    type: PersonRefResponse,
+    nullable: true,
+    description: 'The Talent Acquisition Manager (active employee with that designation); null if there is none',
+  })
+  taManager: PersonRefResponse | null;
+  @ApiProperty({
+    description: 'A job you create now is handed to the TA Manager — leave the recruiter out of the job form',
+  })
+  handsOver: boolean;
+  @ApiProperty({
+    type: [RecruiterOptionResponse],
+    description:
+      'The Talent Acquisition team (Recruiters and the TA Manager). Empty when there is no TA Manager: ' +
+      'then any active employee may be chosen.',
+  })
+  pool: RecruiterOptionResponse[];
+
+  static from(
+    this: void,
+    taManager: { id: string; employeeCode: string; fullName: string } | null,
+    pool: { id: string; employeeCode: string; fullName: string; designation: { title: string } | null }[],
+    handsOver: boolean,
+  ): RecruiterPoolResponse {
+    return {
+      taManager: taManager ? person(taManager) : null,
+      handsOver,
+      pool: pool.map((e) => ({ ...person(e), designation: e.designation?.title ?? null })),
+    };
+  }
 }
