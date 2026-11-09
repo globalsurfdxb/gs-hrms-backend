@@ -72,6 +72,7 @@ const HOME_TABS: Record<'my' | 'team' | 'org', Item[]> = {
     ['leave', 'Leave'],
     ['visa', 'Visa'],
     ['separation', 'Separation'],
+    ['requests', 'Requests'],
     ['expiry', 'Expiry'],
     ['performance', 'Performance'],
     ['notifications', 'Notifications'],
