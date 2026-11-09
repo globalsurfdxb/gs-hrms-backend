@@ -14,7 +14,17 @@
     <li>HR, Office Admin and Super Admin see and edit everyone. A Team Lead sees direct reports. An employee sees only themselves.</li>
     <li>Bank and salary details are visible only to HR and Super Admin.</li>
     <li>Every change is recorded field by field; employees ask for changes through Requests.</li>
+    <li>The directory has status tabs with counts, filters that show how many people each choice leaves, and sorting.</li>
   </ol>
+
+  <h2>Finding people in the directory</h2>
+  <ul>
+    <li><b>Status tabs</b> (All, Active, Onboarding, …) with a count on each.</li>
+    <li><b>Location</b> and <b>Department</b> in the toolbar; <b>More filters</b>: company, designation, reports to (or no manager), employment type, nationality, expired documents.</li>
+    <li>Each filter option shows how many people it would leave; options that leave nobody are disabled. Active filters appear as tags that can be removed one by one or all at once.</li>
+    <li><b>Sort</b>: default, name A–Z, department, newest joiners, longest serving.</li>
+    <li>A Team Lead sees the same tools over their own team only (no "reports to" filter).</li>
+  </ul>
 
   <h2>Who can see and change what</h2>
   <figure>
@@ -42,11 +52,11 @@ flowchart TD
   <table>
     <tr><th>Tab</th><th>Contents</th></tr>
     <tr><td>Overview / Employment</td><td>Code (GS-NNN), name, work email, company, department, designation, location, seating, reporting manager, joining date, status, type (Permanent / Contract / Probation), probation end</td></tr>
-    <tr><td>Personal</td><td>Gender, marital status, blood group, personal email and mobile, addresses, emergency contacts, education, experience, family</td></tr>
+    <tr><td>Personal</td><td>Gender, marital status, blood group, personal email and mobile, addresses, emergency contacts, education and experience (with certificate / letter), family (with date of birth). Kochi also: first / middle / last name</td></tr>
     <tr><td>Passport / Visa / EID <i>(Dubai)</i></td><td>Passport, residence visa, Emirates ID (784-YYYY-NNNNNNN-N), labour card</td></tr>
-    <tr><td>Passport / Aadhaar / PAN <i>(Kochi)</i></td><td>Passport, Aadhaar (12 digits), PAN (ABCDE1234F), UAN (12 digits)</td></tr>
-    <tr><td>Documents</td><td>Uploaded files with expiry dates (PDF, image, Word up to 10 MB)</td></tr>
-    <tr><td>Bank &amp; Salary</td><td>Dubai: IBAN, WPS/bank transfer, Basic + Transport + Accommodation · Kochi: account + IFSC, Basic + HRA + allowances − EPF and other deductions</td></tr>
+    <tr><td>Passport / Aadhaar / PAN <i>(Kochi)</i></td><td>Passport (optional) and name as per passport, Aadhaar (12 digits) and name as per Aadhaar, PAN (ABCDE1234F) and name as per PAN</td></tr>
+    <tr><td>Documents</td><td>Uploaded files with expiry dates and optional details (PDF, image, Word up to 10 MB)</td></tr>
+    <tr><td>Bank &amp; Salary</td><td>Dubai: IBAN, WPS/bank transfer, Basic + Transport + Accommodation − pension for UAE nationals · Kochi: account + IFSC + branch name; PF enrolled → UAN, UAN-linked mobile, previous PF member ID, EPS eligibility; Basic + HRA + allowances − EPF, ESI, professional tax and other deductions</td></tr>
   </table>
 
   <h2>Editing a profile</h2>
@@ -76,6 +86,7 @@ flowchart LR
     <ul>
       <li>Edits are saved in the browser only; uploaded files are not stored anywhere.</li>
       <li>The employee's own mobile change is not saved.</li>
+      <li>Filter counts are worked out in the browser over the loaded list; the backend must count within the viewer's scope.</li>
     </ul>
   </div>
 </section>

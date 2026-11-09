@@ -27,6 +27,8 @@ export const PERSONA = {
   superAdmin: 'GS-120',
   hr: 'GS-119',
   officeAdmin: 'GS-101',
+  taManager: 'GS-155',
   teamLead: 'GS-058',
+  recruiter: 'GS-156',
   employee: 'GS-087',
 } as const;

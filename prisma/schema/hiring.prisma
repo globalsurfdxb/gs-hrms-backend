@@ -135,7 +135,11 @@ model Job {
   qualifications   String    @default("")
   referralEligible Boolean   @default(true) @map("referral_eligible")
   closingDate      DateTime  @map("closing_date") @db.Date
-  recruiterId      String    @map("recruiter_id") @db.Uuid
+  /// Runs the job. Empty while a job handed to the Talent Acquisition Manager waits for them to choose (BR-HIR-021).
+  recruiterId      String?   @map("recruiter_id") @db.Uuid
+  /// The Talent Acquisition Manager the job was handed to; they choose the recruiter (BR-HIR-021). Empty when there
+  /// was no TA Manager when the job was created.
+  taManagerId      String?   @map("ta_manager_id") @db.Uuid
   /// Accepted offers counted against positions (offers, step 5).
   filled           Int       @default(0)
   status           JobStatus @default(DRAFT)
@@ -145,7 +149,8 @@ model Job {
 
   requisition  Requisition      @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
   designation  Designation?     @relation(fields: [designationId], references: [id], onDelete: SetNull)
-  recruiter    Employee         @relation("JobRecruiter", fields: [recruiterId], references: [id], onDelete: Restrict)
+  recruiter    Employee?        @relation("JobRecruiter", fields: [recruiterId], references: [id], onDelete: Restrict)
+  taManager    Employee?        @relation("JobTaManager", fields: [taManagerId], references: [id], onDelete: Restrict)
   createdBy    Employee         @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   panel        JobPanelMember[]
   events       JobEvent[]
@@ -153,6 +158,7 @@ model Job {
 
   @@index([status])
   @@index([recruiterId])
+  @@index([taManagerId])
   @@map("jobs")
 }
 

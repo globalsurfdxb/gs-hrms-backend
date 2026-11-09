@@ -6,13 +6,13 @@
   <div class="meta">
     <b>Used by</b><div><span class="chip c-emp">Everyone</span> <span class="chip c-admin">Super Admin</span> manages roles</div>
     <b>Frontend</b><div><code>/login</code>, <code>/admin/roles</code>, <code>lib/auth.ts</code>, <code>lib/access.ts</code>, <code>lib/guard.ts</code>, <code>lib/nav.ts</code></div>
-    <b>Backend</b><div>Phase 0 — sign-in, sessions and the access check are built; Roles &amp; Permissions API is next</div>
+    <b>Backend</b><div>Phase 0 — sign-in, sessions, the access check and the Roles &amp; Permissions API are built and connected to the frontend; the two Talent Acquisition roles and data scopes are next</div>
   </div>
 
   <h2>In short</h2>
   <ol class="short">
     <li>Everyone signs in with their <b>Microsoft 365</b> work account (with MFA). There are no separate HRMS passwords.</li>
-    <li>Each person has one <b>role</b>: Employee, Team Lead, HR, Office Admin or Super Admin.</li>
+    <li>Each person has one <b>role</b>: Employee, Team Lead, Recruiter, Talent Acquisition Manager, HR, Office Admin or Super Admin (or a custom role).</li>
     <li>The role decides which <b>screens</b> appear and which <b>actions</b> (view, add, edit, delete) are allowed.</li>
     <li>Data is limited to the person's <b>scope</b>: own records, direct reports, their location, or everyone.</li>
   </ol>
@@ -37,6 +37,9 @@ flowchart TD
   class G good
     </pre>
   </figure>
+  <p><b>Until Microsoft sign-in is set up</b>, the sign-in page has an email + password form that works only for the
+  fictional demo accounts (one per role, listed on the page). The server checks the shared demo password, gives the
+  same "email or password is incorrect" answer for any mistake, slows down repeated attempts, and audits every try.</p>
   <ol class="steps">
     <li>Everyone signs in with their <b>Microsoft 365 work account</b>. Microsoft checks the password and MFA; GS HRMS never stores passwords.</li>
     <li>The system looks for the employee record that belongs to that Microsoft account. On the very first sign-in it links them by work email.</li>
@@ -66,7 +69,9 @@ flowchart LR
   <table>
     <tr><th>Role</th><th>My Space</th><th>Team</th><th>Organization</th><th>Operations / Reports / Admin</th><th>Data scope</th></tr>
     <tr><td>Employee</td><td>✔</td><td></td><td></td><td></td><td>Own records</td></tr>
+    <tr><td>Recruiter</td><td>✔</td><td></td><td></td><td>Hiring → Recruiting only (no delete)</td><td>Own records; jobs assigned to them</td></tr>
     <tr><td>Team Lead</td><td>✔</td><td>✔</td><td></td><td></td><td>Own + direct reports</td></tr>
+    <tr><td>Talent Acquisition Manager</td><td>✔</td><td>✔</td><td></td><td>All of Hiring (no delete)</td><td>Own + direct reports; all hiring</td></tr>
     <tr><td>HR</td><td>✔</td><td></td><td>✔</td><td>✔ (no delete in Administration)</td><td>All locations</td></tr>
     <tr><td>Office Admin</td><td>✔</td><td></td><td>✔</td><td>✔ (never delete)</td><td>Own location</td></tr>
     <tr><td>Super Admin</td><td>✔</td><td>✔</td><td>✔</td><td>✔</td><td>Everything</td></tr>
@@ -74,16 +79,18 @@ flowchart LR
   <ul>
     <li>Permissions are set per <b>feature</b> with four actions: <b>View, Add, Edit, Delete</b>. Add/Edit/Delete always need View.</li>
     <li>Features are grouped Module → Category → Feature (for example <i>Administration → Organization → Companies</i>).</li>
-    <li>Super Admin can create <b>custom roles</b>, tick permissions per feature, and add custom features. System roles cannot be renamed.</li>
+    <li>Super Admin can create <b>custom roles</b> (from scratch, by duplicating a role, or by copying another role's access), tick permissions per feature, compare up to four roles side by side, and add custom features. System roles cannot be renamed.</li>
+    <li>Nobody can change their own role, give access they do not have themselves, or change the Super Admin role. When a role's access changes, everyone with that role is signed out so the change applies at once.</li>
     <li>"Team" means <b>direct reports only</b>, not the whole tree below a manager.</li>
   </ul>
 
   <div class="callout gap">
     <h3>Not in the frontend yet</h3>
     <ul>
-      <li>Sign-in only checks that the email exists — no password, no Microsoft. The persona switcher changes role freely.</li>
-      <li>The permission matrix is shown but never enforced; custom roles disappear on page refresh and cannot be given to anyone.</li>
-      <li>The backend now enforces all of this on every request. Next: the Roles &amp; Permissions API and assigning roles to employees.</li>
+      <li>"Continue with Microsoft" is a placeholder; sign-in uses the demo email + password form against the server.</li>
+      <li>Menus and buttons still follow the frontend's built-in role defaults, not the permissions the server returns; a custom role is shown as Employee.</li>
+      <li>Roles &amp; Permissions is saved on the server, but "Add feature" is switched off and there is no screen yet to give someone a role.</li>
+      <li>The backend does not have the <b>Talent Acquisition Manager</b> and <b>Recruiter</b> roles or their demo accounts yet, and "Team → Requests" is missing from its permission list.</li>
     </ul>
   </div>
 </section>

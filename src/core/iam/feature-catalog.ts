@@ -6,7 +6,8 @@
    Pure file — no Nest imports, because the seed script uses it too. */
 
 export type ExtraAction = 'add' | 'edit' | 'delete';
-export type SystemRole = 'Super Admin' | 'HR' | 'Office Admin' | 'Team Lead' | 'Employee';
+export type SystemRole =
+  'Super Admin' | 'HR' | 'Office Admin' | 'Talent Acquisition Manager' | 'Team Lead' | 'Recruiter' | 'Employee';
 
 export interface CatalogFeature {
   id: string;
@@ -29,13 +30,34 @@ export interface CatalogModule {
   categories: CatalogCategory[];
 }
 
-export const SYSTEM_ROLES: SystemRole[] = ['Super Admin', 'HR', 'Office Admin', 'Team Lead', 'Employee'];
-const RANK: Record<SystemRole, number> = { Employee: 1, 'Team Lead': 2, 'Office Admin': 3, HR: 4, 'Super Admin': 5 };
+export const SYSTEM_ROLES: SystemRole[] = [
+  'Super Admin',
+  'HR',
+  'Office Admin',
+  'Talent Acquisition Manager',
+  'Team Lead',
+  'Recruiter',
+  'Employee',
+];
+const RANK: Record<SystemRole, number> = {
+  Employee: 1,
+  Recruiter: 1,
+  'Team Lead': 2,
+  'Talent Acquisition Manager': 2,
+  'Office Admin': 3,
+  HR: 4,
+  'Super Admin': 5,
+};
+/** The Talent Acquisition roles work in Hiring Management only: the manager sees all of it, a recruiter the
+    Recruiting category. Which jobs a Recruiter may touch is narrowed per record (BR-HIR-022), not here. */
+const isTalentRole = (role: SystemRole) => role === 'Talent Acquisition Manager' || role === 'Recruiter';
 
 /** Frontend `PERS`: the app areas and Home scopes each built-in role sees. */
 const PERSONA: Record<SystemRole, { areas: string[]; scopes: string[] }> = {
   Employee: { areas: ['home'], scopes: ['my'] },
   'Team Lead': { areas: ['home'], scopes: ['my', 'team'] },
+  'Talent Acquisition Manager': { areas: ['home'], scopes: ['my', 'team'] },
+  Recruiter: { areas: ['home'], scopes: ['my'] },
   HR: { areas: ['home', 'operations', 'reports', 'administration'], scopes: ['my', 'org'] },
   'Office Admin': { areas: ['home', 'operations', 'reports', 'administration'], scopes: ['my', 'org'] },
   'Super Admin': { areas: ['home', 'operations', 'reports', 'administration'], scopes: ['my', 'team', 'org'] },
@@ -314,6 +336,7 @@ function seesCategory(role: SystemRole, m: CatalogModule, c: CatalogCategory): b
     return p.areas.includes(c.id === 'reports' ? 'reports' : 'operations');
   }
   if (m.id === 'administration') return p.areas.includes('administration');
+  if (m.id === 'hiring' && isTalentRole(role)) return role === 'Talent Acquisition Manager' || c.id === 'recruiting';
   return RANK[role] >= c.rank;
 }
 
@@ -323,7 +346,11 @@ function defaultActions(role: SystemRole, m: CatalogModule, c: CatalogCategory, 
   if (role === 'Super Admin') return have;
   if (role === 'HR') return m.id === 'administration' ? have.filter((a) => a !== 'delete') : have;
   if (role === 'Office Admin') return have.filter((a) => a !== 'delete');
-  if (c.rank <= 2) return have.filter((a) => (role === 'Team Lead' ? a !== 'delete' : a === 'add'));
+  if (isTalentRole(role) && m.id === 'hiring') return have.filter((a) => a !== 'delete');
+  if (c.rank <= 2)
+    return have.filter((a) =>
+      role === 'Team Lead' || role === 'Talent Acquisition Manager' ? a !== 'delete' : a === 'add',
+    );
   return [];
 }
 

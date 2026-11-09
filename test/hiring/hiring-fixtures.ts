@@ -8,7 +8,8 @@ export type Agent = Awaited<ReturnType<typeof signInAs>>;
 export type Who = keyof typeof PERSONA;
 
 /* Shared setup for the hiring e2e specs that need a job: sign every persona in, and walk a requisition through
-   approval to an OPEN job (Team Lead raises, HR and Super Admin approve, HR creates the job). */
+   approval to an OPEN job (Team Lead raises, HR and Super Admin approve, HR creates the job, which goes to the
+   Talent Acquisition Manager, who chooses the recruiter — BR-HIR-021). */
 export async function hiringWorld(app: INestApplication<App>) {
   const prisma = app.get(PrismaService);
   const as: Record<Who, Agent> = {} as never;
@@ -26,8 +27,9 @@ export async function hiringWorld(app: INestApplication<App>) {
   const send = (who: Who, method: 'post' | 'put', path: string, body?: object) =>
     as[who][method](`/api/hiring${path}`).set('Origin', ORIGIN).send(body);
 
-  /** A job from a fully approved requisition; OPEN unless publish is false. */
-  async function job(publish = true): Promise<{ id: string; code: string }> {
+  /** A job from a fully approved requisition; OPEN unless publish is false. Recruited by the Talent Acquisition
+      Manager unless another member of the team is given. */
+  async function job(publish = true, recruiter: Who = 'taManager'): Promise<{ id: string; code: string }> {
     const r = await send('teamLead', 'post', '/requisitions', {
       title: 'Network Engineer',
       companyId: gsit.id,
@@ -51,10 +53,10 @@ export async function hiringWorld(app: INestApplication<App>) {
       expMin: 2,
       expMax: 6,
       panelIds: [id.teamLead],
-      recruiterId: id.hr,
       closingDate: future(30),
       publish,
     }).expect(201);
+    await send('taManager', 'put', `/jobs/${j.body.id}/recruiter`, { recruiterId: id[recruiter] }).expect(200);
     return { id: j.body.id, code: j.body.code };
   }
 

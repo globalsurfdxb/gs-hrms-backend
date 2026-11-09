@@ -49,6 +49,9 @@ docs {
   added to it at APPLIED. Without `jobId`, send `locationId` instead. Running this twice returns 409
   `candidate.duplicate` with `details.candidateId`: change the email and phone. Saves `candidateId` and
   `applicationId`.
+
+  Without full hiring access (e.g. GS-156 Recruiter) `jobId` is required and must be one of your own jobs; a
+  duplicate you may not see returns 409 without `details`.
 }
 
 tests {

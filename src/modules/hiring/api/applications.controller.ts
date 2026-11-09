@@ -12,6 +12,10 @@ import { ListApplicationsQuery } from './dto/candidate-queries.js';
 
 const FEATURE = PERMISSIONS.hiring.candidates;
 const OFFER_OUT = 'While the offer letter is out with the candidate this is refused (409 application.offer_out).';
+/** BR-HIR-022, shared by every pipeline route. */
+const SCOPE =
+  'With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any ' +
+  'job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404.';
 
 @ApiTags('Hiring · Pipeline')
 @ApiCookieAuth()
@@ -24,7 +28,7 @@ export class ApplicationsController {
   @ApiOperation({
     summary: 'List a job’s pipeline',
     description:
-      'Needs Candidates → View (HR, Super Admin by default). The job’s applications with the candidate behind each, ' +
+      `Needs Candidates → View. ${SCOPE} The job’s applications with the candidate behind each, ` +
       'for the board and the list. stage = active applications at that stage; exit = an exit or NONE; ' +
       'inStageForDays finds stalled candidates. Sort by applied (default, newest first), name, stage or inStage.',
   })
@@ -36,7 +40,10 @@ export class ApplicationsController {
 
   @RequirePermission(FEATURE)
   @Get('applications/:id')
-  @ApiOperation({ summary: 'Get one application', description: 'Needs Candidates → View. With its stage history.' })
+  @ApiOperation({
+    summary: 'Get one application',
+    description: `Needs Candidates → View. ${SCOPE} With its stage history.`,
+  })
   @ApiOkResponse({ type: ApplicationDetailResponse })
   @ApiErrors(400, 401, 403, 404)
   get(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
@@ -49,7 +56,8 @@ export class ApplicationsController {
   @ApiOperation({
     summary: 'Move a candidate to another stage',
     description:
-      'Needs Candidates → Edit. Any stage from APPLIED to OFFER, forward or back; also brings an exited candidate ' +
+      `Needs Candidates → Edit. ${SCOPE} ` +
+      'Any stage from APPLIED to OFFER, forward or back; also brings an exited candidate ' +
       'back. Never HIRED (an accepted offer sets it), nothing after HIRED, and not while the job is CLOSED or ' +
       `FILLED (BR-HIR-009). ${OFFER_OUT} Bulk moves: one call per application.`,
   })
@@ -65,7 +73,8 @@ export class ApplicationsController {
   @ApiOperation({
     summary: 'Reject, withdraw or put a candidate on hold',
     description:
-      'Needs Candidates → Edit. REJECTED needs one of the rejection reasons; WITHDRAWN and ON_HOLD take a free ' +
+      `Needs Candidates → Edit. ${SCOPE} ` +
+      'REJECTED needs one of the rejection reasons; WITHDRAWN and ON_HOLD take a free ' +
       `reason. Not after HIRED (BR-HIR-009). ${OFFER_OUT} Bulk reject: one call per application.`,
   })
   @ApiOkResponse({ type: ApplicationDetailResponse })
@@ -80,7 +89,8 @@ export class ApplicationsController {
   @ApiOperation({
     summary: 'Reopen an exited application',
     description:
-      'Needs Candidates → Edit. Back to the stage it left from; not while the job is CLOSED or FILLED (BR-HIR-009).',
+      `Needs Candidates → Edit. ${SCOPE} ` +
+      'Back to the stage it left from; not while the job is CLOSED or FILLED (BR-HIR-009).',
   })
   @ApiOkResponse({ type: ApplicationDetailResponse })
   @ApiErrors(400, 401, 403, 404, 409)

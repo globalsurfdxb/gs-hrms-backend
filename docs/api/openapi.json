@@ -407,7 +407,7 @@
     },
     "/api/auth/dev/login": {
       "post": {
-        "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-058 Team Lead · GS-087 Employee.",
+        "description": "Local development and tests only (404 elsewhere). Sets the session cookie, so every later request in Swagger / Bruno is signed in. GS-120 Super Admin · GS-119 HR · GS-101 Office Admin · GS-155 Talent Acquisition Manager · GS-058 Team Lead · GS-156 Recruiter · GS-087 Employee.",
         "operationId": "AuthController_devLogin",
         "parameters": [],
         "requestBody": {
@@ -2734,7 +2734,7 @@
     },
     "/api/hiring/requisitions": {
       "get": {
-        "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
+        "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
         "operationId": "RequisitionsController_list",
         "parameters": [
           {
@@ -2848,7 +2848,7 @@
         ]
       },
       "post": {
-        "description": "Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step is approved automatically when you are the hiring manager). The hiring manager must hold Requisition approvals → Edit. Currency follows the location. Rules BR-HIR-003.",
+        "description": "Needs Requisitions → Add (Super Admin, HR, Office Admin, Team Lead by default). Saved as DRAFT, or with submit=true sent straight into the approval chain Hiring Manager → HR → Management (the Hiring Manager step is approved automatically when you are the hiring manager). The hiring manager must hold Requisition approvals → Edit. Currency follows the location. Rules BR-HIR-003. Without full hiring access (Team Lead) only for your own department or one you head, in a location it works in, with you as the hiring manager (BR-HIR-019; see GET /hiring/requisitions/scope): another department or hiring manager is 403.",
         "operationId": "RequisitionsController_create",
         "parameters": [],
         "requestBody": {
@@ -2914,9 +2914,57 @@
         ]
       }
     },
+    "/api/hiring/requisitions/scope": {
+      "get": {
+        "description": "Needs Requisitions → Add. With full hiring access (Super Admin, HR, Talent Acquisition Manager) restricted=false: choose any active company, department and hiring manager. Otherwise (Team Lead, Office Admin by default) restricted=true: only your own department and the departments you head, each with its company and the locations it works in; you are the hiring manager (BR-HIR-019).",
+        "operationId": "RequisitionsController_scope",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequisitionScopeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "What the requisition form may offer you",
+        "tags": [
+          "Hiring · Requisitions"
+        ]
+      }
+    },
     "/api/hiring/requisitions/{id}": {
       "get": {
-        "description": "Needs Requisitions → View. HR and Super Admin see every requisition; others see those they raised or manage, those waiting on a step they decide, and those they already decided. Anything else is 404.",
+        "description": "Needs Requisitions → View. Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404.",
         "operationId": "RequisitionsController_get",
         "parameters": [
           {
@@ -2991,7 +3039,7 @@
         ]
       },
       "patch": {
-        "description": "Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted.",
+        "description": "Needs Requisitions → Edit, and you raised it, manage it, or are HR / Super Admin. Only while DRAFT or REJECTED (409 otherwise). Send only the fields that change; a rejected requisition stays REJECTED until resubmitted. Without full hiring access the department can only move to one in your scope, the location must be one the department works in, and the hiring manager cannot change (BR-HIR-019).",
         "operationId": "RequisitionsController_update",
         "parameters": [
           {
@@ -3272,7 +3320,7 @@
     },
     "/api/hiring/requisitions/{id}/hold": {
       "post": {
-        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED → ON_HOLD (BR-HIR-004).",
+        "description": "Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). APPROVED → ON_HOLD (BR-HIR-004).",
         "operationId": "RequisitionsController_hold",
         "parameters": [
           {
@@ -3359,7 +3407,7 @@
     },
     "/api/hiring/requisitions/{id}/resume": {
       "post": {
-        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). ON_HOLD → APPROVED (BR-HIR-004).",
+        "description": "Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). ON_HOLD → APPROVED (BR-HIR-004).",
         "operationId": "RequisitionsController_resume",
         "parameters": [
           {
@@ -3446,7 +3494,7 @@
     },
     "/api/hiring/requisitions/{id}/close": {
       "post": {
-        "description": "Needs Requisitions → Edit and recruiting access (HR, Super Admin). APPROVED or ON_HOLD → CLOSED, final (BR-HIR-004).",
+        "description": "Needs Requisitions → Edit and full hiring access (Super Admin, HR, Talent Acquisition Manager). APPROVED or ON_HOLD → CLOSED, final (BR-HIR-004).",
         "operationId": "RequisitionsController_close",
         "parameters": [
           {
@@ -3533,7 +3581,7 @@
     },
     "/api/hiring/jobs": {
       "get": {
-        "description": "Needs Jobs → View (HR, Super Admin by default). Every job, newest first. Filters: status, location, recruiter.",
+        "description": "Needs Jobs → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404. Newest first. Filters: status, location, recruiter, and awaitingRecruiter=true for jobs the Talent Acquisition Manager has yet to give a recruiter (BR-HIR-021).",
         "operationId": "JobsController_list",
         "parameters": [
           {
@@ -3568,6 +3616,16 @@
             "schema": {
               "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
               "type": "string"
+            }
+          },
+          {
+            "name": "awaitingRecruiter",
+            "required": false,
+            "in": "query",
+            "description": "Only jobs waiting for the Talent Acquisition Manager to choose a recruiter (BR-HIR-021)",
+            "schema": {
+              "example": true,
+              "type": "boolean"
             }
           },
           {
@@ -3645,9 +3703,57 @@
         ]
       }
     },
+    "/api/hiring/recruiters": {
+      "get": {
+        "description": "Needs Jobs → View. For the job form and the \"Choose recruiter\" drawer (BR-HIR-021): the Talent Acquisition Manager (the active employee with that designation, as the frontend finds them), whether a job you create now is handed to them (then leave the recruiter out), and the Talent Acquisition team (active Recruiters and the TA Manager, by designation) to choose from. With no TA Manager the pool is empty and any active employee may be the recruiter.",
+        "operationId": "JobsController_recruiters",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecruiterPoolResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Talent Acquisition Manager and recruiter pool",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
     "/api/hiring/jobs/{id}": {
       "get": {
-        "description": "Needs Jobs → View (HR, Super Admin by default).",
+        "description": "Needs Jobs → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404.",
         "operationId": "JobsController_get",
         "parameters": [
           {
@@ -3724,7 +3830,7 @@
     },
     "/api/hiring/requisitions/{id}/job": {
       "post": {
-        "description": "Needs Jobs → Add (HR, Super Admin by default). Only from an APPROVED requisition that has no job yet (409 otherwise). Title, company, department, location, positions, budget and hiring manager come from the requisition. Recruiter and interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005).",
+        "description": "Needs Jobs → Add and full hiring access (Super Admin, HR, Talent Acquisition Manager by default; 403 hiring.full_access_required otherwise). Only from an APPROVED requisition that has no job yet (409 otherwise). Title, company, department, location, positions, budget and hiring manager come from the requisition. Interviewers must be active employees. publish=true opens it now; otherwise DRAFT (BR-HIR-005). Recruiter (BR-HIR-021): with a Talent Acquisition Manager in place, a job created by anyone but them or a Super Admin is handed to them with no recruiter — sending recruiterId then is 400 job.recruiter_chosen_by_ta; otherwise recruiterId is required (400 job.recruiter_required), from the Talent Acquisition team once there is one. See GET /hiring/recruiters.",
         "operationId": "JobsController_create",
         "parameters": [
           {
@@ -3821,7 +3927,7 @@
     },
     "/api/hiring/jobs/{id}/open": {
       "post": {
-        "description": "Needs Jobs → Edit. DRAFT → OPEN (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "description": "Needs Jobs → Edit. DRAFT → OPEN (BR-HIR-006). Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every position is filled — never through these routes.",
         "operationId": "JobsController_open",
         "parameters": [
           {
@@ -3908,7 +4014,7 @@
     },
     "/api/hiring/jobs/{id}/hold": {
       "post": {
-        "description": "Needs Jobs → Edit. OPEN → ON_HOLD (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "description": "Needs Jobs → Edit. OPEN → ON_HOLD (BR-HIR-006). Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every position is filled — never through these routes.",
         "operationId": "JobsController_hold",
         "parameters": [
           {
@@ -3995,7 +4101,7 @@
     },
     "/api/hiring/jobs/{id}/resume": {
       "post": {
-        "description": "Needs Jobs → Edit. ON_HOLD → OPEN (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "description": "Needs Jobs → Edit. ON_HOLD → OPEN (BR-HIR-006). Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every position is filled — never through these routes.",
         "operationId": "JobsController_resume",
         "parameters": [
           {
@@ -4082,7 +4188,7 @@
     },
     "/api/hiring/jobs/{id}/close": {
       "post": {
-        "description": "Needs Jobs → Edit. OPEN or ON_HOLD → CLOSED (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "description": "Needs Jobs → Edit. OPEN or ON_HOLD → CLOSED (BR-HIR-006). Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every position is filled — never through these routes.",
         "operationId": "JobsController_close",
         "parameters": [
           {
@@ -4169,7 +4275,7 @@
     },
     "/api/hiring/jobs/{id}/reopen": {
       "post": {
-        "description": "Needs Jobs → Edit. CLOSED → OPEN, only while positions are left to fill (BR-HIR-006). FILLED is set by the system when every position is filled — never through these routes.",
+        "description": "Needs Jobs → Edit. CLOSED → OPEN, only while positions are left to fill (BR-HIR-006). Full hiring access only (403 hiring.full_access_required otherwise). FILLED is set by the system when every position is filled — never through these routes.",
         "operationId": "JobsController_reopen",
         "parameters": [
           {
@@ -4256,7 +4362,7 @@
     },
     "/api/hiring/jobs/{id}/recruiter": {
       "put": {
-        "description": "Needs Jobs → Edit. The new recruiter must be an active employee; the change is added to the job history.",
+        "description": "Needs Jobs → Edit, and (BR-HIR-021) the caller must be a Super Admin, a Talent Acquisition Manager (by role or designation) or the TA Manager the job was handed to; on a job with no TA Manager, full hiring access also may (403 job.recruiter_not_allowed otherwise). With a TA Manager in place the recruiter must be on the Talent Acquisition team, otherwise any active employee (400 job.invalid_recruiter). Added to the job history. Another person’s job is 404 for own-jobs users.",
         "operationId": "JobsController_changeRecruiter",
         "parameters": [
           {
@@ -4345,7 +4451,7 @@
             "cookie": []
           }
         ],
-        "summary": "Change the recruiter of a job",
+        "summary": "Choose or change the recruiter of a job",
         "tags": [
           "Hiring · Jobs"
         ]
@@ -4353,7 +4459,7 @@
     },
     "/api/hiring/candidates": {
       "get": {
-        "description": "Needs Candidates → View (HR, Super Admin by default); such users see every candidate. Newest first. Search q matches name, email, phone, company, title, city or an exact tag. No salary in the list.",
+        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. Newest first. Search q matches name, email, phone, company, title, city or an exact tag. No salary in the list.",
         "operationId": "CandidatesController_list",
         "parameters": [
           {
@@ -4504,7 +4610,7 @@
         ]
       },
       "post": {
-        "description": "Needs Candidates → Add. With jobId (an OPEN job) the candidate is also added to that job at APPLIED and takes its location; otherwise locationId is required. Consent must be true. A candidate with the same email or phone returns 409 candidate.duplicate with details.candidateId — add that person to the job instead (BR-HIR-007, BR-HIR-008). Sending salary needs salary access (403 otherwise).",
+        "description": "Needs Candidates → Add. With jobId (an OPEN job) the candidate is also added to that job at APPLIED and takes its location; otherwise locationId is required. Consent must be true. A candidate with the same email or phone returns 409 candidate.duplicate with details.candidateId — add that person to the job instead (BR-HIR-007, BR-HIR-008); if the caller may not see that person, the 409 has no details. Without full hiring access jobId is required (400 candidate.job_required) and must be one of the caller’s own jobs (404 otherwise). Sending salary needs salary access for that job (403 otherwise).",
         "operationId": "CandidatesController_create",
         "parameters": [],
         "requestBody": {
@@ -4592,7 +4698,7 @@
     },
     "/api/hiring/candidates/duplicates": {
       "get": {
-        "description": "Needs Candidates → Add. For the add form’s \"already in the system\" warning: same email, or the same last 9 phone digits (7+ digits). At most 5 matches (BR-HIR-007).",
+        "description": "Needs Candidates → Add. For the add form’s \"already in the system\" warning: same email, or the same last 9 phone digits (7+ digits). At most 5 matches (BR-HIR-007), and only candidates the caller may see (BR-HIR-022).",
         "operationId": "CandidatesController_duplicates",
         "parameters": [
           {
@@ -4672,7 +4778,7 @@
     },
     "/api/hiring/candidates/{id}": {
       "get": {
-        "description": "Needs Candidates → View. With notes and every application and its stage history. Salary appears only for HR / Super Admin (Jobs → View) and the hiring manager of one of the candidate’s jobs. Viewing salary is audited.",
+        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. With notes and each application and its stage history. Salary appears only with full hiring access and for the hiring manager or recruiter of one of the candidate’s jobs. Viewing salary is audited.",
         "operationId": "CandidatesController_get",
         "parameters": [
           {
@@ -4749,7 +4855,7 @@
     },
     "/api/hiring/candidates/{id}/applications": {
       "post": {
-        "description": "Needs Candidates → Add. Only an OPEN job, once per job; starts at APPLIED (BR-HIR-008). Returns the application.",
+        "description": "Needs Candidates → Add. Only an OPEN job, once per job; starts at APPLIED (BR-HIR-008). Without full hiring access both the candidate and the job must be on the caller’s own jobs (404 otherwise). Returns the application.",
         "operationId": "CandidatesController_apply",
         "parameters": [
           {
@@ -4846,7 +4952,7 @@
     },
     "/api/hiring/candidates/{id}/tags": {
       "put": {
-        "description": "Needs Candidates → Edit. The whole list, at most 20; trimmed and de-duplicated.",
+        "description": "Needs Candidates → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. The whole list, at most 20; trimmed and de-duplicated.",
         "operationId": "CandidatesController_setTags",
         "parameters": [
           {
@@ -4933,7 +5039,7 @@
     },
     "/api/hiring/candidates/{id}/notes": {
       "post": {
-        "description": "Needs Candidates → Edit. Notes cannot be changed or deleted afterwards.",
+        "description": "Needs Candidates → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. Notes cannot be changed or deleted afterwards.",
         "operationId": "CandidatesController_addNote",
         "parameters": [
           {
@@ -5020,7 +5126,7 @@
     },
     "/api/hiring/jobs/{id}/applications": {
       "get": {
-        "description": "Needs Candidates → View (HR, Super Admin by default). The job’s applications with the candidate behind each, for the board and the list. stage = active applications at that stage; exit = an exit or NONE; inStageForDays finds stalled candidates. Sort by applied (default, newest first), name, stage or inStage.",
+        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. The job’s applications with the candidate behind each, for the board and the list. stage = active applications at that stage; exit = an exit or NONE; inStageForDays finds stalled candidates. Sort by applied (default, newest first), name, stage or inStage.",
         "operationId": "ApplicationsController_forJob",
         "parameters": [
           {
@@ -5235,7 +5341,7 @@
     },
     "/api/hiring/applications/{id}": {
       "get": {
-        "description": "Needs Candidates → View. With its stage history.",
+        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. With its stage history.",
         "operationId": "ApplicationsController_get",
         "parameters": [
           {
@@ -5312,7 +5418,7 @@
     },
     "/api/hiring/applications/{id}/move": {
       "post": {
-        "description": "Needs Candidates → Edit. Any stage from APPLIED to OFFER, forward or back; also brings an exited candidate back. Never HIRED (an accepted offer sets it), nothing after HIRED, and not while the job is CLOSED or FILLED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk moves: one call per application.",
+        "description": "Needs Candidates → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. Any stage from APPLIED to OFFER, forward or back; also brings an exited candidate back. Never HIRED (an accepted offer sets it), nothing after HIRED, and not while the job is CLOSED or FILLED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk moves: one call per application.",
         "operationId": "ApplicationsController_move",
         "parameters": [
           {
@@ -5409,7 +5515,7 @@
     },
     "/api/hiring/applications/{id}/exit": {
       "post": {
-        "description": "Needs Candidates → Edit. REJECTED needs one of the rejection reasons; WITHDRAWN and ON_HOLD take a free reason. Not after HIRED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk reject: one call per application.",
+        "description": "Needs Candidates → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. REJECTED needs one of the rejection reasons; WITHDRAWN and ON_HOLD take a free reason. Not after HIRED (BR-HIR-009). While the offer letter is out with the candidate this is refused (409 application.offer_out). Bulk reject: one call per application.",
         "operationId": "ApplicationsController_exit",
         "parameters": [
           {
@@ -5506,7 +5612,7 @@
     },
     "/api/hiring/applications/{id}/reopen": {
       "post": {
-        "description": "Needs Candidates → Edit. Back to the stage it left from; not while the job is CLOSED or FILLED (BR-HIR-009).",
+        "description": "Needs Candidates → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any job; otherwise only the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. Back to the stage it left from; not while the job is CLOSED or FILLED (BR-HIR-009).",
         "operationId": "ApplicationsController_reopen",
         "parameters": [
           {
@@ -7023,6 +7129,72 @@
           "pageSize"
         ]
       },
+      "RequesterDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cloud & Infra"
+          },
+          "company": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "locations": {
+            "description": "Locations to choose from (id e.g. Dubai). Show a picker only when there is more than one.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "company",
+          "locations"
+        ]
+      },
+      "RequisitionScopeResponse": {
+        "type": "object",
+        "properties": {
+          "restricted": {
+            "type": "boolean",
+            "description": "true = no full hiring access (Team Lead by default): company and department come from `departments`, the location from that department, and the caller is the hiring manager. false = every active company, department and hiring manager may be chosen; `departments` is empty."
+          },
+          "hiringManager": {
+            "nullable": true,
+            "description": "The fixed hiring manager (the caller) when restricted; null otherwise",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "departments": {
+            "description": "Their own department first, then the departments they head. Empty when restricted means none is set up.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequesterDepartmentResponse"
+            }
+          },
+          "defaultLocationId": {
+            "type": "string",
+            "nullable": true,
+            "example": "Dubai",
+            "description": "Location to preselect: the caller’s own when the department works there"
+          }
+        },
+        "required": [
+          "restricted",
+          "hiringManager",
+          "departments",
+          "defaultLocationId"
+        ]
+      },
       "CreateRequisitionDto": {
         "type": "object",
         "properties": {
@@ -7095,7 +7267,7 @@
           "hiringManagerId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
-            "description": "An active employee"
+            "description": "An active employee with Requisition approvals → Edit. Required with full hiring access; without it (Team Lead) leave it out — you are the hiring manager (BR-HIR-019), and anyone else is refused."
           },
           "justification": {
             "type": "string",
@@ -7118,7 +7290,6 @@
           "budgetMin",
           "budgetMax",
           "targetStart",
-          "hiringManagerId",
           "justification"
         ]
       },
@@ -7194,7 +7365,7 @@
           "hiringManagerId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05",
-            "description": "An active employee"
+            "description": "An active employee with Requisition approvals → Edit. Required with full hiring access; without it (Team Lead) leave it out — you are the hiring manager (BR-HIR-019), and anyone else is refused."
           },
           "justification": {
             "type": "string",
@@ -7258,7 +7429,7 @@
           },
           "canChangeRecruiter": {
             "type": "boolean",
-            "description": "Change the recruiter (Jobs → Edit)"
+            "description": "Choose or change the recruiter (Jobs → Edit and BR-HIR-021: Super Admin, a Talent Acquisition Manager, or full hiring access on a job with no TA Manager)"
           }
         },
         "required": [
@@ -7334,7 +7505,24 @@
             "$ref": "#/components/schemas/PersonRefResponse"
           },
           "recruiter": {
-            "$ref": "#/components/schemas/PersonRefResponse"
+            "nullable": true,
+            "description": "Null while the Talent Acquisition Manager has yet to choose (BR-HIR-021)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager the job was handed to; null if there was none when it was made",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
           },
           "description": {
             "type": "string"
@@ -7413,6 +7601,7 @@
           "budgetMax",
           "hiringManager",
           "recruiter",
+          "taManager",
           "description",
           "skills",
           "expMin",
@@ -7455,6 +7644,64 @@
           "total",
           "page",
           "pageSize"
+        ]
+      },
+      "RecruiterOptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-058"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dev Team Lead"
+          },
+          "designation": {
+            "type": "object",
+            "example": "Recruiter",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "name",
+          "designation"
+        ]
+      },
+      "RecruiterPoolResponse": {
+        "type": "object",
+        "properties": {
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager (active employee with that designation); null if there is none",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "handsOver": {
+            "type": "boolean",
+            "description": "A job you create now is handed to the TA Manager — leave the recruiter out of the job form"
+          },
+          "pool": {
+            "description": "The Talent Acquisition team (Recruiters and the TA Manager). Empty when there is no TA Manager: then any active employee may be chosen.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruiterOptionResponse"
+            }
+          }
+        },
+        "required": [
+          "taManager",
+          "handsOver",
+          "pool"
         ]
       },
       "JobEventResponse": {
@@ -7552,7 +7799,24 @@
             "$ref": "#/components/schemas/PersonRefResponse"
           },
           "recruiter": {
-            "$ref": "#/components/schemas/PersonRefResponse"
+            "nullable": true,
+            "description": "Null while the Talent Acquisition Manager has yet to choose (BR-HIR-021)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
+          },
+          "taManager": {
+            "nullable": true,
+            "description": "The Talent Acquisition Manager the job was handed to; null if there was none when it was made",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonRefResponse"
+              }
+            ]
           },
           "description": {
             "type": "string"
@@ -7638,6 +7902,7 @@
           "budgetMax",
           "hiringManager",
           "recruiter",
+          "taManager",
           "description",
           "skills",
           "expMin",
@@ -7708,7 +7973,7 @@
           "recruiterId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
-            "description": "An active employee who runs this job"
+            "description": "Who runs this job (BR-HIR-021). Leave it out when the job is handed to the Talent Acquisition Manager (GET /hiring/recruiters → handsOver); otherwise required — from the Talent Acquisition team once there is one, else any active employee."
           },
           "referralEligible": {
             "type": "boolean",
@@ -7732,7 +7997,6 @@
           "expMin",
           "expMax",
           "panelIds",
-          "recruiterId",
           "closingDate"
         ]
       },
@@ -7742,7 +8006,7 @@
           "recruiterId": {
             "type": "string",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
-            "description": "An active employee"
+            "description": "An active employee; from the Talent Acquisition team once there is one (GET /hiring/recruiters)"
           }
         },
         "required": [

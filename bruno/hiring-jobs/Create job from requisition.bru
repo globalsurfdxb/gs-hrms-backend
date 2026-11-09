@@ -22,7 +22,6 @@ body:json {
     "expMax": 6,
     "qualifications": "CCNA or higher",
     "panelIds": ["{{reqHiringManagerId}}"],
-    "recruiterId": "{{reqHiringManagerId}}",
     "referralEligible": true,
     "closingDate": "2027-01-31",
     "publish": false
@@ -36,8 +35,15 @@ script:post-response {
 docs {
   Needs Jobs → Add (HR, Super Admin). `requisitionId` must be an APPROVED requisition without a job — walk one
   through "Hiring · Requisitions" first (raise with submit, then decide as HR GS-119 and Super Admin GS-120).
-  Recruiter and panel must be active employees (this uses `reqHiringManagerId` for both).
+  Panel members must be active employees (this uses `reqHiringManagerId`).
   `publish: true` opens the job now. Saves the new id in `jobId`.
+
+  Recruiter (BR-HIR-021): signed in as HR the job is handed to the Talent Acquisition Manager (GS-155) with no
+  recruiter, so leave `recruiterId` out (sending one is 400 job.recruiter_chosen_by_ta). Signed in as GS-155 or
+  Super Admin, add `"recruiterId": "{{recruiterId}}"` (run "Recruiter pool" first) — it is then required.
+
+  Full hiring access only (Super Admin, HR, Talent Acquisition Manager): a Recruiter gets 403
+  hiring.full_access_required.
 }
 
 tests {
