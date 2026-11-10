@@ -2732,6 +2732,219 @@
         ]
       }
     },
+    "/api/employees": {
+      "get": {
+        "description": "Who appears depends on your permissions, not your role name: Directory → View (Organization or Operations) shows everyone (Super Admin, HR, Office Admin by default); Team → Directory shows you and your direct reports (Team Lead, Talent Acquisition Manager); anyone else sees only themselves. The response's scope field says which applies. Sorted by name; filters combine.",
+        "operationId": "EmployeesController_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Name, employee code or work email (contains, any case)",
+            "schema": {
+              "example": "GS-08",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "ACTIVE",
+              "type": "string",
+              "enum": [
+                "ONBOARDING",
+                "ACTIVE",
+                "OFFBOARDING",
+                "INACTIVE"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "PERMANENT",
+              "type": "string",
+              "enum": [
+                "PERMANENT",
+                "CONTRACT",
+                "PROBATION"
+              ]
+            }
+          },
+          {
+            "name": "companyId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "departmentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "designationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a06",
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List employees",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
+    "/api/employees/{employeeCode}": {
+      "get": {
+        "description": "Who appears depends on your permissions, not your role name: Directory → View (Organization or Operations) shows everyone (Super Admin, HR, Office Admin by default); Team → Directory shows you and your direct reports (Team Lead, Talent Acquisition Manager); anyone else sees only themselves. Someone outside your scope is 404 employee.not_found, the same as a code that does not exist.",
+        "operationId": "EmployeesController_get",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one employee",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -6787,6 +7000,180 @@
         },
         "required": [
           "title"
+        ]
+      },
+      "EmployeeRefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "GS IT"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "EmployeePersonResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-120"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dev Super Admin"
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "name"
+        ]
+      },
+      "EmployeeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-087"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dev Employee"
+          },
+          "email": {
+            "type": "string",
+            "example": "gs-087@hrms.local"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONBOARDING",
+              "ACTIVE",
+              "OFFBOARDING",
+              "INACTIVE"
+            ]
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "PERMANENT",
+              "CONTRACT",
+              "PROBATION"
+            ]
+          },
+          "dateOfJoining": {
+            "type": "string",
+            "example": "2024-03-01",
+            "description": "Calendar day"
+          },
+          "company": {
+            "$ref": "#/components/schemas/EmployeeRefResponse"
+          },
+          "department": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeeRefResponse"
+              }
+            ]
+          },
+          "designation": {
+            "nullable": true,
+            "description": "`name` is the designation title",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeeRefResponse"
+              }
+            ]
+          },
+          "location": {
+            "example": {
+              "id": "Dubai",
+              "name": "Dubai"
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeeRefResponse"
+              }
+            ]
+          },
+          "reportingManager": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmployeePersonResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "employeeCode",
+          "name",
+          "email",
+          "status",
+          "employmentType",
+          "dateOfJoining",
+          "company",
+          "department",
+          "designation",
+          "location",
+          "reportingManager"
+        ]
+      },
+      "EmployeeListResponse": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "TEAM",
+              "SELF"
+            ],
+            "description": "Whose records this list can contain: everyone, you and your direct reports, or only you"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmployeeResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 7
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "scope",
+          "items",
+          "total",
+          "page",
+          "pageSize"
         ]
       },
       "RefResponse": {

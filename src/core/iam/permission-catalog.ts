@@ -23,6 +23,13 @@ export const PERMISSIONS = {
     /** System Settings — includes location management. */
     settings: 'administration:admin-settings',
   },
+  employee: {
+    /** Directory in Organization / Operations: every employee (data-scope.ts). */
+    orgDirectory: 'employee:org:directory',
+    opsDirectory: 'employee:ops:directory',
+    /** Team → Directory: self + direct reports. */
+    teamDirectory: 'employee:team:directory',
+  },
   hiring: {
     requisitions: 'hiring:requisitions:requisitions',
     requisitionApprovals: 'hiring:requisitions:requisition-approvals',

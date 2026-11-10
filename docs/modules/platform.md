@@ -36,7 +36,7 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
 | GET    | `/api/auth/me`                 | SignedIn                                                                                                                                                         |
 | POST   | `/api/auth/logout`             | SignedIn                                                                                                                                                         |
 
-## IAM — roles & permissions API done; data scopes and custom features to do
+## IAM — roles & permissions API and data scopes done; custom features to do
 
 - **Roles**: 7 system roles (Super Admin, HR, Office Admin, Talent Acquisition Manager, Team Lead, Recruiter, Employee) + custom roles.
   System roles cannot be renamed/deleted. Employee has exactly one role.
@@ -63,8 +63,9 @@ See [ADR-0003](../adr/0003-entra-sso-server-sessions.md) and `docs/security.md`.
   `src/core/iam/feature-catalog.ts`; a unit test proves they equal a frontend snapshot, so `/api/auth/me`
   returns the keys the frontend's `can()` expects. Known frontend bug kept for parity: its `READ_ONLY` regex has
   a stray backspace after `log`, so "Reminder log" is editable — fix in the frontend, then here.
-- **Data scopes**: Employee=SELF, Team Lead=TEAM (direct reports only), HR/Super Admin=ALL locations,
-  Office Admin=own location by default (`defaultScope`, `lib/data.ts`). Talent Acquisition Manager=TEAM outside
+- **Data scopes — done** (`src/core/iam/data-scope.ts`, decided by permission; see `employees.md`): Employee=SELF,
+  Team Lead=TEAM (direct reports only), HR/Super Admin=ALL locations,
+  Office Admin=ALL (the frontend's own-location `defaultScope` is only a starting filter). Talent Acquisition Manager=TEAM outside
   Hiring; Recruiter=SELF outside Hiring (inside Hiring: assigned jobs only).
 - **Never** let anyone change their own role or grants.
 
@@ -104,8 +105,8 @@ rolled back to the server's set when refused), and uses `POST`/`PATCH`/`DELETE /
 Compare view (up to 4 roles), **Duplicate** and **"copy an existing role"** in the three-step Add role popup are all
 client-side — they end in a normal `POST /iam/roles` with the copied keys, so BR-IAM-004 still applies.
 
-To do: **custom features** (the frontend's "Add feature" — needs a table; disabled while connected), **data scopes**
-per role (`ScopedRepository`), the **two Talent Acquisition roles**, a UI for `PUT /iam/employees/:id/role`.
+To do: **custom features** (the frontend's "Add feature" — needs a table; disabled while connected) and a UI for
+`PUT /iam/employees/:id/role`.
 `npm run db:seed` resets the system roles' grants to the defaults.
 
 ## Workflow engine — to do ([ADR-0004](../adr/0004-workflow-engine.md))

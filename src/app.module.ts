@@ -13,6 +13,7 @@ import { DatabaseModule } from './core/database/database.module.js';
 import { HealthController } from './core/health/health.controller.js';
 import { IamModule } from './core/iam/iam.module.js';
 import { PermissionsGuard } from './core/iam/permissions.guard.js';
+import { EmployeesModule } from './modules/employees/employees.public.js';
 import { HiringModule } from './modules/hiring/hiring.public.js';
 import { OrgModule } from './modules/org/org.public.js';
 
@@ -42,6 +43,7 @@ import { OrgModule } from './modules/org/org.public.js';
 
     // Business modules — import each through its *.public.ts file.
     OrgModule,
+    EmployeesModule,
     HiringModule,
   ],
   controllers: [HealthController],

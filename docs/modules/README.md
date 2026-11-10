@@ -8,7 +8,7 @@ and keep it in sync after (skill: `module-docs`). Template: [_TEMPLATE.md](_TEMP
 | ------------------------------------------------------ | ----- | ------------------------------------------------------------------------------------------ |
 | [org.md](org.md)                                       | 0     | Companies done; locations, departments, designations to do                                 |
 | [platform.md](platform.md)                             | 0     | Auth, sessions, audit done; IAM API, workflow, notifications, jobs, files, mail, PDF to do |
-| [employees.md](employees.md)                           | 1     | Planned                                                                                    |
+| [employees.md](employees.md)                           | 1     | In progress — data scopes, directory list and detail done                                  |
 | [onboarding-offboarding.md](onboarding-offboarding.md) | 1     | Planned                                                                                    |
 | [requests.md](requests.md)                             | 1     | Planned                                                                                    |
 | [compliance.md](compliance.md)                         | 1     | Planned                                                                                    |

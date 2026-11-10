@@ -1,0 +1,24 @@
+meta {
+  name: List employees
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/employees?pageSize=50
+  body: none
+  auth: none
+}
+
+docs {
+  Any signed-in person. The data scope decides who appears: Directory → View sees everyone, Team → Directory sees
+  you and your direct reports, anyone else only themselves. `scope` in the response says which applies.
+}
+
+tests {
+  test("lists employees in scope", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.items).to.be.an("array");
+    expect(["ALL", "TEAM", "SELF"]).to.include(res.body.scope);
+  });
+}
