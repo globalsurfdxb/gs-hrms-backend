@@ -1,6 +1,6 @@
 # Employees
 
-- Status: Planned
+- Status: In progress — data scopes and the read-only directory (list, detail) done
 - Phase: 1
 - Source module: `src/modules/employees/`
 
@@ -68,12 +68,36 @@ Department, Newest joiners, Longest serving. → `GET /employees` needs these fi
 
 ## Access
 
-| Action                             | Rule                                                                                        |
-| ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| Directory list/detail              | ALL for Super Admin/HR/Office Admin; TEAM (direct reports) for Team Lead; SELF for Employee |
-| Edit employee                      | Super Admin, HR, Office Admin                                                               |
-| Bank & PF, Salary tabs (view/edit) | Super Admin, HR only                                                                        |
-| Reveal full identity numbers       | dedicated permission, audited                                                               |
+| Action                             | Rule                                                           |
+| ---------------------------------- | -------------------------------------------------------------- |
+| Directory list/detail              | Data scope by permission (`core/iam/data-scope.ts`): see below |
+| Edit employee                      | Super Admin, HR, Office Admin                                  |
+| Bank & PF, Salary tabs (view/edit) | Super Admin, HR only                                           |
+| Reveal full identity numbers       | dedicated permission, audited                                  |
+
+### Data scopes — done
+
+Decided by permission, never by role name, so custom roles follow their grants (same rule as the frontend
+`lib/guard.ts` and `DirectoryView`). Applied in the repository query (`infrastructure/employee-scope.where.ts`);
+anyone out of scope is 404 `employee.not_found`, the same as a code that does not exist.
+
+| Scope | Granted by                                             | Default roles                         |
+| ----- | ------------------------------------------------------ | ------------------------------------- |
+| ALL   | Directory → View (Organization or Operations)          | Super Admin, HR, Office Admin         |
+| TEAM  | Team → Directory: self + direct reports (not the tree) | Team Lead, Talent Acquisition Manager |
+| SELF  | anything else: own record only                         | Recruiter, Employee                   |
+
+Office Admin's "own location" in the frontend (`defaultScope`) is only the starting value of a location filter they
+can change, so it is not a restriction. Editing will use the same rule with the Edit grant
+(`employeeScopeOf(user, 'edit')`). Tests: `core/iam/data-scope.spec.ts`, `test/employees/directory.e2e-spec.ts`.
+
+## Endpoints
+
+| Status | Method | Path                           | Access            | Notes                                                                                                                         |
+| ------ | ------ | ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ✅     | GET    | `/api/employees`               | signed in, scoped | paged; `q` (name, code, email), `status`, `type`, `companyId`, `departmentId`, `designationId`, `locationId`; returns `scope` |
+| ✅     | GET    | `/api/employees/:employeeCode` | signed in, scoped | directory fields only; any case                                                                                               |
+| to do  | GET    | `/api/employees` facets, sort  |                   | facet counts computed in the scoped query; Reports to, Nationality, Expired documents                                         |
 
 ## Threat model
 

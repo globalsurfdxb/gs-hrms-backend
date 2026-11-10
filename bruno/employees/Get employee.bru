@@ -1,0 +1,21 @@
+meta {
+  name: Get employee
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/employees/GS-087
+  body: none
+  auth: none
+}
+
+docs {
+  Any signed-in person, within their data scope. Someone outside it is 404 employee.not_found.
+}
+
+tests {
+  test("found or out of scope", function () {
+    expect([200, 404]).to.include(res.status);
+  });
+}
