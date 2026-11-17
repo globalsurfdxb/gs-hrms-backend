@@ -2945,6 +2945,160 @@
         ]
       }
     },
+    "/api/employees/{employeeCode}/profile": {
+      "get": {
+        "description": "Personal details, emergency contacts, work experience, education and family. Anyone who can see the person in the directory (data scope: everyone, self + direct reports, or self) — otherwise 404 employee.not_found. `canEdit` says whether you may save changes.",
+        "operationId": "ProfilesController_get",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get an employee’s profile",
+        "tags": [
+          "Employees"
+        ]
+      },
+      "patch": {
+        "description": "Needs Directory → Edit in Organization or Operations (Super Admin, HR, Office Admin by default) — otherwise 403 employee.edit_not_allowed. Fields left out stay as they are; null or \"\" clears one. A list that is sent replaces the whole list. Emergency contact groups must match the work location (BR-EMP-010). One audit row (Employee · employee.profile_updated) lists what changed; a save that changes nothing writes nothing.",
+        "operationId": "ProfilesController_update",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update an employee’s profile",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -7175,6 +7329,548 @@
           "page",
           "pageSize"
         ]
+      },
+      "EmergencyContactResponse": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "example": "Local Emergency Contact (UAE)"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sam Example"
+          },
+          "relationship": {
+            "type": "string",
+            "example": "Spouse"
+          },
+          "mobile": {
+            "type": "string",
+            "example": "+971 50 000 0000"
+          }
+        },
+        "required": [
+          "group",
+          "name",
+          "relationship",
+          "mobile"
+        ]
+      },
+      "WorkExperienceResponse": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "example": "Example Systems LLC"
+          },
+          "location": {
+            "type": "string",
+            "example": "Dubai, UAE"
+          },
+          "fromDate": {
+            "type": "string",
+            "example": "2019-04-01",
+            "nullable": true
+          },
+          "toDate": {
+            "type": "string",
+            "example": "2023-02-28",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "example": "Systems Engineer"
+          },
+          "workMode": {
+            "type": "string",
+            "example": "Onsite",
+            "description": "Onsite | Remote | Hybrid, or \"\" when not given"
+          }
+        },
+        "required": [
+          "company",
+          "location",
+          "fromDate",
+          "toDate",
+          "title",
+          "workMode"
+        ]
+      },
+      "EducationResponse": {
+        "type": "object",
+        "properties": {
+          "qualification": {
+            "type": "string",
+            "example": "Bachelor's Degree"
+          },
+          "institution": {
+            "type": "string",
+            "example": "Example University"
+          },
+          "course": {
+            "type": "string",
+            "example": "Bachelor of Technology"
+          },
+          "field": {
+            "type": "string",
+            "example": "Computer Science"
+          },
+          "startYear": {
+            "type": "number",
+            "example": 2012,
+            "nullable": true
+          },
+          "endYear": {
+            "type": "number",
+            "example": 2016,
+            "nullable": true
+          }
+        },
+        "required": [
+          "qualification",
+          "institution",
+          "course",
+          "field",
+          "startYear",
+          "endYear"
+        ]
+      },
+      "FamilyMemberResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Alex Example"
+          },
+          "relationship": {
+            "type": "string",
+            "example": "Father"
+          },
+          "occupation": {
+            "type": "string",
+            "example": "Retired"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "example": "1965-08-20",
+            "nullable": true
+          }
+        },
+        "required": [
+          "name",
+          "relationship",
+          "occupation",
+          "dateOfBirth"
+        ]
+      },
+      "ProfileResponse": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-087"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "middleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "example": "1992-05-14",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "example": "India",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "example": "Female",
+            "nullable": true
+          },
+          "maritalStatus": {
+            "type": "string",
+            "example": "Married",
+            "nullable": true
+          },
+          "bloodGroup": {
+            "type": "string",
+            "example": "O+",
+            "nullable": true
+          },
+          "personalEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "personalMobile": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "permanentAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "extension": {
+            "type": "string",
+            "nullable": true
+          },
+          "seatingLocation": {
+            "type": "string",
+            "nullable": true
+          },
+          "probationEnd": {
+            "type": "string",
+            "example": "2026-06-30",
+            "nullable": true
+          },
+          "totalExperience": {
+            "type": "string",
+            "example": "4 yr 6 mo",
+            "nullable": true
+          },
+          "emergencyContacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmergencyContactResponse"
+            }
+          },
+          "experience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkExperienceResponse"
+            }
+          },
+          "education": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EducationResponse"
+            }
+          },
+          "family": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyMemberResponse"
+            }
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Whether you may change this profile (PATCH)"
+          }
+        },
+        "required": [
+          "employeeCode",
+          "firstName",
+          "middleName",
+          "lastName",
+          "dateOfBirth",
+          "nationality",
+          "gender",
+          "maritalStatus",
+          "bloodGroup",
+          "personalEmail",
+          "personalMobile",
+          "currentAddress",
+          "permanentAddress",
+          "workPhone",
+          "extension",
+          "seatingLocation",
+          "probationEnd",
+          "totalExperience",
+          "emergencyContacts",
+          "experience",
+          "education",
+          "family",
+          "canEdit"
+        ]
+      },
+      "EmergencyContactDto": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "enum": [
+              "Local Emergency Contact (UAE)",
+              "Home Country Emergency Contact",
+              "Primary Emergency Contact",
+              "Alternate Emergency Contact"
+            ],
+            "example": "Local Emergency Contact (UAE)",
+            "description": "BR-EMP-010"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sam Example"
+          },
+          "relationship": {
+            "type": "string",
+            "example": "Spouse"
+          },
+          "mobile": {
+            "type": "string",
+            "example": "+971 50 000 0000"
+          }
+        },
+        "required": [
+          "group",
+          "name",
+          "relationship",
+          "mobile"
+        ]
+      },
+      "WorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "example": "Example Systems LLC"
+          },
+          "location": {
+            "type": "string",
+            "example": "Dubai, UAE"
+          },
+          "fromDate": {
+            "type": "object",
+            "example": "2019-04-01",
+            "nullable": true
+          },
+          "toDate": {
+            "type": "object",
+            "example": "2023-02-28",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "example": "Systems Engineer"
+          },
+          "workMode": {
+            "type": "string",
+            "enum": [
+              "Onsite",
+              "Remote",
+              "Hybrid"
+            ],
+            "example": "Onsite"
+          }
+        },
+        "required": [
+          "company"
+        ]
+      },
+      "EducationDto": {
+        "type": "object",
+        "properties": {
+          "qualification": {
+            "type": "string",
+            "example": "Bachelor's Degree"
+          },
+          "institution": {
+            "type": "string",
+            "example": "Example University"
+          },
+          "course": {
+            "type": "string",
+            "example": "Bachelor of Technology"
+          },
+          "field": {
+            "type": "string",
+            "example": "Computer Science"
+          },
+          "startYear": {
+            "type": "object",
+            "example": 2012,
+            "nullable": true
+          },
+          "endYear": {
+            "type": "object",
+            "example": 2016,
+            "nullable": true
+          }
+        },
+        "required": [
+          "qualification"
+        ]
+      },
+      "FamilyMemberDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Alex Example"
+          },
+          "relationship": {
+            "type": "string",
+            "example": "Father"
+          },
+          "occupation": {
+            "type": "string",
+            "example": "Retired"
+          },
+          "dateOfBirth": {
+            "type": "object",
+            "example": "1965-08-20",
+            "nullable": true
+          }
+        },
+        "required": [
+          "name",
+          "relationship"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "object",
+            "example": "Sam",
+            "nullable": true,
+            "description": "India keeps the name in parts"
+          },
+          "middleName": {
+            "type": "object",
+            "example": "",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "object",
+            "example": "Example",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "object",
+            "example": "1992-05-14",
+            "nullable": true,
+            "description": "In the past"
+          },
+          "nationality": {
+            "type": "object",
+            "example": "India",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "Male",
+              "Female",
+              "Other"
+            ],
+            "nullable": true
+          },
+          "maritalStatus": {
+            "type": "string",
+            "enum": [
+              "Single",
+              "Married",
+              "Divorced",
+              "Widowed"
+            ],
+            "nullable": true
+          },
+          "bloodGroup": {
+            "type": "string",
+            "enum": [
+              "O+",
+              "O-",
+              "A+",
+              "A-",
+              "B+",
+              "B-",
+              "AB+",
+              "AB-"
+            ],
+            "nullable": true
+          },
+          "personalEmail": {
+            "type": "object",
+            "example": "sam.example@example.com",
+            "nullable": true
+          },
+          "personalMobile": {
+            "type": "object",
+            "example": "+971 50 000 0000",
+            "nullable": true
+          },
+          "currentAddress": {
+            "type": "object",
+            "example": "Flat 1, Example Tower, Dubai",
+            "nullable": true
+          },
+          "permanentAddress": {
+            "type": "object",
+            "example": "Example House, Kochi, India",
+            "nullable": true
+          },
+          "workPhone": {
+            "type": "object",
+            "example": "+971 4 000 0000",
+            "nullable": true
+          },
+          "extension": {
+            "type": "object",
+            "example": "214",
+            "nullable": true
+          },
+          "seatingLocation": {
+            "type": "object",
+            "example": "Floor 3",
+            "nullable": true
+          },
+          "probationEnd": {
+            "type": "object",
+            "example": "2026-06-30",
+            "nullable": true
+          },
+          "totalExperience": {
+            "type": "object",
+            "example": "4 yr 6 mo",
+            "nullable": true
+          },
+          "emergencyContacts": {
+            "description": "Replaces the list",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmergencyContactDto"
+            }
+          },
+          "experience": {
+            "description": "Replaces the list",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkExperienceDto"
+            }
+          },
+          "education": {
+            "description": "Replaces the list",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EducationDto"
+            }
+          },
+          "family": {
+            "description": "Replaces the list",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyMemberDto"
+            }
+          }
+        }
       },
       "RefResponse": {
         "type": "object",

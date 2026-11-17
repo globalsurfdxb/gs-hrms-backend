@@ -51,6 +51,13 @@ model Employee {
   sessions         Session[]
   headOf           Department[] @relation("DepartmentHead")
 
+  // Profile (Phase 1): personal details and the lists the profile page edits.
+  profile           EmployeeProfile?
+  emergencyContacts EmergencyContact[]
+  experience        WorkExperience[]
+  education         Education[]
+  family            FamilyMember[]
+
   // Hiring (src/modules/hiring) — references only; hiring owns these tables.
   requisitionsReplacing   Requisition[]     @relation("RequisitionReplaces")
   requisitionsManaged     Requisition[]     @relation("RequisitionHiringManager")
@@ -71,4 +78,106 @@ model Employee {
   @@index([locationId])
   @@index([companyId, departmentId])
   @@map("employees")
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Profile — personal details, not identity, bank or salary (those are encrypted and arrive in their own tables).
+// Values use the frontend's labels (lib/options.ts), validated by the DTOs. One row per employee, created on first save.
+
+model EmployeeProfile {
+  employeeId       String    @id @map("employee_id") @db.Uuid
+  /// India keeps the name in parts; the full name (as per passport) stays on employees.full_name.
+  firstName        String?   @map("first_name")
+  middleName       String?   @map("middle_name")
+  lastName         String?   @map("last_name")
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  nationality      String?
+  /// Male | Female | Other
+  gender           String?
+  /// Single | Married | Divorced | Widowed
+  maritalStatus    String?   @map("marital_status")
+  /// O+ O- A+ A- B+ B- AB+ AB-
+  bloodGroup       String?   @map("blood_group")
+  personalEmail    String?   @map("personal_email")
+  personalMobile   String?   @map("personal_mobile")
+  currentAddress   String?   @map("current_address")
+  permanentAddress String?   @map("permanent_address")
+  workPhone        String?   @map("work_phone")
+  extension        String?
+  seatingLocation  String?   @map("seating_location")
+  probationEnd     DateTime? @map("probation_end") @db.Date
+  /// As the frontend shows it, e.g. "4 yr 6 mo".
+  totalExperience  String?   @map("total_experience")
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_profiles")
+}
+
+/// Lists keep the order the person entered them in (`position`); a save replaces the whole list.
+model EmergencyContact {
+  id           String @id @default(uuid(7)) @db.Uuid
+  employeeId   String @map("employee_id") @db.Uuid
+  position     Int
+  /// UAE: Local Emergency Contact (UAE) | Home Country Emergency Contact; India: Primary | Alternate Emergency Contact.
+  group        String
+  name         String
+  relationship String
+  mobile       String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_emergency_contacts")
+}
+
+model WorkExperience {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  employeeId String    @map("employee_id") @db.Uuid
+  position   Int
+  company    String
+  location   String    @default("")
+  fromDate   DateTime? @map("from_date") @db.Date
+  toDate     DateTime? @map("to_date") @db.Date
+  title      String    @default("")
+  /// Onsite | Remote | Hybrid
+  workMode   String    @default("") @map("work_mode")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_experience")
+}
+
+model Education {
+  id            String @id @default(uuid(7)) @db.Uuid
+  employeeId    String @map("employee_id") @db.Uuid
+  position      Int
+  qualification String
+  institution   String @default("")
+  course        String @default("")
+  field         String @default("")
+  startYear     Int?   @map("start_year")
+  endYear       Int?   @map("end_year")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_education")
+}
+
+model FamilyMember {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  employeeId   String    @map("employee_id") @db.Uuid
+  position     Int
+  name         String
+  relationship String
+  occupation   String    @default("")
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_family")
 }

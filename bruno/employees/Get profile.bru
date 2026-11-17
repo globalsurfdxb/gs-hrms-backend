@@ -1,0 +1,22 @@
+meta {
+  name: Get profile
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/employees/GS-087/profile
+  body: none
+  auth: none
+}
+
+docs {
+  Anyone who can see the person in the directory (data scope). Personal details, emergency contacts, experience,
+  education and family. `canEdit` says whether you may save changes.
+}
+
+tests {
+  test("found or out of scope", function () {
+    expect([200, 404]).to.include(res.status);
+  });
+}
