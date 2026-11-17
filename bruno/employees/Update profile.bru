@@ -1,0 +1,37 @@
+meta {
+  name: Update profile
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/employees/GS-087/profile
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "bloodGroup": "O+",
+    "personalMobile": "+971 50 000 0087",
+    "emergencyContacts": [
+      { "group": "Local Emergency Contact (UAE)", "name": "Sample Contact", "relationship": "Friend", "mobile": "+971 55 000 0001" }
+    ]
+  }
+}
+
+docs {
+  Needs Directory → Edit (Super Admin, HR, Office Admin by default). Fields left out stay as they are; null or ""
+  clears one; a list that is sent replaces the whole list. One audit row per save that changes something.
+}
+
+tests {
+  test("saved", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.bloodGroup).to.equal("O+");
+  });
+}

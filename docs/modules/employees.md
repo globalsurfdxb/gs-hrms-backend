@@ -1,6 +1,6 @@
 # Employees
 
-- Status: In progress — data scopes and the read-only directory (list, detail) done
+- Status: In progress — data scopes, directory (list, detail) and profile details (read, edit) done
 - Phase: 1
 - Source module: `src/modules/employees/`
 
@@ -45,17 +45,18 @@ diff + audit, `addEmployee`, `canEditEmployees`, `canEditSensitive`), `lib/profi
 
 ## Business rules
 
-| Id         | Rule                                                                                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| BR-EMP-001 | Location template decides which identity/bank fields are valid; changing location clears the other country's fields and re-validates department/designation |
-| BR-EMP-002 | Department must belong to the company and operate in the location                                                                                           |
-| BR-EMP-003 | Reporting line cannot form a cycle (org-chart reassign)                                                                                                     |
-| BR-EMP-004 | email, employeeCode, employmentStatus are never edited directly (status changes only via onboarding/offboarding)                                            |
-| BR-EMP-005 | Every field change is audited field-by-field (module Employee / Bank / Salary); sensitive values masked in audit                                            |
-| BR-EMP-006 | Uploads: pdf, png, jpg, jpeg, doc, docx ≤ 10 MB; required documents per template                                                                            |
-| BR-EMP-007 | Self-service: employee edits only mobile directly; everything else via requests                                                                             |
-| BR-EMP-008 | India identity: Aadhaar and PAN each carry the name as printed; PF enrolled = Yes requires a 12-digit UAN and the UAN-linked mobile                         |
-| BR-EMP-009 | Bank account number is confirmed by typing it twice on capture (onboarding wizard, joining form); India account 9–18 digits, IFSC validated                 |
+| Id         | Rule                                                                                                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BR-EMP-001 | Location template decides which identity/bank fields are valid; changing location clears the other country's fields and re-validates department/designation          |
+| BR-EMP-002 | Department must belong to the company and operate in the location                                                                                                    |
+| BR-EMP-003 | Reporting line cannot form a cycle (org-chart reassign)                                                                                                              |
+| BR-EMP-004 | email, employeeCode, employmentStatus are never edited directly (status changes only via onboarding/offboarding)                                                     |
+| BR-EMP-005 | Every field change is audited field-by-field (module Employee / Bank / Salary); sensitive values masked in audit                                                     |
+| BR-EMP-006 | Uploads: pdf, png, jpg, jpeg, doc, docx ≤ 10 MB; required documents per template                                                                                     |
+| BR-EMP-007 | Self-service: employee edits only mobile directly; everything else via requests                                                                                      |
+| BR-EMP-008 | India identity: Aadhaar and PAN each carry the name as printed; PF enrolled = Yes requires a 12-digit UAN and the UAN-linked mobile                                  |
+| BR-EMP-009 | Bank account number is confirmed by typing it twice on capture (onboarding wizard, joining form); India account 9–18 digits, IFSC validated                          |
+| BR-EMP-010 | Emergency contact groups follow the work location: UAE — Local Emergency Contact (UAE), Home Country Emergency Contact; India — Primary, Alternate Emergency Contact |
 
 ## Directory list
 
@@ -75,6 +76,14 @@ Department, Newest joiners, Longest serving. → `GET /employees` needs these fi
 | Bank & PF, Salary tabs (view/edit) | Super Admin, HR only                                           |
 | Reveal full identity numbers       | dedicated permission, audited                                  |
 
+### Profile — done
+
+Tables `employee_profiles` (1:1) and `employee_emergency_contacts`, `employee_experience`, `employee_education`,
+`employee_family` (ordered by `position`; a save replaces a list). Values use the frontend labels (`lib/options.ts`),
+checked by the DTOs and by CHECK constraints. Editing needs Directory → Edit in Organization or Operations
+(`application/employee-access.ts`); Team → Directory → Edit does not edit records. Tests: `domain/profile.rules.spec.ts`,
+`application/employee-access.spec.ts`, `test/employees/profile.e2e-spec.ts`.
+
 ### Data scopes — done
 
 Decided by permission, never by role name, so custom roles follow their grants (same rule as the frontend
@@ -88,16 +97,20 @@ anyone out of scope is 404 `employee.not_found`, the same as a code that does no
 | SELF  | anything else: own record only                         | Recruiter, Employee                   |
 
 Office Admin's "own location" in the frontend (`defaultScope`) is only the starting value of a location filter they
-can change, so it is not a restriction. Editing will use the same rule with the Edit grant
-(`employeeScopeOf(user, 'edit')`). Tests: `core/iam/data-scope.spec.ts`, `test/employees/directory.e2e-spec.ts`.
+can change, so it is not a restriction. Editing needs Directory → Edit in Organization or Operations (see Profile).
+Tests: `core/iam/data-scope.spec.ts`, `test/employees/directory.e2e-spec.ts`.
 
 ## Endpoints
 
-| Status | Method | Path                           | Access            | Notes                                                                                                                         |
-| ------ | ------ | ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| ✅     | GET    | `/api/employees`               | signed in, scoped | paged; `q` (name, code, email), `status`, `type`, `companyId`, `departmentId`, `designationId`, `locationId`; returns `scope` |
-| ✅     | GET    | `/api/employees/:employeeCode` | signed in, scoped | directory fields only; any case                                                                                               |
-| to do  | GET    | `/api/employees` facets, sort  |                   | facet counts computed in the scoped query; Reports to, Nationality, Expired documents                                         |
+| Status | Method | Path                                                          | Access                                        | Notes                                                                                                                                                                          |
+| ------ | ------ | ------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ✅     | GET    | `/api/employees`                                              | signed in, scoped                             | paged; `q` (name, code, email), `status`, `type`, `companyId`, `departmentId`, `designationId`, `locationId`; returns `scope`                                                  |
+| ✅     | GET    | `/api/employees/:employeeCode`                                | signed in, scoped                             | directory fields only; any case                                                                                                                                                |
+| ✅     | GET    | `/api/employees/:employeeCode/profile`                        | signed in, scoped                             | personal details, emergency contacts, experience, education, family; `canEdit`                                                                                                 |
+| ✅     | PATCH  | `/api/employees/:employeeCode/profile`                        | Directory → Edit (Organization or Operations) | fields left out unchanged, null/"" clears, lists replace; BR-EMP-010; one audit row `employee.profile_updated` (lists summarised: names or entry counts); no-op writes nothing |
+| to do  | GET    | `/api/employees` facets, sort                                 |                                               | facet counts computed in the scoped query; Reports to, Nationality, Expired documents                                                                                          |
+| to do  |        | identity, bank & PF, salary, documents                        |                                               | encrypted columns, masking, reveal permission (spec Access table)                                                                                                              |
+| to do  | PATCH  | employment fields (company, department, manager, type, dates) |                                               | BR-EMP-002, BR-EMP-003                                                                                                                                                         |
 
 ## Threat model
 

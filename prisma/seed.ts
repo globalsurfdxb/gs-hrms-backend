@@ -169,6 +169,89 @@ const PEOPLE = [
   },
 ];
 
+/** A fictional starting profile (all personas work in Dubai, so the UAE contact groups apply). Only fills what is
+    still empty, so re-seeding never overwrites edits made locally. */
+async function seedProfile(employeeId: string, code: string, name: string) {
+  const n = Number(code.slice(3)) || 1;
+  const first = name.split(' ')[1] ?? name;
+  await prisma.employeeProfile.upsert({
+    where: { employeeId },
+    update: {},
+    create: {
+      employeeId,
+      dateOfBirth: new Date(`${1985 + (n % 12)}-0${1 + (n % 9)}-15`),
+      nationality: ['India', 'UAE', 'Philippines', 'UK'][n % 4],
+      gender: n % 2 ? 'Male' : 'Female',
+      maritalStatus: n % 3 ? 'Married' : 'Single',
+      bloodGroup: ['O+', 'A+', 'B+', 'AB+'][n % 4],
+      personalEmail: `${code.toLowerCase()}.personal@example.com`,
+      personalMobile: `+971 50 000 0${String(n).padStart(3, '0')}`,
+      currentAddress: `Apartment ${n}, Example Residence, Dubai`,
+      permanentAddress: `Example Street ${n}, Home City`,
+      workPhone: '+971 4 000 0000',
+      extension: String(100 + n),
+      seatingLocation: 'Floor 3',
+      totalExperience: `${4 + (n % 8)} yr 0 mo`,
+    },
+  });
+  const empty = async (count: Promise<number>) => (await count) === 0;
+  if (await empty(prisma.emergencyContact.count({ where: { employeeId } }))) {
+    await prisma.emergencyContact.createMany({
+      data: [
+        {
+          employeeId,
+          position: 0,
+          group: 'Local Emergency Contact (UAE)',
+          name: `${first} Contact A`,
+          relationship: 'Friend',
+          mobile: '+971 55 000 0001',
+        },
+        {
+          employeeId,
+          position: 1,
+          group: 'Home Country Emergency Contact',
+          name: `${first} Contact B`,
+          relationship: 'Parent',
+          mobile: '+44 20 0000 0001',
+        },
+      ],
+    });
+  }
+  if (await empty(prisma.workExperience.count({ where: { employeeId } }))) {
+    await prisma.workExperience.create({
+      data: {
+        employeeId,
+        position: 0,
+        company: 'Example Systems LLC',
+        location: 'Dubai, UAE',
+        fromDate: new Date('2018-02-01'),
+        toDate: new Date('2021-12-31'),
+        title: 'Associate',
+        workMode: 'Onsite',
+      },
+    });
+  }
+  if (await empty(prisma.education.count({ where: { employeeId } }))) {
+    await prisma.education.create({
+      data: {
+        employeeId,
+        position: 0,
+        qualification: "Bachelor's Degree",
+        institution: 'Example University',
+        course: 'Bachelor of Science',
+        field: 'Business',
+        startYear: 2010,
+        endYear: 2014,
+      },
+    });
+  }
+  if (await empty(prisma.familyMember.count({ where: { employeeId } }))) {
+    await prisma.familyMember.create({
+      data: { employeeId, position: 0, name: `${first} Relative`, relationship: 'Parent', occupation: 'Retired' },
+    });
+  }
+}
+
 async function main() {
   const roleIds = new Map<string, string>();
   for (const r of ROLES) {
@@ -227,6 +310,7 @@ async function main() {
       create: { employeeCode: p.code, ...data },
     });
     employeeIds.set(p.code, e.id);
+    await seedProfile(e.id, p.code, p.name);
   }
 
   console.log(
