@@ -1,6 +1,7 @@
 # Employees
 
-- Status: In progress — data scopes, directory (list, detail) and profile details (read, edit) done
+- Status: In progress — data scopes, directory (list, detail), profile details (read, edit) and employment details
+  (edit) done
 - Phase: 1
 - Source module: `src/modules/employees/`
 
@@ -84,6 +85,20 @@ checked by the DTOs and by CHECK constraints. Editing needs Directory → Edit i
 (`application/employee-access.ts`); Team → Directory → Edit does not edit records. Tests: `domain/profile.rules.spec.ts`,
 `application/employee-access.spec.ts`, `test/employees/profile.e2e-spec.ts`.
 
+### Employment details — done
+
+Name, work location, organization, department, designation, reporting manager, employment type and joining date on
+the `employees` row (`PATCH …/employment`, Directory → Edit). Only the parts that change are re-checked, so older
+data never blocks an unrelated save. BR-EMP-002: the organization operates in the location (`companies.location_id`
+null = everywhere), the department belongs to the organization and has the location, the designation belongs to the
+department, a newly chosen organization is active. BR-EMP-003: the manager exists, is not the employee, is not
+inactive and does not report to the employee, directly or indirectly (walking up from the new manager must not reach
+the employee).
+BR-EMP-001 / 010: a move between UAE and India switches emergency contact groups (Local ↔ Primary, Home Country ↔
+Alternate) and clears a seating location the new office does not list; identity and bank fields are not stored yet,
+so nothing else is cleared. The audit row (`employee.employment_updated`) records readable values (names, "Name
+(GS-NNN)"), not ids. Tests: `domain/employment.rules.spec.ts`, `test/employees/employment.e2e-spec.ts`.
+
 ### Data scopes — done
 
 Decided by permission, never by role name, so custom roles follow their grants (same rule as the frontend
@@ -102,15 +117,15 @@ Tests: `core/iam/data-scope.spec.ts`, `test/employees/directory.e2e-spec.ts`.
 
 ## Endpoints
 
-| Status | Method | Path                                                          | Access                                        | Notes                                                                                                                                                                          |
-| ------ | ------ | ------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ✅     | GET    | `/api/employees`                                              | signed in, scoped                             | paged; `q` (name, code, email), `status`, `type`, `companyId`, `departmentId`, `designationId`, `locationId`; returns `scope`                                                  |
-| ✅     | GET    | `/api/employees/:employeeCode`                                | signed in, scoped                             | directory fields only; any case                                                                                                                                                |
-| ✅     | GET    | `/api/employees/:employeeCode/profile`                        | signed in, scoped                             | personal details, emergency contacts, experience, education, family; `canEdit`                                                                                                 |
-| ✅     | PATCH  | `/api/employees/:employeeCode/profile`                        | Directory → Edit (Organization or Operations) | fields left out unchanged, null/"" clears, lists replace; BR-EMP-010; one audit row `employee.profile_updated` (lists summarised: names or entry counts); no-op writes nothing |
-| to do  | GET    | `/api/employees` facets, sort                                 |                                               | facet counts computed in the scoped query; Reports to, Nationality, Expired documents                                                                                          |
-| to do  |        | identity, bank & PF, salary, documents                        |                                               | encrypted columns, masking, reveal permission (spec Access table)                                                                                                              |
-| to do  | PATCH  | employment fields (company, department, manager, type, dates) |                                               | BR-EMP-002, BR-EMP-003                                                                                                                                                         |
+| Status | Method | Path                                      | Access                                        | Notes                                                                                                                                                                              |
+| ------ | ------ | ----------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅     | GET    | `/api/employees`                          | signed in, scoped                             | paged; `q` (name, code, email), `status`, `type`, `companyId`, `departmentId`, `designationId`, `locationId`; returns `scope`                                                      |
+| ✅     | GET    | `/api/employees/:employeeCode`            | signed in, scoped                             | directory fields only; any case                                                                                                                                                    |
+| ✅     | GET    | `/api/employees/:employeeCode/profile`    | signed in, scoped                             | personal details, emergency contacts, experience, education, family; `canEdit`                                                                                                     |
+| ✅     | PATCH  | `/api/employees/:employeeCode/profile`    | Directory → Edit (Organization or Operations) | fields left out unchanged, null/"" clears, lists replace; BR-EMP-010; one audit row `employee.profile_updated` (lists summarised: names or entry counts); no-op writes nothing     |
+| to do  | GET    | `/api/employees` facets, sort             |                                               | facet counts computed in the scoped query; Reports to, Nationality, Expired documents                                                                                              |
+| to do  |        | identity, bank & PF, salary, documents    |                                               | encrypted columns, masking, reveal permission (spec Access table)                                                                                                                  |
+| ✅     | PATCH  | `/api/employees/:employeeCode/employment` | Directory → Edit (Organization or Operations) | name, location, organization, department, designation, manager, type, joining date; BR-EMP-001…004, 010; one audit row `employee.employment_updated`; returns the directory record |
 
 ## Threat model
 

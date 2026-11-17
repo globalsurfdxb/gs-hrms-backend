@@ -15,7 +15,7 @@ export interface EmployeeFilter {
 }
 
 /* Directory fields only. Profile, identity, bank and salary arrive with their own tables and access levels. */
-const EMPLOYEE = {
+export const EMPLOYEE = {
   id: true,
   employeeCode: true,
   fullName: true,

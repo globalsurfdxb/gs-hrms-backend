@@ -1,0 +1,36 @@
+meta {
+  name: Update employment
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/employees/GS-087/employment
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "employmentType": "PERMANENT"
+  }
+}
+
+docs {
+  Needs Directory → Edit (Super Admin, HR, Office Admin by default). Name, work location, organization,
+  department, designation, reporting manager (uuid or null), employment type and joining date. Fields left
+  out stay as they are. BR-EMP-002: organization/department/designation fit together and the location;
+  BR-EMP-003: no reporting cycles. Email, code and status are not editable here. One audit row per save
+  that changes something.
+}
+
+tests {
+  test("saved", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.employmentType).to.equal("PERMANENT");
+  });
+}
