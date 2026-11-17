@@ -3099,6 +3099,94 @@
         ]
       }
     },
+    "/api/employees/{employeeCode}/employment": {
+      "patch": {
+        "description": "Name, work location, organization, department, designation, reporting manager, employment type and joining date. Needs Directory → Edit in Organization or Operations (Super Admin, HR, Office Admin by default) — otherwise 403 employee.edit_not_allowed; someone outside your scope is 404. Fields left out stay as they are; null clears department, designation or manager. Rules: the organization operates in the location, the department belongs to the organization and the location, the designation to the department (BR-EMP-002); the manager is active and not in the employee’s own reporting line (BR-EMP-003). Email, employee code and status cannot be changed here (BR-EMP-004). A move between UAE and India switches emergency contact groups and clears a seating location the new office does not have (BR-EMP-001). One audit row (Employee · employee.employment_updated) lists what changed; a save that changes nothing writes nothing. Returns the directory record.",
+        "operationId": "EmploymentController_update",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmploymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update an employee’s employment details",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -7869,6 +7957,58 @@
             "items": {
               "$ref": "#/components/schemas/FamilyMemberDto"
             }
+          }
+        }
+      },
+      "UpdateEmploymentDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Sam Example",
+            "description": "Full name as per passport"
+          },
+          "locationId": {
+            "type": "string",
+            "example": "Dubai",
+            "description": "Work location id. Moving between UAE and India switches emergency contact groups (BR-EMP-001)"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Organization; must operate in the work location (BR-EMP-002)"
+          },
+          "departmentId": {
+            "type": "object",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Belongs to the organization and the location (BR-EMP-002)"
+          },
+          "designationId": {
+            "type": "object",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Belongs to the department"
+          },
+          "reportingManagerId": {
+            "type": "object",
+            "format": "uuid",
+            "nullable": true,
+            "description": "null = no manager. Not in the employee’s own reporting line (BR-EMP-003)"
+          },
+          "employmentType": {
+            "type": "string",
+            "enum": [
+              "PERMANENT",
+              "CONTRACT",
+              "PROBATION"
+            ],
+            "example": "PERMANENT"
+          },
+          "dateOfJoining": {
+            "type": "string",
+            "example": "2024-03-01",
+            "description": "Calendar day"
           }
         }
       },
