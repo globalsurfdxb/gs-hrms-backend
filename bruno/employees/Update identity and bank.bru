@@ -1,0 +1,36 @@
+meta {
+  name: Update identity and bank
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/employees/GS-087/identity-bank
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "bankName": "Example Bank",
+    "paymentMode": "WPS Transfer"
+  }
+}
+
+docs {
+  Needs Identity & bank details → Edit (HR, Super Admin by default). Fields left out stay; "" or null
+  clears one. Numbers may contain spaces and are stored encrypted. The other country's fields are refused
+  (BR-EMP-001); formats and PF rules BR-EMP-008/009 (UAE IBAN with checksum, India account + IFSC).
+  One audit row per area that changed (Employee / Bank), numbers masked. Use fictional numbers only.
+}
+
+tests {
+  test("saved", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.bankName).to.equal("Example Bank");
+  });
+}

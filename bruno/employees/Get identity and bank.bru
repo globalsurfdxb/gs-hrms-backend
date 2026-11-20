@@ -1,0 +1,24 @@
+meta {
+  name: Get identity and bank
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/employees/GS-087/identity-bank
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Identity & bank details → View (HR, Super Admin by default) and the person in your directory
+  scope; anyone may read their own. Otherwise 404. Passport, Emirates ID, Aadhaar, PAN, UAN and account
+  numbers come back masked to the last 4 characters. `template` (UAE | INDIA) says which fields apply.
+}
+
+tests {
+  test("masked", function () {
+    expect(res.status).to.equal(200);
+    if (res.body.passportNumber) expect(res.body.passportNumber).to.match(/^•+.{4}$/);
+  });
+}
