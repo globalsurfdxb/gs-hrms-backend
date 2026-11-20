@@ -92,6 +92,7 @@
   },
   "overrides": {
     "multer": "2.5.0",
+    "effect": "3.22.5",
     "@azure/identity": {
       "@azure/msal-node": "$@azure/msal-node"
     }

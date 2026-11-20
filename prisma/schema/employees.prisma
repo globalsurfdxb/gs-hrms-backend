@@ -57,6 +57,7 @@ model Employee {
   experience        WorkExperience[]
   education         Education[]
   family            FamilyMember[]
+  identityBank      EmployeeIdentityBank?
 
   // Hiring (src/modules/hiring) — references only; hiring owns these tables.
   requisitionsReplacing   Requisition[]     @relation("RequisitionReplaces")
@@ -180,4 +181,50 @@ model FamilyMember {
 
   @@index([employeeId])
   @@map("employee_family")
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Identity, bank and PF (Phase 1). Columns ending in `_enc` hold FieldCipher output (`v1.<iv>.<tag>.<ciphertext>`),
+// never the plain number; the API returns them masked unless the caller may reveal them (docs/security.md).
+// Which fields apply depends on the work location's template (BR-EMP-001): UAE keeps Emirates ID, visa and labour
+// card; India keeps Aadhaar, PAN, UAN / PF and the bank branch. One row per employee, created on first save.
+
+model EmployeeIdentityBank {
+  employeeId        String    @id @map("employee_id") @db.Uuid
+  // Passport (both templates; the "name as per passport" is India only).
+  passportNumberEnc String?   @map("passport_number_enc")
+  passportExpiry    DateTime? @map("passport_expiry") @db.Date
+  passportName      String?   @map("passport_name")
+  // UAE
+  emiratesIdEnc     String?   @map("emirates_id_enc")
+  emiratesIdExpiry  DateTime? @map("emirates_id_expiry") @db.Date
+  visaExpiry        DateTime? @map("visa_expiry") @db.Date
+  labourCardIssue   DateTime? @map("labour_card_issue") @db.Date
+  labourCardExpiry  DateTime? @map("labour_card_expiry") @db.Date
+  // India
+  aadhaarEnc        String?   @map("aadhaar_enc")
+  aadhaarName       String?   @map("aadhaar_name")
+  panEnc            String?   @map("pan_enc")
+  panName           String?   @map("pan_name")
+  uanEnc            String?   @map("uan_enc")
+  /// Yes | No
+  pfEnrolled        String?   @map("pf_enrolled")
+  uanMobile         String?   @map("uan_mobile")
+  pfMemberId        String?   @map("pf_member_id")
+  /// Eligible | Not eligible | Not sure
+  epsEligibility    String?   @map("eps_eligibility")
+  // Bank. UAE: WPS Transfer | Bank Transfer, IBAN. India: Bank Transfer | Cheque, account number + IFSC.
+  paymentMode       String?   @map("payment_mode")
+  bankName          String?   @map("bank_name")
+  accountName       String?   @map("account_name")
+  accountNumberEnc  String?   @map("account_number_enc")
+  /// India: IFSC. UAE: routing / bank code.
+  branchCode        String?   @map("branch_code")
+  /// India only.
+  branchName        String?   @map("branch_name")
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_identity_bank")
 }

@@ -12,6 +12,7 @@ import {
   seatingAfterMove,
   type Placement,
 } from '../domain/employment.rules.js';
+import { clearedByMove, SECRET_FIELDS } from '../domain/identity-bank.rules.js';
 import type { ProfileProblem } from '../domain/profile.rules.js';
 import { EmploymentRepository, type EmploymentWrite } from '../infrastructure/employment.repository.js';
 import { EmployeesRepository } from '../infrastructure/employees.repository.js';
@@ -126,6 +127,13 @@ export class EmploymentService {
           .filter((c, i) => c.group !== cur.emergencyContacts[i]!.group);
         if (write.emergencyGroups.length)
           note('emergencyContactGroups', `${title(cur.location.template)} groups`, `${title(to)} groups`);
+        // The other country's identity fields and the bank details no longer apply (the passport stays).
+        if (cur.identityBank) {
+          write.identityBankCleared = Object.fromEntries(
+            clearedByMove(to).map((f) => [(SECRET_FIELDS as readonly string[]).includes(f) ? `${f}Enc` : f, null]),
+          );
+          note('identityAndBank', `${title(cur.location.template)} details`, 'Country-specific details cleared');
+        }
       }
       const seat = cur.profile?.seatingLocation ?? null;
       if (seat && seatingAfterMove(seat, facts.names.seating ?? []) === null) {

@@ -29,6 +29,10 @@ export const PERMISSIONS = {
     opsDirectory: 'employee:ops:directory',
     /** Team → Directory: self + direct reports. */
     teamDirectory: 'employee:team:directory',
+    /** Identity & bank details: View = masked values, Edit = change them (HR, Super Admin by default). */
+    identityBank: 'employee:sensitive:identity-bank',
+    /** Reveal one full identity or bank number; every reveal is audited. */
+    revealNumbers: 'employee:sensitive:reveal-numbers',
   },
   hiring: {
     requisitions: 'hiring:requisitions:requisitions',

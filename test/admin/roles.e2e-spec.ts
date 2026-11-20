@@ -68,8 +68,13 @@ describe('Roles & permissions API', () => {
       m.categories.flatMap((c) => c.features),
     );
     expect(res.body).toHaveLength(7);
-    expect(features).toHaveLength(113);
+    expect(features).toHaveLength(115);
     expect(features).toContainEqual({ id: COMPANIES, label: 'Companies', actions: ['add', 'edit', 'delete'] });
+    expect(features).toContainEqual({
+      id: 'employee:sensitive:reveal-numbers',
+      label: 'Reveal full numbers',
+      actions: [],
+    });
   });
 
   it('lists the system roles with their grants and members', () => {

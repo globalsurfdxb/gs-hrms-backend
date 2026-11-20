@@ -1,0 +1,34 @@
+meta {
+  name: Reveal number
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/employees/GS-087/identity-bank/reveal
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "field": "passportNumber"
+  }
+}
+
+docs {
+  Needs Reveal full numbers (HR, Super Admin by default). Returns one full number: passportNumber,
+  emiratesId, aadhaar, pan, uan or accountNumber. Every reveal writes an audit row naming the field,
+  never the value. 404 employee.number_not_on_file when it is empty.
+}
+
+tests {
+  test("revealed", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.field).to.equal("passportNumber");
+  });
+}

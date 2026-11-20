@@ -25,6 +25,7 @@ const CURRENT = {
   reportingManager: { select: { employeeCode: true, fullName: true } },
   profile: { select: { seatingLocation: true } },
   emergencyContacts: { select: { id: true, group: true } },
+  identityBank: { select: { employeeId: true } },
 } as const satisfies Prisma.EmployeeSelect;
 
 export type EmploymentRecord = Prisma.EmployeeGetPayload<{ select: typeof CURRENT }>;
@@ -48,6 +49,8 @@ export interface EmploymentWrite {
   emergencyGroups: { id: string; group: string }[];
   /** undefined = leave the seating location alone; null = clear it. */
   seatingLocation?: null;
+  /** Identity / bank columns a country move clears (BR-EMP-001), all set to null. */
+  identityBankCleared?: Prisma.EmployeeIdentityBankUpdateManyMutationInput;
 }
 
 /** Upper bound when walking a reporting line; the company is ~200 people, so a longer chain means bad data. */
@@ -154,6 +157,9 @@ export class EmploymentRepository {
       }
       if (w.seatingLocation === null) {
         await tx.employeeProfile.updateMany({ where: { employeeId }, data: { seatingLocation: null } });
+      }
+      if (w.identityBankCleared) {
+        await tx.employeeIdentityBank.updateMany({ where: { employeeId }, data: w.identityBankCleared });
       }
       await this.audit.record(
         {

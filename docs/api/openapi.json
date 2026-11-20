@@ -3187,6 +3187,248 @@
         ]
       }
     },
+    "/api/employees/{employeeCode}/identity-bank": {
+      "get": {
+        "description": "Needs Employee Management → Identity & bank → Identity & bank details → View (HR, Super Admin by default) and the person in your directory scope. Anyone may read their own. Otherwise 404 employee.not_found. Passport, Emirates ID, Aadhaar, PAN, UAN and account numbers are masked to the last 4 characters. `template` says which fields apply (BR-EMP-001); `canEdit` and `canReveal` say what you may do.",
+        "operationId": "IdentityBankController_get",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityBankResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get an employee’s identity and bank details (masked)",
+        "tags": [
+          "Employees"
+        ]
+      },
+      "patch": {
+        "description": "Needs Identity & bank details → Edit (HR, Super Admin by default), otherwise 403 employee.identity_bank_edit_not_allowed, and the person in your Directory → Edit scope (404 otherwise). Fields left out stay; \"\" or null clears one. Numbers may contain spaces and are stored encrypted. Fields of the other country are refused (BR-EMP-001); formats and PF rules: BR-EMP-008/009. Writes one audit row per area that changed — Employee · employee.identity_updated and Bank · employee.bank_updated — with numbers masked. Returns the details masked.",
+        "operationId": "IdentityBankController_update",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIdentityBankDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityBankResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update an employee’s identity and bank details",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
+    "/api/employees/{employeeCode}/identity-bank/reveal": {
+      "post": {
+        "description": "Needs Employee Management → Identity & bank → Reveal full numbers (HR, Super Admin by default), otherwise 403 employee.reveal_not_allowed, and a record you may read (404 employee.not_found). Returns one number; 404 employee.number_not_on_file when it is empty. Every reveal writes an audit row (Employee · employee.number_revealed) naming the field, never the value. Show it briefly and do not store it.",
+        "operationId": "IdentityBankController_reveal",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealNumberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevealedNumberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reveal one full identity or bank number",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -8011,6 +8253,379 @@
             "description": "Calendar day"
           }
         }
+      },
+      "IdentityBankResponse": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-087"
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "UAE",
+              "INDIA"
+            ],
+            "description": "Which fields apply (BR-EMP-001)"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "AED",
+              "INR"
+            ],
+            "description": "Set by the work location"
+          },
+          "passportNumber": {
+            "type": "string",
+            "nullable": true,
+            "example": "••••4567",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "passportExpiry": {
+            "type": "string",
+            "nullable": true,
+            "example": "2030-06-30"
+          },
+          "passportName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Sam Example"
+          },
+          "emiratesId": {
+            "type": "string",
+            "nullable": true,
+            "example": "••••••••••••••67-1",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "emiratesIdExpiry": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-03-31"
+          },
+          "visaExpiry": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-03-31"
+          },
+          "labourCardIssue": {
+            "type": "string",
+            "nullable": true,
+            "example": "2025-04-01"
+          },
+          "labourCardExpiry": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-03-31"
+          },
+          "aadhaar": {
+            "type": "string",
+            "nullable": true,
+            "example": "••••••••9012",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "aadhaarName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Sam Example"
+          },
+          "pan": {
+            "type": "string",
+            "nullable": true,
+            "example": "••••••234F",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "panName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Sam Example"
+          },
+          "uan": {
+            "type": "string",
+            "nullable": true,
+            "example": "••••••••0400",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "pfEnrolled": {
+            "type": "string",
+            "nullable": true,
+            "example": "Yes"
+          },
+          "uanMobile": {
+            "type": "string",
+            "nullable": true,
+            "example": "+91 98765 43210"
+          },
+          "pfMemberId": {
+            "type": "string",
+            "nullable": true,
+            "example": "KN/KCH/0012345/000/0000123"
+          },
+          "epsEligibility": {
+            "type": "string",
+            "nullable": true,
+            "example": "Eligible"
+          },
+          "paymentMode": {
+            "type": "string",
+            "nullable": true,
+            "example": "WPS Transfer"
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Example Bank"
+          },
+          "accountName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Sam Example"
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true,
+            "example": "•••••••••••••••••••0001",
+            "description": "Masked to the last 4 characters; POST …/identity-bank/reveal returns the full number."
+          },
+          "branchCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "HDFC0001234"
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Kochi Main"
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Whether you may change these details"
+          },
+          "canReveal": {
+            "type": "boolean",
+            "description": "Whether you may reveal a full number (each reveal is audited)"
+          }
+        },
+        "required": [
+          "employeeCode",
+          "template",
+          "currency",
+          "passportNumber",
+          "passportExpiry",
+          "passportName",
+          "emiratesId",
+          "emiratesIdExpiry",
+          "visaExpiry",
+          "labourCardIssue",
+          "labourCardExpiry",
+          "aadhaar",
+          "aadhaarName",
+          "pan",
+          "panName",
+          "uan",
+          "pfEnrolled",
+          "uanMobile",
+          "pfMemberId",
+          "epsEligibility",
+          "paymentMode",
+          "bankName",
+          "accountName",
+          "accountNumber",
+          "branchCode",
+          "branchName",
+          "canEdit",
+          "canReveal"
+        ]
+      },
+      "UpdateIdentityBankDto": {
+        "type": "object",
+        "properties": {
+          "passportNumber": {
+            "type": "object",
+            "example": "N1234567",
+            "nullable": true,
+            "description": "Required for UAE employees. Stored encrypted."
+          },
+          "passportExpiry": {
+            "type": "object",
+            "example": "2030-06-30",
+            "nullable": true
+          },
+          "passportName": {
+            "type": "object",
+            "example": "Sam Example",
+            "nullable": true,
+            "description": "India only"
+          },
+          "emiratesId": {
+            "type": "object",
+            "example": "784-1990-1234567-1",
+            "nullable": true,
+            "description": "UAE only. 784-YYYY-NNNNNNN-N. Stored encrypted."
+          },
+          "emiratesIdExpiry": {
+            "type": "object",
+            "example": "2027-03-31",
+            "nullable": true
+          },
+          "visaExpiry": {
+            "type": "object",
+            "example": "2027-03-31",
+            "nullable": true
+          },
+          "labourCardIssue": {
+            "type": "object",
+            "example": "2025-04-01",
+            "nullable": true
+          },
+          "labourCardExpiry": {
+            "type": "object",
+            "example": "2027-03-31",
+            "nullable": true
+          },
+          "aadhaar": {
+            "type": "object",
+            "example": "1234 5678 9012",
+            "nullable": true,
+            "description": "India only. 12 digits. Stored encrypted."
+          },
+          "aadhaarName": {
+            "type": "object",
+            "example": "Sam Example",
+            "nullable": true,
+            "description": "India only"
+          },
+          "pan": {
+            "type": "object",
+            "example": "ABCDE1234F",
+            "nullable": true,
+            "description": "India only. Stored encrypted."
+          },
+          "panName": {
+            "type": "object",
+            "example": "Sam Example",
+            "nullable": true,
+            "description": "India only"
+          },
+          "uan": {
+            "type": "object",
+            "example": "100200300400",
+            "nullable": true,
+            "description": "India only. 12 digits. Stored encrypted."
+          },
+          "pfEnrolled": {
+            "type": "string",
+            "enum": [
+              "Yes",
+              "No"
+            ],
+            "nullable": true,
+            "description": "India only"
+          },
+          "uanMobile": {
+            "type": "object",
+            "example": "+91 98765 43210",
+            "nullable": true,
+            "description": "India only"
+          },
+          "pfMemberId": {
+            "type": "object",
+            "example": "KN/KCH/0012345/000/0000123",
+            "nullable": true,
+            "description": "India only"
+          },
+          "epsEligibility": {
+            "type": "string",
+            "enum": [
+              "Eligible",
+              "Not eligible",
+              "Not sure"
+            ],
+            "nullable": true,
+            "description": "India only"
+          },
+          "paymentMode": {
+            "type": "object",
+            "example": "WPS Transfer",
+            "nullable": true,
+            "description": "UAE: WPS Transfer | Bank Transfer. India: Bank Transfer | Cheque."
+          },
+          "bankName": {
+            "type": "object",
+            "example": "Example Bank",
+            "nullable": true
+          },
+          "accountName": {
+            "type": "object",
+            "example": "Sam Example",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "object",
+            "example": "AE22 0330 0000 1000 0000 001",
+            "nullable": true,
+            "description": "UAE: IBAN. India: 9–18 digits. Stored encrypted."
+          },
+          "branchCode": {
+            "type": "object",
+            "example": "HDFC0001234",
+            "nullable": true,
+            "description": "India: IFSC (required with an account). UAE: routing / bank code."
+          },
+          "branchName": {
+            "type": "object",
+            "example": "Kochi Main",
+            "nullable": true,
+            "description": "India only"
+          }
+        }
+      },
+      "RevealNumberDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "passportNumber",
+              "emiratesId",
+              "aadhaar",
+              "pan",
+              "uan",
+              "accountNumber"
+            ],
+            "example": "passportNumber"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      },
+      "RevealedNumberResponse": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "passportNumber",
+              "emiratesId",
+              "aadhaar",
+              "pan",
+              "uan",
+              "accountNumber"
+            ],
+            "example": "passportNumber"
+          },
+          "value": {
+            "type": "string",
+            "example": "N1234567",
+            "description": "The full number. Do not cache or log it."
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
       },
       "RefResponse": {
         "type": "object",

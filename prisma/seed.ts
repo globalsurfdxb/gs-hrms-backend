@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { defaultGrants } from '../src/core/iam/permission-catalog.js';
+import { FieldCipher } from '../src/shared/crypto/field-cipher.js';
 
 /* Development seed — FICTIONAL data only. One persona per system role, matching the frontend persona codes
    (lib/data.ts PERSONAS) so the dev login mirrors the frontend's persona switcher.
@@ -10,6 +11,11 @@ import { defaultGrants } from '../src/core/iam/permission-catalog.js';
 if (process.env['NODE_ENV'] === 'production') throw new Error('Refusing to seed a production database');
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env['DATABASE_URL']! }) });
+/** Same keys as the app (env FIELD_ENCRYPTION_KEY / FIELD_BLIND_INDEX_KEY, base64), so the API can decrypt seeds. */
+const cipher = new FieldCipher(
+  Buffer.from(process.env['FIELD_ENCRYPTION_KEY'] ?? '', 'base64'),
+  Buffer.from(process.env['FIELD_BLIND_INDEX_KEY'] ?? '', 'base64'),
+);
 
 const ROLES = [
   { name: 'Super Admin', description: 'Every module' },
@@ -250,6 +256,28 @@ async function seedProfile(employeeId: string, code: string, name: string) {
       data: { employeeId, position: 0, name: `${first} Relative`, relationship: 'Parent', occupation: 'Retired' },
     });
   }
+  // Identity and bank (UAE template). Fictional numbers, encrypted like real ones.
+  const bban = `0330000010000000${String(n).padStart(3, '0')}`;
+  const iban = `AE${String(98n - (BigInt(`${bban}101400`) % 97n)).padStart(2, '0')}${bban}`;
+  await prisma.employeeIdentityBank.upsert({
+    where: { employeeId },
+    update: {},
+    create: {
+      employeeId,
+      passportNumberEnc: cipher.encrypt(`N${String(1000000 + n)}`),
+      passportExpiry: new Date('2031-06-30'),
+      emiratesIdEnc: cipher.encrypt(`784-${1985 + (n % 12)}-${String(n).padStart(7, '0')}-1`),
+      emiratesIdExpiry: new Date('2027-03-31'),
+      visaExpiry: new Date('2027-03-31'),
+      labourCardIssue: new Date('2025-04-01'),
+      labourCardExpiry: new Date('2027-03-31'),
+      paymentMode: 'WPS Transfer',
+      bankName: 'Example Bank',
+      accountName: name,
+      accountNumberEnc: cipher.encrypt(iban),
+      branchCode: '803320101',
+    },
+  });
 }
 
 async function main() {

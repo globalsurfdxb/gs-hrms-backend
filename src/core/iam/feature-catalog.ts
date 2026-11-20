@@ -213,6 +213,17 @@ function buildCatalog(): CatalogModule[] {
         features: items.map(([key, label]) => feature(`employee:ops:${key}`, label)),
       })),
       cat('employee', 'reports', 'Reports', 4, ['Reports & analytics']),
+      /* Passport, Emirates ID, Aadhaar, PAN, UAN and bank details: View = masked, Edit = change them, "Reveal full
+         numbers" = see one whole number (audited). Actions are set explicitly, as in the frontend. */
+      {
+        id: 'sensitive',
+        label: 'Identity & bank',
+        rank: 4,
+        features: [
+          { id: 'employee:sensitive:identity-bank', label: 'Identity & bank details', actions: ['edit'] },
+          { id: 'employee:sensitive:reveal-numbers', label: 'Reveal full numbers', actions: [] },
+        ],
+      },
     ],
   };
   const hiring: CatalogModule = {
@@ -333,6 +344,7 @@ function seesCategory(role: SystemRole, m: CatalogModule, c: CatalogCategory): b
   const p = PERSONA[role];
   if (m.id === 'employee') {
     if (c.id === 'my' || c.id === 'team' || c.id === 'org') return p.scopes.includes(c.id);
+    if (c.id === 'sensitive') return RANK[role] >= c.rank;
     return p.areas.includes(c.id === 'reports' ? 'reports' : 'operations');
   }
   if (m.id === 'administration') return p.areas.includes('administration');
