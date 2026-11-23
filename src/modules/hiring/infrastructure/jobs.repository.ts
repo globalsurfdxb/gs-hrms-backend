@@ -51,6 +51,10 @@ const JOB = {
   taManager: PERSON,
   createdBy: PERSON,
   panel: { select: { employee: PERSON }, orderBy: { employee: { fullName: 'asc' } } },
+  // Candidate counts for the jobs list: every application, and the active ones (not exited, not hired — frontend
+  // `isActiveApp`). One application per candidate and job, so these count candidates.
+  _count: { select: { applications: true } },
+  applications: { where: { exit: null, stage: { not: 'HIRED' } }, select: { id: true } },
   // Read from the requisition: it cannot change once approved.
   requisition: {
     select: {
@@ -155,6 +159,16 @@ export class JobsRepository {
       where: { employmentStatus: 'ACTIVE', designation: { title: { in: [RECRUITER_TITLE, TA_MANAGER_TITLE] } } },
       select: { ...PERSON.select, designation: { select: { title: true } } },
       orderBy: { fullName: 'asc' },
+    });
+  }
+
+  /** Active employees with their designation, by name — for the interview panel and recruiter pickers. */
+  activePeople() {
+    return this.prisma.employee.findMany({
+      where: { employmentStatus: 'ACTIVE' },
+      select: { ...PERSON.select, designation: { select: { title: true } } },
+      orderBy: [{ fullName: 'asc' }, { employeeCode: 'asc' }],
+      take: 2000,
     });
   }
 

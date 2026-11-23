@@ -278,6 +278,23 @@ describe('Jobs API', () => {
     }
   });
 
+  it('lists active employees for the panel and recruiter pickers, names only', async () => {
+    for (const who of ['hr', 'taManager', 'recruiter'] as Who[]) {
+      const people = (await as[who].get('/api/hiring/people').expect(200)).body;
+      const ids = people.map((p: { id: string }) => p.id);
+      expect(ids).toEqual(expect.arrayContaining([id.teamLead, id.employee, id.hr]));
+      expect(Object.keys(people[0]).sort()).toEqual(['designation', 'employeeCode', 'id', 'name']);
+    }
+    const left = await prisma.employee.findFirst({ where: { employmentStatus: 'INACTIVE' }, select: { id: true } });
+    if (left) {
+      const ids = (await as.hr.get('/api/hiring/people').expect(200)).body.map((p: { id: string }) => p.id);
+      expect(ids).not.toContain(left.id);
+    }
+    for (const who of ['teamLead', 'officeAdmin', 'employee'] as Who[]) {
+      await as[who].get('/api/hiring/people').expect(403);
+    }
+  });
+
   it.each(['teamLead', 'officeAdmin', 'employee'] as Who[])('gives %s no access to jobs', async (who) => {
     const req = await approvedRequisition();
     const job = (await send('hr', 'post', `/requisitions/${req.id}/job`, jobBody()).expect(201)).body;

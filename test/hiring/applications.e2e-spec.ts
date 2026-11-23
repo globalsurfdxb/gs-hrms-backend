@@ -25,6 +25,18 @@ describe('Pipeline API', () => {
   });
   afterAll(() => app.close());
 
+  it('counts a job’s candidates: all of them, and those still in the pipeline', async () => {
+    const { job, appId } = await onNewJob();
+    await w.send('hr', 'post', '/candidates', w.candidate({ jobId: job.id })).expect(201);
+    const counts = async () => (await w.as.hr.get(`/api/hiring/jobs/${job.id}`).expect(200)).body.candidates;
+    expect(await counts()).toEqual({ active: 2, total: 2 });
+    await act('hr', appId, 'exit', { exit: 'WITHDRAWN', reason: 'Took another offer' }).expect(200);
+    expect(await counts()).toEqual({ active: 1, total: 2 });
+    const listed = (await w.as.hr.get('/api/hiring/jobs?locationId=Dubai&pageSize=100').expect(200)).body.items;
+    const row = listed.find((j: { id: string }) => j.id === job.id);
+    expect(row?.candidates).toEqual({ active: 1, total: 2 });
+  });
+
   it('moves forward and back with a history line each, never to Hired (BR-HIR-009)', async () => {
     const { appId } = await onNewJob();
     await act('hr', appId, 'move', { stage: 'TECHNICAL_INTERVIEW', note: 'Strong call' }).expect(200);
