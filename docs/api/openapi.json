@@ -4672,6 +4672,57 @@
         ]
       }
     },
+    "/api/hiring/people": {
+      "get": {
+        "description": "Needs Jobs → View. For the interview panel picker and, when there is no Talent Acquisition Manager, the recruiter picker: every active employee with name, employee code and designation, by name. No contact details, location or manager — the directory itself stays scoped (Team → Directory for the TA Manager).",
+        "operationId": "JobsController_people",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecruiterOptionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Active employees to pick from",
+        "tags": [
+          "Hiring · Jobs"
+        ]
+      }
+    },
     "/api/hiring/jobs/{id}": {
       "get": {
         "description": "Needs Jobs → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) every job; otherwise only the caller’s own jobs — hiring manager or recruiter (BR-HIR-022); another job is 404.",
@@ -10427,6 +10478,24 @@
           "code"
         ]
       },
+      "JobCandidatesResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "number",
+            "example": 4,
+            "description": "Not exited and not hired"
+          },
+          "total": {
+            "type": "number",
+            "example": 9
+          }
+        },
+        "required": [
+          "active",
+          "total"
+        ]
+      },
       "JobViewerResponse": {
         "type": "object",
         "properties": {
@@ -10572,6 +10641,9 @@
               "$ref": "#/components/schemas/PersonRefResponse"
             }
           },
+          "candidates": {
+            "$ref": "#/components/schemas/JobCandidatesResponse"
+          },
           "referralEligible": {
             "type": "boolean"
           },
@@ -10625,6 +10697,7 @@
           "expMax",
           "qualifications",
           "panel",
+          "candidates",
           "referralEligible",
           "closingDate",
           "status",
@@ -10866,6 +10939,9 @@
               "$ref": "#/components/schemas/PersonRefResponse"
             }
           },
+          "candidates": {
+            "$ref": "#/components/schemas/JobCandidatesResponse"
+          },
           "referralEligible": {
             "type": "boolean"
           },
@@ -10926,6 +11002,7 @@
           "expMax",
           "qualifications",
           "panel",
+          "candidates",
           "referralEligible",
           "closingDate",
           "status",

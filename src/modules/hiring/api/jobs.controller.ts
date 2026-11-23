@@ -8,7 +8,12 @@ import { PERMISSIONS } from '../../../core/iam/permission-catalog.js';
 import { JobsService } from '../application/jobs.service.js';
 import { ChangeRecruiterDto } from './dto/change-recruiter.dto.js';
 import { CreateJobDto } from './dto/create-job.dto.js';
-import { JobDetailResponse, JobListResponse, RecruiterPoolResponse } from './dto/job.response.js';
+import {
+  JobDetailResponse,
+  JobListResponse,
+  RecruiterOptionResponse,
+  RecruiterPoolResponse,
+} from './dto/job.response.js';
 import { ListJobsQuery } from './dto/list-jobs.query.js';
 
 const FEATURE = PERMISSIONS.hiring.jobs;
@@ -55,6 +60,21 @@ export class JobsController {
   @ApiErrors(401, 403)
   recruiters(@CurrentUser() user: AuthUser) {
     return this.jobs.recruiters(user);
+  }
+
+  @RequirePermission(FEATURE)
+  @Get('people')
+  @ApiOperation({
+    summary: 'Active employees to pick from',
+    description:
+      'Needs Jobs → View. For the interview panel picker and, when there is no Talent Acquisition Manager, the ' +
+      'recruiter picker: every active employee with name, employee code and designation, by name. No contact ' +
+      'details, location or manager — the directory itself stays scoped (Team → Directory for the TA Manager).',
+  })
+  @ApiOkResponse({ type: [RecruiterOptionResponse] })
+  @ApiErrors(401, 403)
+  people() {
+    return this.jobs.people();
   }
 
   @RequirePermission(FEATURE)

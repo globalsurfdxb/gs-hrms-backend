@@ -42,6 +42,12 @@ export class JobViewerResponse {
   canChangeRecruiter: boolean;
 }
 
+/** Candidates on a job: everyone who applied, and those still in the pipeline. */
+export class JobCandidatesResponse {
+  @ApiProperty({ example: 4, description: 'Not exited and not hired' }) active: number;
+  @ApiProperty({ example: 9 }) total: number;
+}
+
 export class JobResponse {
   @ApiProperty() id: string;
   @ApiProperty({ example: 'JOB-0001' }) code: string;
@@ -76,6 +82,7 @@ export class JobResponse {
   @ApiProperty({ example: 6 }) expMax: number;
   @ApiProperty({ example: 'CCNA or higher' }) qualifications: string;
   @ApiProperty({ type: [PersonRefResponse] }) panel: PersonRefResponse[];
+  @ApiProperty({ type: JobCandidatesResponse }) candidates: JobCandidatesResponse;
   @ApiProperty() referralEligible: boolean;
   @ApiProperty({ example: '2026-12-15' }) closingDate: string;
   @ApiProperty({ enum: JOB_STATUSES }) status: (typeof JOB_STATUSES)[number];
@@ -109,6 +116,7 @@ export class JobResponse {
       expMax: j.expMax,
       qualifications: j.qualifications,
       panel: j.panel.map((p) => person(p.employee)),
+      candidates: { active: j.applications.length, total: j._count.applications },
       referralEligible: j.referralEligible,
       closingDate: dayOf(j.closingDate),
       status: j.status,

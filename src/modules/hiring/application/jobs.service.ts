@@ -6,7 +6,14 @@ import { AppError, forbidden, notFound } from '../../../shared/errors/app-error.
 import { dateOfDay } from '../../../shared/time/calendar-day.js';
 import type { ChangeRecruiterDto } from '../api/dto/change-recruiter.dto.js';
 import type { CreateJobDto } from '../api/dto/create-job.dto.js';
-import { JobDetailResponse, JobListResponse, JobResponse, RecruiterPoolResponse } from '../api/dto/job.response.js';
+import {
+  JobDetailResponse,
+  JobListResponse,
+  JobResponse,
+  RecruiterOptionResponse,
+  RecruiterPoolResponse,
+} from '../api/dto/job.response.js';
+import { person } from '../api/dto/common.response.js';
 import type { ListJobsQuery } from '../api/dto/list-jobs.query.js';
 import { assertCanCreateJob, checkJobInput, jobHistory, jobStatusAfter, type JobAction } from '../domain/job.rules.js';
 import { canChooseRecruiter, canRecruit, handsOver, type RecruiterActor } from '../domain/recruiter.rules.js';
@@ -40,6 +47,11 @@ export class JobsService {
 
   async get(id: string, user: AuthUser): Promise<JobDetailResponse> {
     return JobDetailResponse.fromDetail(await this.found(id, user), await this.viewerOf(user));
+  }
+
+  /** Active employees for the panel and recruiter pickers (name, code, designation only). */
+  async people(): Promise<RecruiterOptionResponse[]> {
+    return (await this.jobs.activePeople()).map((e) => ({ ...person(e), designation: e.designation?.title ?? null }));
   }
 
   /** BR-HIR-021: who a new job goes to, and who can be chosen to run it — for the job form and the recruiter
