@@ -278,6 +278,23 @@ async function seedProfile(employeeId: string, code: string, name: string) {
       branchCode: '803320101',
     },
   });
+  // Salary (UAE components, AED). Fictional round figures; added only when the person has none.
+  if (await empty(prisma.salaryComponent.count({ where: { employeeId } }))) {
+    const basic = 6000 + (n % 10) * 500;
+    await prisma.salaryComponent.createMany({
+      data: [
+        ['Basic Salary', basic],
+        ['Transportation Allowance', 800],
+        ['Accommodation Allowance', Math.round(basic * 0.4)],
+      ].map(([label, amount], position) => ({
+        employeeId,
+        kind: 'EARNING' as const,
+        position,
+        label: String(label),
+        amount: `${amount}.00`,
+      })),
+    });
+  }
 }
 
 async function main() {

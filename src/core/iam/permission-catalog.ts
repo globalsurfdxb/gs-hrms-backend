@@ -33,6 +33,8 @@ export const PERMISSIONS = {
     identityBank: 'employee:sensitive:identity-bank',
     /** Reveal one full identity or bank number; every reveal is audited. */
     revealNumbers: 'employee:sensitive:reveal-numbers',
+    /** Salary structure: View = read it, Edit = change it (HR, Super Admin by default). Anyone reads their own. */
+    salary: 'employee:sensitive:salary',
   },
   hiring: {
     requisitions: 'hiring:requisitions:requisitions',

@@ -214,14 +214,16 @@ function buildCatalog(): CatalogModule[] {
       })),
       cat('employee', 'reports', 'Reports', 4, ['Reports & analytics']),
       /* Passport, Emirates ID, Aadhaar, PAN, UAN and bank details: View = masked, Edit = change them, "Reveal full
-         numbers" = see one whole number (audited). Actions are set explicitly, as in the frontend. */
+         numbers" = see one whole number (audited). Salary: View = read the structure, Edit = change it. Actions are
+         set explicitly, as in the frontend. */
       {
         id: 'sensitive',
-        label: 'Identity & bank',
+        label: 'Identity, bank & salary',
         rank: 4,
         features: [
           { id: 'employee:sensitive:identity-bank', label: 'Identity & bank details', actions: ['edit'] },
           { id: 'employee:sensitive:reveal-numbers', label: 'Reveal full numbers', actions: [] },
+          { id: 'employee:sensitive:salary', label: 'Salary', actions: ['edit'] },
         ],
       },
     ],

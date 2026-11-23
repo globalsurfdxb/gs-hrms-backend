@@ -1,0 +1,25 @@
+meta {
+  name: Get salary
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/employees/GS-087/salary
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Salary → View (HR, Super Admin by default) and the person in your directory scope; anyone may
+  read their own (otherwise 404). Amounts are strings with 2 decimals in the location's currency (AED / INR);
+  totals and net pay are calculated. Viewing someone else's salary writes an audit row without amounts.
+}
+
+tests {
+  test("read", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.currency).to.be.oneOf(["AED", "INR"]);
+    expect(res.body.netPay).to.match(/^\d+\.\d{2}$/);
+  });
+}

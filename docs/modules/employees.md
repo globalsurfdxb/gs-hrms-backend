@@ -1,7 +1,7 @@
 # Employees
 
 - Status: In progress — data scopes, directory (list, detail), profile details (read, edit), employment details
-  (edit) and identity, bank & PF (masked, reveal) done
+  (edit), identity, bank & PF (masked, reveal) and salary structure done
 - Phase: 1
 - Source module: `src/modules/employees/`
 
@@ -46,18 +46,19 @@ diff + audit, `addEmployee`, `canEditEmployees`, `canEditSensitive`), `lib/profi
 
 ## Business rules
 
-| Id         | Rule                                                                                                                                                                 |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| BR-EMP-001 | Location template decides which identity/bank fields are valid; changing location clears the other country's fields and re-validates department/designation          |
-| BR-EMP-002 | Department must belong to the company and operate in the location                                                                                                    |
-| BR-EMP-003 | Reporting line cannot form a cycle (org-chart reassign)                                                                                                              |
-| BR-EMP-004 | email, employeeCode, employmentStatus are never edited directly (status changes only via onboarding/offboarding)                                                     |
-| BR-EMP-005 | Every field change is audited field-by-field (module Employee / Bank / Salary); sensitive values masked in audit                                                     |
-| BR-EMP-006 | Uploads: pdf, png, jpg, jpeg, doc, docx ≤ 10 MB; required documents per template                                                                                     |
-| BR-EMP-007 | Self-service: employee edits only mobile directly; everything else via requests                                                                                      |
-| BR-EMP-008 | India identity: Aadhaar and PAN each carry the name as printed; PF enrolled = Yes requires a 12-digit UAN and the UAN-linked mobile                                  |
-| BR-EMP-009 | Bank account number is confirmed by typing it twice on capture (onboarding wizard, joining form); India account 9–18 digits, IFSC validated                          |
-| BR-EMP-010 | Emergency contact groups follow the work location: UAE — Local Emergency Contact (UAE), Home Country Emergency Contact; India — Primary, Alternate Emergency Contact |
+| Id         | Rule                                                                                                                                                                                          |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BR-EMP-001 | Location template decides which identity/bank fields are valid; changing location clears the other country's fields and re-validates department/designation                                   |
+| BR-EMP-002 | Department must belong to the company and operate in the location                                                                                                                             |
+| BR-EMP-003 | Reporting line cannot form a cycle (org-chart reassign)                                                                                                                                       |
+| BR-EMP-004 | email, employeeCode, employmentStatus are never edited directly (status changes only via onboarding/offboarding)                                                                              |
+| BR-EMP-005 | Every field change is audited field-by-field (module Employee / Bank / Salary); sensitive values masked in audit                                                                              |
+| BR-EMP-006 | Uploads: pdf, png, jpg, jpeg, doc, docx ≤ 10 MB; required documents per template                                                                                                              |
+| BR-EMP-007 | Self-service: employee edits only mobile directly; everything else via requests                                                                                                               |
+| BR-EMP-008 | India identity: Aadhaar and PAN each carry the name as printed; PF enrolled = Yes requires a 12-digit UAN and the UAN-linked mobile                                                           |
+| BR-EMP-009 | Bank account number is confirmed by typing it twice on capture (onboarding wizard, joining form); India account 9–18 digits, IFSC validated                                                   |
+| BR-EMP-010 | Emergency contact groups follow the work location: UAE — Local Emergency Contact (UAE), Home Country Emergency Contact; India — Primary, Alternate Emergency Contact                          |
+| BR-EMP-011 | Salary: earnings and deductions with unique names per list, at most 20 each, amounts ≥ 0 with 2 decimals, deductions ≤ earnings; currency follows the location; nobody edits their own salary |
 
 ## Directory list
 
@@ -77,7 +78,8 @@ Department, Newest joiners, Longest serving. → `GET /employees` needs these fi
 | Identity, Bank & PF (view masked) | Identity & bank details → View (Super Admin, HR); own record   |
 | Identity, Bank & PF (edit)        | Identity & bank details → Edit (Super Admin, HR)               |
 | Reveal full identity/bank numbers | Reveal full numbers (Super Admin, HR), every reveal audited    |
-| Salary tab (view/edit)            | Super Admin, HR only (to do)                                   |
+| Salary (view)                     | Salary → View (Super Admin, HR); own salary; views audited     |
+| Salary (edit)                     | Salary → Edit (Super Admin, HR); never one's own               |
 
 ### Profile — done
 
@@ -121,6 +123,19 @@ IFSC. The passport number cannot be cleared for UAE. Formats are checked only fo
 `employee.identity_updated` (module Employee), `employee.bank_updated` (module Bank), `employee.number_revealed`.
 Tests: `domain/identity-bank.rules.spec.ts`, `test/employees/identity-bank.e2e-spec.ts`.
 
+### Salary — done
+
+Table `employee_salary_components` (kind EARNING | DEDUCTION, ordered by `position`, amount `Decimal(14,2)`; a save
+replaces the structure). Totals and net pay are calculated, never stored. The currency is not stored: it follows the
+work location (UAE AED, India INR); a move keeps the amounts and the employment audit row notes
+`salaryCurrency: "INR — amounts kept, review them"`. Not encrypted (decided 2026-10-23, hiring.md Q8): protected by
+the Salary permission (Employee Management → Identity, bank & salary; HR and Super Admin by default), the data scope
+and audit. Anyone may read their own salary; nobody may change their own (403 `employee.salary_own_edit_not_allowed`).
+BR-EMP-011 rules in `domain/salary.rules.ts`; amounts are handled in fils / paise so totals are exact. Audit rows
+(module Salary): `employee.salary_updated` with the component names and `amountsChanged`, never amounts; a save with
+no change writes nothing; `employee.salary_viewed` when someone reads another person's salary. Tests:
+`domain/salary.rules.spec.ts`, `test/employees/salary.e2e-spec.ts`.
+
 ### Data scopes — done
 
 Decided by permission, never by role name, so custom roles follow their grants (same rule as the frontend
@@ -149,7 +164,9 @@ Tests: `core/iam/data-scope.spec.ts`, `test/employees/directory.e2e-spec.ts`.
 | ✅     | GET    | `/api/employees/:employeeCode/identity-bank`        | Identity & bank details → View, scoped; own   | numbers masked; `template`, `currency`, `canEdit`, `canReveal`                                                                                                                     |
 | ✅     | PATCH  | `/api/employees/:employeeCode/identity-bank`        | Identity & bank details → Edit, edit scope    | encrypted numbers; BR-EMP-001/008/009; audit rows `employee.identity_updated` / `employee.bank_updated`, masked; no-op writes nothing                                              |
 | ✅     | POST   | `/api/employees/:employeeCode/identity-bank/reveal` | Reveal full numbers, scoped                   | one number; audit row `employee.number_revealed` names the field only                                                                                                              |
-| to do  |        | salary, documents                                   |                                               | Salary tab (Super Admin, HR); documents need file storage                                                                                                                          |
+| ✅     | GET    | `/api/employees/:employeeCode/salary`               | Salary → View, scoped; own                    | amounts as strings, totals and net pay; currency from the location; others' views audited `employee.salary_viewed`                                                                 |
+| ✅     | PUT    | `/api/employees/:employeeCode/salary`               | Salary → Edit, edit scope; not own            | replaces the structure; BR-EMP-011; audit `employee.salary_updated` with names only; no-op writes nothing                                                                          |
+| to do  |        | documents                                           |                                               | documents need file storage                                                                                                                                                        |
 | ✅     | PATCH  | `/api/employees/:employeeCode/employment`           | Directory → Edit (Organization or Operations) | name, location, organization, department, designation, manager, type, joining date; BR-EMP-001…004, 010; one audit row `employee.employment_updated`; returns the directory record |
 
 ## Threat model

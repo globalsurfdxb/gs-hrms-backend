@@ -26,6 +26,7 @@ const CURRENT = {
   profile: { select: { seatingLocation: true } },
   emergencyContacts: { select: { id: true, group: true } },
   identityBank: { select: { employeeId: true } },
+  _count: { select: { salaryComponents: true } },
 } as const satisfies Prisma.EmployeeSelect;
 
 export type EmploymentRecord = Prisma.EmployeeGetPayload<{ select: typeof CURRENT }>;
