@@ -3429,6 +3429,150 @@
         ]
       }
     },
+    "/api/employees/{employeeCode}/salary": {
+      "get": {
+        "description": "Needs Employee Management → Identity, bank & salary → Salary → View (HR, Super Admin by default) and the person in your directory scope. Anyone may read their own. Otherwise 404 employee.not_found. Amounts are strings with 2 decimals in the location’s currency (AED or INR); totals and net pay are calculated. Viewing someone else’s salary writes an audit row (Salary · employee.salary_viewed, no amounts).",
+        "operationId": "SalaryController_get",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalaryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get an employee’s salary structure",
+        "tags": [
+          "Employees"
+        ]
+      },
+      "put": {
+        "description": "Needs Salary → Edit (HR, Super Admin by default), otherwise 403 employee.salary_edit_not_allowed, and the person in your Directory → Edit scope (404 otherwise). Your own salary cannot be changed (403 employee.salary_own_edit_not_allowed). Send every earning and deduction: the list replaces what is saved. Names are required and unique per list; at most 20 lines each; deductions may not exceed earnings. Writes one audit row (Salary · employee.salary_updated) with the component names and whether amounts changed, never the amounts. No change, no audit row.",
+        "operationId": "SalaryController_replace",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "GS-087",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSalaryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Replace an employee’s salary structure",
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
     "/api/hiring/requisitions": {
       "get": {
         "description": "Needs Requisitions → View (Super Admin, HR, Office Admin, Team Lead by default). Full hiring access (Jobs + Requisitions → View: Super Admin, HR, Talent Acquisition Manager) sees every requisition; others see those they raised or manage, the ones behind a job they recruit for (BR-HIR-022), those waiting on a step they decide, and those they already decided. Anything else is 404. Newest first. Use waitingOnMe=true for the approval inbox.",
@@ -8625,6 +8769,135 @@
         "required": [
           "field",
           "value"
+        ]
+      },
+      "SalaryLineResponse": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "Basic Salary"
+          },
+          "amount": {
+            "type": "string",
+            "example": "9000.00",
+            "description": "Decimal as a string — never a float"
+          }
+        },
+        "required": [
+          "label",
+          "amount"
+        ]
+      },
+      "SalaryResponse": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "example": "GS-087"
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "UAE",
+              "INDIA"
+            ],
+            "description": "Which default components apply"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "AED",
+              "INR"
+            ],
+            "description": "Set by the work location"
+          },
+          "earnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryLineResponse"
+            }
+          },
+          "deductions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryLineResponse"
+            }
+          },
+          "totalEarnings": {
+            "type": "string",
+            "example": "12000.00",
+            "description": "Sum of the earnings"
+          },
+          "totalDeductions": {
+            "type": "string",
+            "example": "0.00",
+            "description": "Sum of the deductions"
+          },
+          "netPay": {
+            "type": "string",
+            "example": "12000.00",
+            "description": "Earnings minus deductions"
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Whether you may change this salary"
+          }
+        },
+        "required": [
+          "employeeCode",
+          "template",
+          "currency",
+          "earnings",
+          "deductions",
+          "totalEarnings",
+          "totalDeductions",
+          "netPay",
+          "canEdit"
+        ]
+      },
+      "SalaryLineDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "Basic Salary",
+            "maxLength": 60
+          },
+          "amount": {
+            "type": "string",
+            "example": "9000.00",
+            "description": "Up to 12 digits and 2 decimals, as a string. Zero is allowed."
+          }
+        },
+        "required": [
+          "label",
+          "amount"
+        ]
+      },
+      "UpdateSalaryDto": {
+        "type": "object",
+        "properties": {
+          "earnings": {
+            "maxItems": 20,
+            "description": "In the order shown on the profile",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryLineDto"
+            }
+          },
+          "deductions": {
+            "maxItems": 20,
+            "example": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryLineDto"
+            }
+          }
+        },
+        "required": [
+          "earnings",
+          "deductions"
         ]
       },
       "RefResponse": {

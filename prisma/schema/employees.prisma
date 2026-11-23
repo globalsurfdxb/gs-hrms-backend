@@ -20,6 +20,13 @@ enum EmploymentType {
   @@map("employment_type")
 }
 
+enum SalaryComponentKind {
+  EARNING
+  DEDUCTION
+
+  @@map("salary_component_kind")
+}
+
 model Employee {
   id                 String           @id @default(uuid(7)) @db.Uuid
   /// GS-NNN, shown everywhere in the UI.
@@ -58,6 +65,7 @@ model Employee {
   education         Education[]
   family            FamilyMember[]
   identityBank      EmployeeIdentityBank?
+  salaryComponents  SalaryComponent[]
 
   // Hiring (src/modules/hiring) — references only; hiring owns these tables.
   requisitionsReplacing   Requisition[]     @relation("RequisitionReplaces")
@@ -227,4 +235,23 @@ model EmployeeIdentityBank {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("employee_identity_bank")
+}
+
+// Salary structure (spec docs/modules/employees.md): earnings and deductions, each a label and an amount. Totals are
+// computed, never stored. The currency follows the work location (UAE AED, India INR), so it is not stored either: a
+// move between countries keeps the amounts and HR reviews them. Protected by access (Salary permission), not
+// encryption (decided 2026-10-23, hiring.md Q8); amounts never go into the audit log. A save replaces the list.
+model SalaryComponent {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  employeeId String              @map("employee_id") @db.Uuid
+  kind       SalaryComponentKind
+  position   Int
+  label      String
+  amount     Decimal             @db.Decimal(14, 2)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, kind, label])
+  @@index([employeeId])
+  @@map("employee_salary_components")
 }

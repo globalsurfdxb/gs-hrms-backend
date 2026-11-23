@@ -12,7 +12,7 @@ import {
   seatingAfterMove,
   type Placement,
 } from '../domain/employment.rules.js';
-import { clearedByMove, SECRET_FIELDS } from '../domain/identity-bank.rules.js';
+import { clearedByMove, CURRENCY, SECRET_FIELDS } from '../domain/identity-bank.rules.js';
 import type { ProfileProblem } from '../domain/profile.rules.js';
 import { EmploymentRepository, type EmploymentWrite } from '../infrastructure/employment.repository.js';
 import { EmployeesRepository } from '../infrastructure/employees.repository.js';
@@ -133,6 +133,10 @@ export class EmploymentService {
             clearedByMove(to).map((f) => [(SECRET_FIELDS as readonly string[]).includes(f) ? `${f}Enc` : f, null]),
           );
           note('identityAndBank', `${title(cur.location.template)} details`, 'Country-specific details cleared');
+        }
+        // Salary amounts stay as they are; the currency follows the location, so HR reviews them.
+        if (cur._count.salaryComponents) {
+          note('salaryCurrency', CURRENCY[cur.location.template], `${CURRENCY[to]} — amounts kept, review them`);
         }
       }
       const seat = cur.profile?.seatingLocation ?? null;

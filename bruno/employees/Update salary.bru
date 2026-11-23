@@ -1,0 +1,40 @@
+meta {
+  name: Update salary
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/employees/GS-087/salary
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "earnings": [
+      { "label": "Basic Salary", "amount": "9000" },
+      { "label": "Transportation Allowance", "amount": "800" },
+      { "label": "Accommodation Allowance", "amount": "3600" }
+    ],
+    "deductions": []
+  }
+}
+
+docs {
+  Needs Salary → Edit (HR, Super Admin by default); never your own salary (403). Send the whole structure:
+  it replaces what is saved. Names required and unique per list, at most 20 lines each, amounts like
+  "9000.50", deductions not above earnings. One audit row (Salary) with names only, never amounts.
+  Use fictional figures only.
+}
+
+tests {
+  test("saved", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalEarnings).to.equal("13400.00");
+  });
+}
