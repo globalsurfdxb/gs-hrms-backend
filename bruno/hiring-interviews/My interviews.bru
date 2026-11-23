@@ -1,0 +1,23 @@
+meta {
+  name: My interviews
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/me/interviews
+  body: none
+  auth: none
+}
+
+docs {
+  Any signed-in employee: the interviews you are on the panel for (upcoming and past). Candidate name and job
+  only — no contact details or salary.
+}
+
+tests {
+  test("my interviews (200)", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.upcoming).to.be.an("array");
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: List interviews
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/hiring/interviews?when=upcoming
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Interviews → View (Super Admin, HR, Talent Acquisition Manager, Recruiter). Without full hiring access
+  only interviews on your own jobs (BR-HIR-022). when = upcoming (default) | past | all; also locationId, jobId,
+  applicationId, page, pageSize.
+}
+
+tests {
+  test("listed (200) — or 403 without Interviews → View", function () {
+    expect([200, 403]).to.include(res.status);
+  });
+}

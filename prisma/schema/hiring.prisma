@@ -309,10 +309,11 @@ model Application {
   createdById String            @map("created_by_id") @db.Uuid
   updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  candidate Candidate     @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  job       Job           @relation(fields: [jobId], references: [id], onDelete: Restrict)
-  createdBy Employee      @relation("ApplicationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  history   StageChange[]
+  candidate  Candidate     @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  job        Job           @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  createdBy  Employee      @relation("ApplicationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  history    StageChange[]
+  interviews Interview[]
 
   @@unique([candidateId, jobId])
   @@index([jobId, stage])
@@ -337,4 +338,76 @@ model StageChange {
 
   @@index([applicationId, at])
   @@map("application_stage_changes")
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Step 4: interviews (spec §3, BR-HIR-010).
+
+enum InterviewRound {
+  SCREENING_CALL
+  TECHNICAL
+  HR
+  FINAL
+
+  @@map("interview_round")
+}
+
+enum InterviewMode {
+  IN_PERSON
+  TEAMS
+  PHONE
+
+  @@map("interview_mode")
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+
+  @@map("interview_status")
+}
+
+/// An interview round for one application. Times are typed in the location's local time and stored as instants
+/// (startsAt/endsAt) so clashes compare across locations; `timezone` is the location's at scheduling time.
+model Interview {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  applicationId   String          @map("application_id") @db.Uuid
+  round           InterviewRound
+  startsAt        DateTime        @map("starts_at") @db.Timestamptz(3)
+  endsAt          DateTime        @map("ends_at") @db.Timestamptz(3)
+  durationMin     Int             @map("duration_min")
+  timezone        String
+  mode            InterviewMode
+  /// https only (BR-HIR-010); empty when none.
+  link            String          @default("")
+  notes           String          @default("")
+  status          InterviewStatus @default(SCHEDULED)
+  rescheduleCount Int             @default(0) @map("reschedule_count")
+  scheduledById   String          @map("scheduled_by_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  application Application            @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  scheduledBy Employee               @relation("InterviewScheduledBy", fields: [scheduledById], references: [id], onDelete: Restrict)
+  panel       InterviewPanelMember[]
+
+  @@index([applicationId])
+  @@index([status, startsAt])
+  @@map("interviews")
+}
+
+/// Interviewers on one interview (at least one). Indexed by employee for "My interviews" and clash checks.
+model InterviewPanelMember {
+  interviewId String @map("interview_id") @db.Uuid
+  employeeId  String @map("employee_id") @db.Uuid
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  employee  Employee  @relation("InterviewPanel", fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@id([interviewId, employeeId])
+  @@index([employeeId])
+  /// Panel clash lookups (a panelist's interviews).
+  @@index([employeeId, interviewId], map: "interview_panel_members_employee_interview_idx")
+  @@map("interview_panel_members")
 }

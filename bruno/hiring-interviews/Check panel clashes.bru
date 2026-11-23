@@ -1,0 +1,24 @@
+meta {
+  name: Check panel clashes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/hiring/interviews/clashes?applicationId={{applicationId}}&date=2027-01-15&time=10:00&durationMin=60&panelIds={{panelistId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Interviews → Add. Which of the panelists already have a scheduled interview overlapping this time
+  (names only). A warning for the form; scheduling is not refused. Set applicationId (from "Add candidate" or the
+  pipeline) and panelistId (an employee id, e.g. from "Who am I") first. When rescheduling add &excludeId=…
+}
+
+tests {
+  test("checked (200) — or 404 when the application is not yours", function () {
+    expect([200, 403, 404]).to.include(res.status);
+    if (res.status === 200) expect(res.body.clashes).to.be.an("array");
+  });
+}

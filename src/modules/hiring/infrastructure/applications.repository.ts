@@ -187,28 +187,40 @@ export class ApplicationsRepository {
   /** Applies a pipeline change (BR-HIR-009) with its history line and audit row. */
   change(before: ApplicationDetailRecord, c: PipelineChange, action: string, actor: AuditActor) {
     return this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.application.updateMany({
-        where: { id: before.id, updatedAt: before.updatedAt },
-        data: { stage: c.stage, exit: c.exit, exitFrom: c.exitFrom, exitReason: c.exitReason, exitNote: c.exitNote },
-      });
-      if (count === 0) {
-        throw conflict('application.changed', 'This application was changed by someone else. Reload it and try again.');
-      }
-      await tx.stageChange.create({
-        data: { applicationId: before.id, actorId: actor.id, actorLabel: actor.label, ...c.history },
-      });
-      await this.audit.record(
-        {
-          ...AUDIT,
-          actor,
-          action,
-          entityId: before.id,
-          before: { stage: before.stage, exit: before.exit },
-          after: { stage: c.stage, exit: c.exit, reason: c.exitReason },
-        },
-        tx,
-      );
+      await this.applyChange(tx, before, c, action, actor);
       return tx.application.findUniqueOrThrow({ where: { id: before.id }, select: APPLICATION_DETAIL });
     });
+  }
+
+  /** The pipeline change itself, inside the caller's transaction (also used when scheduling an interview moves the
+      candidate forward). Guarded by `updatedAt`: a concurrent move → 409. */
+  async applyChange(
+    tx: Prisma.TransactionClient,
+    before: { id: string; updatedAt: Date; stage: ApplicationStage; exit: ApplicationExit | null },
+    c: PipelineChange,
+    action: string,
+    actor: AuditActor,
+  ): Promise<void> {
+    const { count } = await tx.application.updateMany({
+      where: { id: before.id, updatedAt: before.updatedAt },
+      data: { stage: c.stage, exit: c.exit, exitFrom: c.exitFrom, exitReason: c.exitReason, exitNote: c.exitNote },
+    });
+    if (count === 0) {
+      throw conflict('application.changed', 'This application was changed by someone else. Reload it and try again.');
+    }
+    await tx.stageChange.create({
+      data: { applicationId: before.id, actorId: actor.id, actorLabel: actor.label, ...c.history },
+    });
+    await this.audit.record(
+      {
+        ...AUDIT,
+        actor,
+        action,
+        entityId: before.id,
+        before: { stage: before.stage, exit: before.exit },
+        after: { stage: c.stage, exit: c.exit, reason: c.exitReason },
+      },
+      tx,
+    );
   }
 }
