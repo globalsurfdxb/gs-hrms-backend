@@ -2,7 +2,9 @@ import { AppError } from '../../../shared/errors/app-error.js';
 import {
   assertEditable,
   canDecideStep,
+  checkDesignationChoice,
   checkRequisitionInput,
+  cleanDesignationTitle,
   decidableLabels,
   decideStep,
   statusAfter,
@@ -191,5 +193,40 @@ describe('BR-HIR-004 hold, resume, close', () => {
     ['close', 'CLOSED'],
   ] as const)('refuses %s from %s', (action, from) => {
     expect(code(() => statusAfter(action, from))).toBe('requisition.invalid_transition');
+  });
+});
+
+describe('BR-HIR-003 / BR-HIR-020 designation', () => {
+  const titles = ['Network Engineer', 'Cloud Architect'];
+  const check = (designationId: string | null, proposed: string | null, departmentTitles = titles) =>
+    code(() =>
+      checkDesignationChoice({
+        designationId,
+        proposedDesignation: proposed === null ? null : cleanDesignationTitle(proposed),
+        departmentTitles,
+      }),
+    );
+
+  it('needs a designation when the department has any', () => {
+    expect(check(null, null)).toBe('requisition.designation_required');
+    expect(check('d1', null)).toBe('no error');
+    expect(check(null, null, [])).toBe('no error');
+  });
+
+  it('accepts a new title instead, never both', () => {
+    expect(check(null, '  Senior   Cloud Engineer ')).toBe('no error');
+    expect(check(null, 'Site Lead', [])).toBe('no error');
+    expect(check('d1', 'Senior Cloud Engineer')).toBe('requisition.designation_conflict');
+  });
+
+  it('refuses a title of 2–80 characters only, or one the department already has (any case)', () => {
+    expect(check(null, ' A ')).toBe('requisition.invalid_proposed_designation');
+    expect(check(null, 'x'.repeat(81))).toBe('requisition.invalid_proposed_designation');
+    expect(check(null, 'x'.repeat(80))).toBe('no error');
+    expect(check(null, ' network  ENGINEER ')).toBe('requisition.designation_exists');
+  });
+
+  it('cleans spaces', () => {
+    expect(cleanDesignationTitle('  Senior \t Cloud  Engineer ')).toBe('Senior Cloud Engineer');
   });
 });

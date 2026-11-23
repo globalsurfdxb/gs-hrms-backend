@@ -24,6 +24,10 @@ Before each step, check the frontend for changes since the commit noted in the s
   (`employees.department_id`) or one they head (`departments.head_employee_id`), in a location the department works
   in, with themselves as hiring manager. On an edit only a change of department, location or hiring manager is
   checked, so one HR raised for them elsewhere stays editable. `GET /hiring/requisitions/scope` feeds the form.
+- Designation (BR-HIR-003/020, `checkDesignationChoice`): required when the department has any, or a new title is
+  proposed instead. On the last approval the title joins the department through org's public
+  `DesignationsService.ensureForApprovedRequisition`, **inside the approval transaction** — the one direct
+  cross-module write, decided 2026-11-23 because there is no event bus yet. Move it to an event once one exists.
 - Jobs (step 2): only Jobs permission holders reach them; without full access only their own jobs (recruiter or
   hiring manager). Create and status need full access. Recruiter hand-over (BR-HIR-021, `domain/recruiter.rules.ts`):
   the TA Manager and the TA team are found by **designation title**, as the frontend does (Q21) — a job created by

@@ -128,6 +128,7 @@ describe('Jobs API', () => {
       title: 'Draft only',
       companyId: ref.companyId,
       departmentId: ref.departmentId,
+      designationId: ref.designationId,
       locationId: 'Dubai',
       positions: 1,
       employmentType: 'CONTRACT',

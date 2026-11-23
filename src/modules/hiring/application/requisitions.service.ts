@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { actorOf } from '../../../core/audit/audit.service.js';
 import type { AuthUser } from '../../../core/auth/auth-user.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { hasPermission, PERMISSIONS } from '../../../core/iam/permission-catalog.js';
 import { AppError, forbidden, notFound } from '../../../shared/errors/app-error.js';
+import { DesignationsService } from '../../org/org.public.js';
 import { dateOfDay, dayOf, todayIn } from '../../../shared/time/calendar-day.js';
 import type { CreateRequisitionDto } from '../api/dto/create-requisition.dto.js';
 import type { DecideRequisitionDto } from '../api/dto/decide-requisition.dto.js';
@@ -14,7 +16,9 @@ import type { UpdateRequisitionDto } from '../api/dto/update-requisition.dto.js'
 import {
   assertEditable,
   assertTransition,
+  checkDesignationChoice,
   checkRequisitionInput,
+  cleanDesignationTitle,
   decidableLabels,
   decideStep,
   statusAfter,
@@ -44,7 +48,10 @@ const STATUS_AUDIT: Record<StatusAction, string> = {
    to be the raiser, the hiring manager or a recruiting user, and hold/resume/close needs a recruiting user. */
 @Injectable()
 export class RequisitionsService {
-  constructor(private readonly requisitions: RequisitionsRepository) {}
+  constructor(
+    private readonly requisitions: RequisitionsRepository,
+    private readonly designations: DesignationsService,
+  ) {}
 
   async list(query: ListRequisitionsQuery, user: AuthUser): Promise<RequisitionListResponse> {
     const page = query.page ?? 1;
@@ -92,6 +99,7 @@ export class RequisitionsService {
       companyId: dto.companyId,
       departmentId: dto.departmentId,
       designationId: dto.designationId ?? null,
+      proposedDesignation: proposedOf(dto.proposedDesignation),
       locationId: dto.locationId,
       positions: dto.positions,
       employmentType: dto.employmentType,
@@ -120,6 +128,7 @@ export class RequisitionsService {
       ...(dto.companyId !== undefined && { companyId: dto.companyId }),
       ...(dto.departmentId !== undefined && { departmentId: dto.departmentId }),
       ...(dto.designationId !== undefined && { designationId: dto.designationId }),
+      ...(dto.proposedDesignation !== undefined && { proposedDesignation: proposedOf(dto.proposedDesignation) }),
       ...(dto.locationId !== undefined && { locationId: dto.locationId }),
       ...(dto.positions !== undefined && { positions: dto.positions }),
       ...(dto.employmentType !== undefined && { employmentType: dto.employmentType }),
@@ -135,13 +144,14 @@ export class RequisitionsService {
     if (dto.companyId !== undefined && dto.departmentId === undefined && dto.companyId !== current.companyId) {
       throw new AppError('requisition.department_mismatch', 'Choose a department of the new company');
     }
-    if (
-      dto.departmentId !== undefined &&
-      dto.designationId === undefined &&
-      dto.departmentId !== current.departmentId
-    ) {
-      next.designationId = null;
+    // The designation (or the new one asked for) belongs to the department, so it goes when the department does.
+    if (dto.departmentId !== undefined && dto.departmentId !== current.departmentId) {
+      if (dto.designationId === undefined) next.designationId = null;
+      if (dto.proposedDesignation === undefined) next.proposedDesignation = null;
     }
+    // Choosing one replaces the other (BR-HIR-020); sending both is refused in checked().
+    if (dto.designationId && dto.proposedDesignation === undefined) next.proposedDesignation = null;
+    if (dto.proposedDesignation && dto.designationId === undefined) next.designationId = null;
     if (next.reason !== 'REPLACEMENT') next.replacesEmployeeId = null;
 
     const data = await this.checked(next, user, current);
@@ -184,12 +194,26 @@ export class RequisitionsService {
       new Date(),
     );
     const action = dto.decision === 'APPROVED' ? 'requisition.step_approved' : 'requisition.step_rejected';
+    // BR-HIR-020: the last approval adds the requested designation to the department, in the same transaction.
+    const proposed = before.proposedDesignation;
+    const addDesignation =
+      result.status === 'APPROVED' && proposed && !before.designation
+        ? (tx: Prisma.TransactionClient) =>
+            this.designations.ensureForApprovedRequisition(
+              tx,
+              before.department.id,
+              proposed,
+              before.code,
+              actorOf(user),
+            )
+        : undefined;
     const saved = await this.requisitions.saveChain(
       before,
       { status: result.status, steps: result.steps },
       action,
       { step: result.decided.label, decision: dto.decision, note: result.decided.note, status: result.status },
       actorOf(user),
+      addDesignation,
     );
     return RequisitionResponse.from(saved, viewerOf(user));
   }
@@ -246,11 +270,12 @@ export class RequisitionsService {
   /** Checks every reference, BR-HIR-003 and (without full access) BR-HIR-019; returns the data with the location's
       currency. `before` is the stored requisition on an edit or a submit. */
   private async checked(d: RequisitionData, user: AuthUser, before?: RequisitionData): Promise<RequisitionData> {
-    const [location, company, department, designation, manager, replaced] = await Promise.all([
+    const [location, company, department, designation, titles, manager, replaced] = await Promise.all([
       this.requisitions.location(d.locationId),
       this.requisitions.company(d.companyId),
       this.requisitions.department(d.departmentId),
       d.designationId ? this.requisitions.designation(d.designationId) : null,
+      this.requisitions.designationTitles(d.departmentId),
       this.requisitions.hiringManager(d.hiringManagerId),
       d.replacesEmployeeId ? this.requisitions.employee(d.replacesEmployeeId) : null,
     ]);
@@ -268,6 +293,11 @@ export class RequisitionsService {
     if (d.designationId && designation?.departmentId !== d.departmentId) {
       throw new AppError('requisition.designation_mismatch', 'The designation does not belong to that department');
     }
+    checkDesignationChoice({
+      designationId: d.designationId,
+      proposedDesignation: d.proposedDesignation,
+      departmentTitles: titles,
+    });
     if (!manager || manager.employmentStatus !== 'ACTIVE') {
       throw new AppError('requisition.invalid_hiring_manager', 'The hiring manager must be an active employee');
     }
@@ -299,6 +329,10 @@ export class RequisitionsService {
     return { ...d, currency: location.currency };
   }
 }
+
+/** BR-HIR-020: a proposed title as stored (cleaned), or null when withdrawn / not sent. */
+const proposedOf = (title: string | null | undefined): string | null =>
+  title === null || title === undefined ? null : cleanDesignationTitle(title);
 
 /** Full hiring access (see hiring-access.ts) sees and manages every requisition. */
 const seesAll = hasFullHiringAccess;
@@ -332,6 +366,7 @@ function dataOf(r: RequisitionRecord): RequisitionData {
     companyId: r.company.id,
     departmentId: r.department.id,
     designationId: r.designation?.id ?? null,
+    proposedDesignation: r.proposedDesignation,
     locationId: r.location.id,
     positions: r.positions,
     employmentType: r.employmentType,

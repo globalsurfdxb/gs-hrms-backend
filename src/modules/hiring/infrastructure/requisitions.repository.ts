@@ -15,6 +15,8 @@ export interface RequisitionData {
   companyId: string;
   departmentId: string;
   designationId: string | null;
+  /** BR-HIR-020: a new title asked for instead of a designation (cleaned). */
+  proposedDesignation: string | null;
   locationId: string;
   positions: number;
   employmentType: HiringEmploymentType;
@@ -54,6 +56,7 @@ const REQUISITION = {
   company: { select: { id: true, name: true } },
   department: { select: { id: true, name: true } },
   designation: { select: { id: true, title: true } },
+  proposedDesignation: true,
   location: { select: { id: true, name: true } },
   positions: true,
   employmentType: true,
@@ -179,6 +182,13 @@ export class RequisitionsRepository {
     return this.prisma.designation.findUnique({ where: { id }, select: { id: true, departmentId: true } });
   }
 
+  /** BR-HIR-003/020: the department's designation titles. */
+  designationTitles(departmentId: string) {
+    return this.prisma.designation
+      .findMany({ where: { departmentId }, select: { title: true } })
+      .then((rows) => rows.map((r) => r.title));
+  }
+
   employee(id: string) {
     return this.prisma.employee.findUnique({ where: { id }, select: { id: true, employmentStatus: true } });
   }
@@ -233,13 +243,16 @@ export class RequisitionsRepository {
     });
   }
 
-  /** Submit, resubmit or decide: replaces the chain and sets the status. */
+  /** Submit, resubmit or decide: replaces the chain and sets the status. ddDesignation (BR-HIR-020) runs in the
+      same transaction when a requisition with a proposed designation is approved, and returns the designation it
+      is linked to. */
   saveChain(
     before: RequisitionRecord,
     chain: { status: RequisitionStatus; steps: Step[] },
     action: string,
     after: Prisma.InputJsonObject,
     actor: AuditActor,
+    addDesignation?: (tx: Prisma.TransactionClient) => Promise<{ id: string; created: boolean }>,
   ) {
     return this.prisma.$transaction(async (tx) => {
       await this.guardedUpdate(tx, before, { status: chain.status });
@@ -249,6 +262,24 @@ export class RequisitionsRepository {
         { ...AUDIT, actor, action, entityId: before.id, before: { status: before.status }, after },
         tx,
       );
+      if (addDesignation) {
+        const designation = await addDesignation(tx);
+        await tx.requisition.update({ where: { id: before.id }, data: { designationId: designation.id } });
+        await this.audit.record(
+          {
+            ...AUDIT,
+            actor,
+            action: 'requisition.designation_approved',
+            entityId: before.id,
+            after: {
+              designation: before.proposedDesignation,
+              designationId: designation.id,
+              addedToDepartment: designation.created,
+            },
+          },
+          tx,
+        );
+      }
       return tx.requisition.findUniqueOrThrow({ where: { id: before.id }, select: REQUISITION });
     });
   }

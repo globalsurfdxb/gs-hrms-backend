@@ -47,6 +47,15 @@ export class RequisitionResponse {
   @ApiProperty({ type: RefResponse }) department: RefResponse;
   @ApiProperty({ type: RefResponse, nullable: true, description: 'name = designation title' })
   designation: RefResponse | null;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'Senior Cloud Engineer',
+    description:
+      'BR-HIR-020: a new title asked for instead of a designation. Until approval designation is null; once ' +
+      'approved it stays set (show it as new) and designation is the one it became.',
+  })
+  proposedDesignation: string | null;
   @ApiProperty({ type: RefResponse, description: 'id is the location id, e.g. Dubai' }) location: RefResponse;
   @ApiProperty({ example: 2 }) positions: number;
   @ApiProperty({ enum: EMPLOYMENT_TYPES }) employmentType: (typeof EMPLOYMENT_TYPES)[number];
@@ -81,6 +90,7 @@ export class RequisitionResponse {
       company: r.company,
       department: r.department,
       designation: r.designation ? { id: r.designation.id, name: r.designation.title } : null,
+      proposedDesignation: r.proposedDesignation,
       location: r.location,
       positions: r.positions,
       employmentType: r.employmentType,

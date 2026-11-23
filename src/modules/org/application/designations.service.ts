@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { actorOf } from '../../../core/audit/audit.service.js';
+import { actorOf, type AuditActor } from '../../../core/audit/audit.service.js';
 import type { AuthUser } from '../../../core/auth/auth-user.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { AppError, conflict, notFound } from '../../../shared/errors/app-error.js';
 import type { CreateDesignationDto } from '../api/dto/create-designation.dto.js';
 import { DesignationResponse } from '../api/dto/designation.response.js';
@@ -31,6 +32,20 @@ export class DesignationsService {
     return DesignationResponse.from(
       await this.designations.create({ departmentId: dto.departmentId, title }, actorOf(user)),
     );
+  }
+
+  /** For the hiring module (BR-HIR-020): when a requisition that proposed a new designation is approved, the title
+      joins its department — or the existing one with that title (any case) is used. Runs in the approval's
+      transaction, so both commit together (a deliberate exception to "side effects through events": there is no
+      event bus yet and the two must not drift apart). The caller has already checked who may approve. */
+  ensureForApprovedRequisition(
+    tx: Prisma.TransactionClient,
+    departmentId: string,
+    title: string,
+    requisitionCode: string,
+    actor: AuditActor,
+  ): Promise<{ id: string; created: boolean }> {
+    return this.designations.ensure(tx, { departmentId, title: title.trim() }, `requisition ${requisitionCode}`, actor);
   }
 
   async update(id: string, dto: UpdateDesignationDto, user: AuthUser): Promise<DesignationResponse> {
