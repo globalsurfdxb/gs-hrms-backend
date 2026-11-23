@@ -20,6 +20,8 @@ describe('Requisitions — Team Lead scope (BR-HIR-019)', () => {
     title: 'Cloud Engineer',
     companyId: ref.gsit,
     departmentId: ref.own,
+    // BR-HIR-020: a new title fits any department, whichever designations it has.
+    proposedDesignation: 'Scope Test Role',
     locationId: 'Dubai',
     positions: 1,
     employmentType: 'FULL_TIME',
@@ -140,7 +142,11 @@ describe('Requisitions — Team Lead scope (BR-HIR-019)', () => {
       'requisition.hiring_manager_fixed',
     );
     // Moving it into their own department is allowed.
-    await patch('teamLead', r.id, { companyId: ref.gsit, departmentId: ref.own }).expect(200);
+    await patch('teamLead', r.id, {
+      companyId: ref.gsit,
+      departmentId: ref.own,
+      proposedDesignation: 'Scope Test Role',
+    }).expect(200);
     const submitted = (await post('teamLead', `/${r.id}/submit`).expect(200)).body;
     expect(submitted.status).toBe('PENDING_APPROVAL');
   });

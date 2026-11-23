@@ -21,6 +21,7 @@ export async function hiringWorld(app: INestApplication<App>) {
   const gsit = await prisma.company.findUniqueOrThrow({ where: { shortCode: 'GSIT' } });
   const dept = await prisma.department.findUniqueOrThrow({
     where: { companyId_name: { companyId: gsit.id, name: 'Cloud & Infra' } },
+    include: { designations: { orderBy: { title: 'asc' } } },
   });
 
   const future = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
@@ -34,6 +35,7 @@ export async function hiringWorld(app: INestApplication<App>) {
       title: 'Network Engineer',
       companyId: gsit.id,
       departmentId: dept.id,
+      designationId: dept.designations[0].id,
       locationId: 'Dubai',
       positions: 2,
       employmentType: 'FULL_TIME',

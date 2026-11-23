@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuditService, type AuditActor } from '../../../core/audit/audit.service.js';
 import { PrismaService } from '../../../core/database/prisma.service.js';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import type { DesignationUsage } from '../domain/department.rules.js';
 
 const DESIGNATION = { id: true, departmentId: true, title: true, updatedAt: true } as const;
@@ -60,6 +61,34 @@ export class DesignationsRepository {
       );
       return designation;
     });
+  }
+
+  /** The department's designation with this title (ignoring case), created when there is none. Runs inside the
+      caller's transaction, so it commits or rolls back with the change that needs it (requisition approval). */
+  async ensure(
+    tx: Prisma.TransactionClient,
+    data: { departmentId: string; title: string },
+    source: string,
+    actor: AuditActor,
+  ): Promise<{ id: string; created: boolean }> {
+    const found = await tx.designation.findFirst({
+      where: { departmentId: data.departmentId, title: { equals: data.title, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (found) return { id: found.id, created: false };
+    const { id } = await tx.designation.create({ data, select: { id: true } });
+    await this.audit.record(
+      {
+        actor,
+        module: 'Organization',
+        action: 'designation.created',
+        entityType: 'designation',
+        entityId: id,
+        after: { ...data, source },
+      },
+      tx,
+    );
+    return { id, created: true };
   }
 
   rename(id: string, before: string, title: string, actor: AuditActor) {

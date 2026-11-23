@@ -9092,6 +9092,12 @@
               }
             ]
           },
+          "proposedDesignation": {
+            "type": "string",
+            "nullable": true,
+            "example": "Senior Cloud Engineer",
+            "description": "BR-HIR-020: a new title asked for instead of a designation. Until approval designation is null; once approved it stays set (show it as new) and designation is the one it became."
+          },
           "location": {
             "description": "id is the location id, e.g. Dubai",
             "allOf": [
@@ -9192,6 +9198,7 @@
           "company",
           "department",
           "designation",
+          "proposedDesignation",
           "location",
           "positions",
           "employmentType",
@@ -9324,9 +9331,15 @@
             "description": "A department of that company"
           },
           "designationId": {
-            "type": "string",
+            "type": "object",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03",
-            "description": "A designation of that department"
+            "description": "A designation of that department — required when the department has any, unless proposedDesignation is sent"
+          },
+          "proposedDesignation": {
+            "type": "string",
+            "nullable": true,
+            "example": "Senior Cloud Engineer",
+            "description": "BR-HIR-020: a new title instead of designationId (not both), 2–80 characters, not already a designation of the department. It joins the department when the requisition is approved. On PATCH, null withdraws it; sending designationId withdraws it too."
           },
           "locationId": {
             "type": "string",
@@ -9422,9 +9435,15 @@
             "description": "A department of that company"
           },
           "designationId": {
-            "type": "string",
+            "type": "object",
             "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03",
-            "description": "A designation of that department"
+            "description": "A designation of that department — required when the department has any, unless proposedDesignation is sent"
+          },
+          "proposedDesignation": {
+            "type": "string",
+            "nullable": true,
+            "example": "Senior Cloud Engineer",
+            "description": "BR-HIR-020: a new title instead of designationId (not both), 2–80 characters, not already a designation of the department. It joins the department when the requisition is approved. On PATCH, null withdraws it; sending designationId withdraws it too."
           },
           "locationId": {
             "type": "string",

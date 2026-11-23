@@ -36,11 +36,26 @@ export class CreateRequisitionDto {
 
   @ApiPropertyOptional({
     example: '0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a03',
-    description: 'A designation of that department',
+    description:
+      'A designation of that department — required when the department has any, unless proposedDesignation is sent',
   })
   @IsOptional()
   @IsUUID()
-  designationId?: string;
+  designationId?: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: 'Senior Cloud Engineer',
+    description:
+      'BR-HIR-020: a new title instead of designationId (not both), 2–80 characters, not already a designation of ' +
+      'the department. It joins the department when the requisition is approved. On PATCH, null withdraws it; ' +
+      'sending designationId withdraws it too.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  proposedDesignation?: string | null;
 
   @ApiProperty({ example: 'Dubai', description: 'Location id; sets the currency' })
   @IsString()

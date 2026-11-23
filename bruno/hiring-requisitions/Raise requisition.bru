@@ -19,6 +19,7 @@ body:json {
     "title": "Network Engineer",
     "companyId": "{{reqCompanyId}}",
     "departmentId": "{{reqDepartmentId}}",
+    "designationId": "{{reqDesignationId}}",
     "locationId": "Dubai",
     "positions": 2,
     "employmentType": "FULL_TIME",
@@ -44,10 +45,15 @@ docs {
   `npx prisma studio`, tables companies / departments / employees):
   - `reqCompanyId` — e.g. GS IT
   - `reqDepartmentId` — a department of that company, e.g. Cloud & Infra
+  - `reqDesignationId` — a designation of that department (table designations), e.g. Cloud Engineer
   - `reqHiringManagerId` — an active employee, e.g. GS-058 (the `employeeId` from "Who am I")
 
   As a Team Lead (GS-058) only your own department or one you head can be used (see "Requisition form scope"), and
   you are the hiring manager: remove `hiringManagerId` or set it to yourself — anyone else is 403 (BR-HIR-019).
+
+  Designation (BR-HIR-003/020): required when the department has any. To ask for a new one instead, replace
+  `designationId` with `"proposedDesignation": "Senior Cloud Engineer"` (2–80 characters, not already in the
+  department); it joins the department when the requisition is fully approved.
 
   Saves the new id in `requisitionId` for the next requests.
 }

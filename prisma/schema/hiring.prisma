@@ -47,29 +47,32 @@ enum RequisitionStepStatus {
 
 /// A request for headcount. Only an APPROVED requisition can become a job.
 model Requisition {
-  id                 String               @id @default(uuid(7)) @db.Uuid
+  id                  String               @id @default(uuid(7)) @db.Uuid
   /// REQ-0001, from a sequence so concurrent saves never share a code (see the migration).
-  code               String               @unique @default(dbgenerated("('REQ-'::text || lpad((nextval('hiring_requisition_code_seq'::regclass))::text, 4, '0'::text))"))
-  title              String
-  companyId          String               @map("company_id") @db.Uuid
-  departmentId       String               @map("department_id") @db.Uuid
-  designationId      String?              @map("designation_id") @db.Uuid
-  locationId         String               @map("location_id")
-  positions          Int
-  employmentType     HiringEmploymentType @map("employment_type")
-  reason             RequisitionReason
-  replacesEmployeeId String?              @map("replaces_employee_id") @db.Uuid
+  code                String               @unique @default(dbgenerated("('REQ-'::text || lpad((nextval('hiring_requisition_code_seq'::regclass))::text, 4, '0'::text))"))
+  title               String
+  companyId           String               @map("company_id") @db.Uuid
+  departmentId        String               @map("department_id") @db.Uuid
+  designationId       String?              @map("designation_id") @db.Uuid
+  /// BR-HIR-020: a new title asked for instead of a designation; added to the department (and linked through
+  /// designationId) when the requisition is approved, and kept afterwards to show it was requested as new.
+  proposedDesignation String?              @map("proposed_designation") @db.VarChar(80)
+  locationId          String               @map("location_id")
+  positions           Int
+  employmentType      HiringEmploymentType @map("employment_type")
+  reason              RequisitionReason
+  replacesEmployeeId  String?              @map("replaces_employee_id") @db.Uuid
   /// Monthly (UAE) or yearly CTC (India) budget per position, in the location's currency.
-  budgetMin          Decimal              @map("budget_min") @db.Decimal(14, 2)
-  budgetMax          Decimal              @map("budget_max") @db.Decimal(14, 2)
-  currency           String               @db.Char(3)
-  targetStart        DateTime             @map("target_start") @db.Date
-  hiringManagerId    String               @map("hiring_manager_id") @db.Uuid
-  justification      String
-  status             RequisitionStatus    @default(DRAFT)
-  createdById        String               @map("created_by_id") @db.Uuid
-  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  budgetMin           Decimal              @map("budget_min") @db.Decimal(14, 2)
+  budgetMax           Decimal              @map("budget_max") @db.Decimal(14, 2)
+  currency            String               @db.Char(3)
+  targetStart         DateTime             @map("target_start") @db.Date
+  hiringManagerId     String               @map("hiring_manager_id") @db.Uuid
+  justification       String
+  status              RequisitionStatus    @default(DRAFT)
+  createdById         String               @map("created_by_id") @db.Uuid
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   company       Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   department    Department        @relation(fields: [departmentId], references: [id], onDelete: Restrict)

@@ -88,6 +88,50 @@ export function checkRequisitionInput(i: RequisitionInputCheck): void {
   }
 }
 
+/* ---------------------------------------------------------------------- designation (BR-HIR-003 / BR-HIR-020) */
+
+export const PROPOSED_DESIGNATION_MIN = 2;
+export const PROPOSED_DESIGNATION_MAX = 80;
+
+/** A proposed title as it will be stored: trimmed, inner spaces collapsed. */
+export const cleanDesignationTitle = (title: string): string => title.trim().replace(/\s+/g, ' ');
+
+export interface DesignationChoice {
+  designationId: string | null;
+  /** Already cleaned (cleanDesignationTitle). */
+  proposedDesignation: string | null;
+  /** Titles of the department's designations. */
+  departmentTitles: readonly string[];
+}
+
+/** BR-HIR-003: a designation of the department is required when it has any — or, BR-HIR-020, a new title is
+    proposed instead (never both), 2–80 characters and not already one of the department's, ignoring case. */
+export function checkDesignationChoice(c: DesignationChoice): void {
+  if (c.designationId && c.proposedDesignation !== null) {
+    throw new AppError('requisition.designation_conflict', 'Choose a designation or propose a new one, not both');
+  }
+  if (c.proposedDesignation !== null) {
+    const n = c.proposedDesignation.length;
+    if (n < PROPOSED_DESIGNATION_MIN || n > PROPOSED_DESIGNATION_MAX) {
+      throw new AppError(
+        'requisition.invalid_proposed_designation',
+        `The new designation must be ${PROPOSED_DESIGNATION_MIN}–${PROPOSED_DESIGNATION_MAX} characters`,
+      );
+    }
+    const wanted = c.proposedDesignation.toLowerCase();
+    if (c.departmentTitles.some((t) => t.toLowerCase() === wanted)) {
+      throw new AppError(
+        'requisition.designation_exists',
+        'That designation already exists in this department. Choose it from the list.',
+      );
+    }
+    return;
+  }
+  if (!c.designationId && c.departmentTitles.length > 0) {
+    throw new AppError('requisition.designation_required', 'Choose a designation');
+  }
+}
+
 /* ---------------------------------------------------------------------- approval chain */
 
 /** BR-HIR-001: a fresh chain on (re)submit. When the submitter is the hiring manager, their own step is approved
