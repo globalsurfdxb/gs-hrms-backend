@@ -1,0 +1,25 @@
+meta {
+  name: Cancel interview
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/hiring/interviews/{{interviewId}}/cancel
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Interviews → Edit. Only a SCHEDULED interview (409 otherwise).
+}
+
+tests {
+  test("cancelled (200) — or 409 when already completed/cancelled", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

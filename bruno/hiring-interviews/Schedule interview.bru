@@ -1,0 +1,47 @@
+meta {
+  name: Schedule interview
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/hiring/interviews
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "applicationId": "{{applicationId}}",
+    "round": "TECHNICAL",
+    "date": "2027-01-15",
+    "time": "10:00",
+    "durationMin": 60,
+    "mode": "TEAMS",
+    "panelIds": ["{{panelistId}}"],
+    "link": "https://teams.microsoft.com/l/meetup-join/example",
+    "notes": "Created from the Bruno collection"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setEnvVar("interviewId", res.body.id);
+}
+
+docs {
+  Needs Interviews → Add (BR-HIR-010). Time in the job location's local time, not in the past; panel = active
+  employees (1–10); link https only. A SCREENING_CALL / TECHNICAL / HR round moves the candidate forward to that
+  stage (never back); FINAL moves nothing. 409 when the candidate left the pipeline or the job is closed/filled.
+  Saves the id in interviewId.
+}
+
+tests {
+  test("scheduled (201) — or 409 when the candidate is no longer in the pipeline", function () {
+    expect([201, 403, 404, 409]).to.include(res.status);
+    if (res.status === 201) expect(res.body.status).to.equal("SCHEDULED");
+  });
+}

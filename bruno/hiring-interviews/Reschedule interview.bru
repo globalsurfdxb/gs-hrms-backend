@@ -1,0 +1,34 @@
+meta {
+  name: Reschedule interview
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/hiring/interviews/{{interviewId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "date": "2027-01-16",
+    "time": "14:30",
+    "durationMin": 45
+  }
+}
+
+docs {
+  Needs Interviews → Edit. New date and time (required) and optionally durationMin, mode, panelIds, link
+  ("" removes it). The round stays. Only a SCHEDULED interview (409 otherwise); counts the move.
+}
+
+tests {
+  test("rescheduled (200) — or 409 when no longer scheduled", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

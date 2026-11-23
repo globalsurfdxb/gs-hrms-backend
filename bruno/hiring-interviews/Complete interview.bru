@@ -1,0 +1,25 @@
+meta {
+  name: Complete interview
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/hiring/interviews/{{interviewId}}/complete
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+docs {
+  Needs Interviews → Edit. Only a SCHEDULED interview (409 otherwise).
+}
+
+tests {
+  test("completed (200) — or 409 when already completed/cancelled", function () {
+    expect([200, 409]).to.include(res.status);
+  });
+}

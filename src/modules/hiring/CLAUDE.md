@@ -41,6 +41,11 @@ Before each step, check the frontend for changes since the commit noted in the s
   see that candidate. Applications only to OPEN jobs. Pipeline
   rules live in `domain/application.rules.ts`; a SENT offer blocks exits and leaving OFFER (`offerSent`, wired to
   offers in step 5). Notes and stage history are append-only by trigger.
+- Interviews (step 4, BR-HIR-010, `domain/interview.rules.ts`): typed in the location's local time, stored as
+  instants (`shared/time/wall-clock.ts`); scoped through the application (BR-HIR-022); scheduling moves the candidate
+  forward in the same transaction (`ApplicationsRepository.applyChange`); a panel clash is a warning, never a refusal,
+  and never reveals the other interview. `/me/interviews` and `/me/referrals` are `@SignedIn` and always about the
+  caller — no contact details, salary or stage history there.
 - Salary (current/expected/offered) only for full hiring access + that job's hiring manager and recruiter — omit the fields
   otherwise; never in audit amounts or logs (spec Q8); a view of a record with salary writes an audit row.
 - Pre-offer documents (step 5a) gate offer creation (VERIFIED or WAIVED); their files are identity documents —

@@ -6537,6 +6537,767 @@
           "Hiring · Pipeline"
         ]
       }
+    },
+    "/api/hiring/interviews": {
+      "get": {
+        "description": "Needs Interviews → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. when=upcoming (default: scheduled and not yet over, soonest first), past (completed, cancelled or over, latest first) or all; filter by location, job or application.",
+        "operationId": "InterviewsController_list",
+        "parameters": [
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "upcoming = scheduled and not yet over (soonest first); past = the rest (latest first)",
+            "schema": {
+              "default": "upcoming",
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobId",
+            "required": false,
+            "in": "query",
+            "description": "One job’s interviews",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applicationId",
+            "required": false,
+            "in": "query",
+            "description": "One application’s interviews (candidate page)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List interviews",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      },
+      "post": {
+        "description": "Needs Interviews → Add. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. BR-HIR-010: only for a candidate still in the pipeline on a job that is not closed or filled (409); at least one active panel member; link https only. Times are typed in the job location’s local time (Dubai or Kochi) and must not be in the past. A screening call, technical or HR round moves the candidate forward to that stage (never back), with a stage-history line.",
+        "operationId": "InterviewsController_schedule",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleInterviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Schedule an interview",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      }
+    },
+    "/api/hiring/interviews/clashes": {
+      "get": {
+        "description": "Needs Interviews → Add. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. Which of the given panelists already have a scheduled interview overlapping this time (BR-HIR-010) — names only, never the other interview. A warning for the form; scheduling is not refused. When rescheduling, pass excludeId.",
+        "operationId": "InterviewsController_clashes",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "query",
+            "description": "The application being scheduled (its location gives the timezone)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "2026-12-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "10:00",
+              "type": "string"
+            }
+          },
+          {
+            "name": "durationMin",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": 60,
+              "type": "number",
+              "enum": [
+                30,
+                45,
+                60,
+                90,
+                120
+              ]
+            }
+          },
+          {
+            "name": "panelIds",
+            "required": true,
+            "in": "query",
+            "description": "Comma-separated employee ids",
+            "schema": {
+              "example": "id1,id2",
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludeId",
+            "required": false,
+            "in": "query",
+            "description": "When rescheduling: the interview itself, so it does not clash with itself",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewClashesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Check the panel for clashes",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      }
+    },
+    "/api/hiring/interviews/{id}": {
+      "get": {
+        "description": "Needs Interviews → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404.",
+        "operationId": "InterviewsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get one interview",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      },
+      "put": {
+        "description": "Needs Interviews → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. A new date and time, and optionally duration, mode, panel and link. The round stays. Only a SCHEDULED interview of a candidate still in the pipeline (409). Times are typed in the job location’s local time (Dubai or Kochi) and must not be in the past. Counts the move.",
+        "operationId": "InterviewsController_reschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleInterviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reschedule an interview",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      }
+    },
+    "/api/hiring/interviews/{id}/complete": {
+      "post": {
+        "description": "Needs Interviews → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. Only a SCHEDULED interview (409 otherwise).",
+        "operationId": "InterviewsController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Mark an interview completed",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      }
+    },
+    "/api/hiring/interviews/{id}/cancel": {
+      "post": {
+        "description": "Needs Interviews → Edit. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any interview; otherwise only those on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022) — anything else is 404. Only a SCHEDULED interview (409 otherwise).",
+        "operationId": "InterviewsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found — or the caller is not allowed to know it exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — duplicate value, record in use, or an invalid status change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cancel an interview",
+        "tags": [
+          "Hiring · Interviews"
+        ]
+      }
+    },
+    "/api/me/interviews": {
+      "get": {
+        "description": "Any signed-in employee. The interviews you are on the panel for, whatever your role: candidate name, job title, round, local time, mode, link, notes and the rest of the panel. No candidate contact details, salary or stage history.",
+        "operationId": "MyHiringController_interviews",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyInterviewsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "My interviews",
+        "tags": [
+          "Hiring · My Space"
+        ]
+      }
+    },
+    "/api/me/referrals": {
+      "get": {
+        "description": "Any signed-in employee. Candidates HR recorded with you as the referrer (source Employee Referral), one row per job with the status in plain words only (RECEIVED, IN_PROCESS, OFFER_STAGE, HIRED, NOT_SELECTED, CLOSED), and the open roles that take referrals. Nothing is public: tell HR about the person you refer.",
+        "operationId": "MyHiringController_referrals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReferralsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "My referrals",
+        "tags": [
+          "Hiring · My Space"
+        ]
+      }
     }
   },
   "info": {
@@ -11223,6 +11984,617 @@
         },
         "required": [
           "exit"
+        ]
+      },
+      "InterviewApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string",
+            "example": "TECHNICAL_INTERVIEW"
+          },
+          "exit": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "stage",
+          "exit"
+        ]
+      },
+      "InterviewJobResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title"
+        ]
+      },
+      "InterviewViewerResponse": {
+        "type": "object",
+        "properties": {
+          "canEdit": {
+            "type": "boolean",
+            "description": "Reschedule, complete or cancel: Interviews → Edit and still SCHEDULED"
+          }
+        },
+        "required": [
+          "canEdit"
+        ]
+      },
+      "InterviewResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "Local day at the location"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00",
+            "description": "Local time at the location (24-hour)"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Dubai"
+          },
+          "startsAt": {
+            "type": "string",
+            "example": "2026-12-01T06:00:00.000Z"
+          },
+          "endsAt": {
+            "type": "string",
+            "example": "2026-12-01T07:00:00.000Z"
+          },
+          "durationMin": {
+            "type": "number",
+            "enum": [
+              30,
+              45,
+              60,
+              90,
+              120
+            ],
+            "example": 60
+          },
+          "id": {
+            "type": "string"
+          },
+          "application": {
+            "$ref": "#/components/schemas/InterviewApplicationResponse"
+          },
+          "candidate": {
+            "description": "The candidate (id and name)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "job": {
+            "$ref": "#/components/schemas/InterviewJobResponse"
+          },
+          "location": {
+            "description": "id is the location id, e.g. Dubai",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefResponse"
+              }
+            ]
+          },
+          "round": {
+            "type": "string",
+            "enum": [
+              "SCREENING_CALL",
+              "TECHNICAL",
+              "HR",
+              "FINAL"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "IN_PERSON",
+              "TEAMS",
+              "PHONE"
+            ]
+          },
+          "panel": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRefResponse"
+            }
+          },
+          "link": {
+            "type": "string",
+            "example": "https://teams.microsoft.com/l/meetup-join/…",
+            "description": "Empty when none"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Focus on firewall design."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "rescheduleCount": {
+            "type": "number",
+            "example": 0,
+            "description": "How many times it was moved"
+          },
+          "scheduledBy": {
+            "$ref": "#/components/schemas/PersonRefResponse"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/InterviewViewerResponse"
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "timezone",
+          "startsAt",
+          "endsAt",
+          "durationMin",
+          "id",
+          "application",
+          "candidate",
+          "job",
+          "location",
+          "round",
+          "mode",
+          "panel",
+          "link",
+          "notes",
+          "status",
+          "rescheduleCount",
+          "scheduledBy",
+          "createdAt",
+          "updatedAt",
+          "viewer"
+        ]
+      },
+      "InterviewListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InterviewResponse"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "InterviewClashesResponse": {
+        "type": "object",
+        "properties": {
+          "clashes": {
+            "description": "Panelists who already have a scheduled interview overlapping this time (a warning, not a refusal)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRefResponse"
+            }
+          }
+        },
+        "required": [
+          "clashes"
+        ]
+      },
+      "ScheduleInterviewDto": {
+        "type": "object",
+        "properties": {
+          "applicationId": {
+            "type": "string",
+            "example": "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a10",
+            "description": "An active application"
+          },
+          "round": {
+            "type": "string",
+            "enum": [
+              "SCREENING_CALL",
+              "TECHNICAL",
+              "HR",
+              "FINAL"
+            ],
+            "example": "TECHNICAL",
+            "description": "Moves the candidate forward to SCREENING / TECHNICAL_INTERVIEW / HR_INTERVIEW; FINAL moves nothing"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "YYYY-MM-DD in the location’s timezone"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00",
+            "description": "Local time of the job’s location (Dubai or Kochi), 24-hour HH:MM"
+          },
+          "durationMin": {
+            "type": "number",
+            "enum": [
+              30,
+              45,
+              60,
+              90,
+              120
+            ],
+            "example": 60,
+            "description": "Minutes"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "IN_PERSON",
+              "TEAMS",
+              "PHONE"
+            ],
+            "example": "TEAMS"
+          },
+          "panelIds": {
+            "example": [
+              "0199f3a2-7c1e-7b40-9a55-2f6c7e9d1a05"
+            ],
+            "description": "Active employees",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link": {
+            "type": "string",
+            "example": "https://teams.microsoft.com/l/meetup-join/…",
+            "description": "https only"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Focus on firewall design.",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "applicationId",
+          "round",
+          "date",
+          "time",
+          "durationMin",
+          "mode",
+          "panelIds"
+        ]
+      },
+      "RescheduleInterviewDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-12-02",
+            "description": "YYYY-MM-DD in the location’s timezone"
+          },
+          "time": {
+            "type": "string",
+            "example": "14:30",
+            "description": "Local time of the job’s location (Dubai or Kochi), 24-hour HH:MM"
+          },
+          "durationMin": {
+            "type": "number",
+            "enum": [
+              30,
+              45,
+              60,
+              90,
+              120
+            ],
+            "example": 45
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "IN_PERSON",
+              "TEAMS",
+              "PHONE"
+            ],
+            "example": "IN_PERSON"
+          },
+          "panelIds": {
+            "description": "Replaces the panel",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link": {
+            "type": "string",
+            "example": "",
+            "description": "https only; empty string removes it"
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ]
+      },
+      "MyInterviewResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "Local day at the location"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00",
+            "description": "Local time at the location (24-hour)"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Dubai"
+          },
+          "startsAt": {
+            "type": "string",
+            "example": "2026-12-01T06:00:00.000Z"
+          },
+          "endsAt": {
+            "type": "string",
+            "example": "2026-12-01T07:00:00.000Z"
+          },
+          "durationMin": {
+            "type": "number",
+            "enum": [
+              30,
+              45,
+              60,
+              90,
+              120
+            ],
+            "example": 60
+          },
+          "id": {
+            "type": "string"
+          },
+          "candidateName": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "jobTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "location": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "round": {
+            "type": "string",
+            "enum": [
+              "SCREENING_CALL",
+              "TECHNICAL",
+              "HR",
+              "FINAL"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "IN_PERSON",
+              "TEAMS",
+              "PHONE"
+            ]
+          },
+          "otherPanel": {
+            "description": "The other panel members",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRefResponse"
+            }
+          },
+          "link": {
+            "type": "string",
+            "description": "Empty when none"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "timezone",
+          "startsAt",
+          "endsAt",
+          "durationMin",
+          "id",
+          "candidateName",
+          "jobTitle",
+          "location",
+          "round",
+          "mode",
+          "otherPanel",
+          "link",
+          "notes",
+          "status"
+        ]
+      },
+      "MyInterviewsResponse": {
+        "type": "object",
+        "properties": {
+          "upcoming": {
+            "description": "Scheduled and not yet over, soonest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyInterviewResponse"
+            }
+          },
+          "past": {
+            "description": "Completed, cancelled or already over, latest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyInterviewResponse"
+            }
+          }
+        },
+        "required": [
+          "upcoming",
+          "past"
+        ]
+      },
+      "ReferralRoleResponse": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "JOB-0001"
+          },
+          "title": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "department": {
+            "type": "string",
+            "example": "Cloud & Infra"
+          },
+          "location": {
+            "$ref": "#/components/schemas/RefResponse"
+          },
+          "closingDate": {
+            "type": "string",
+            "example": "2026-12-31"
+          }
+        },
+        "required": [
+          "jobId",
+          "code",
+          "title",
+          "department",
+          "location",
+          "closingDate"
+        ]
+      },
+      "MyReferralResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The application id"
+          },
+          "candidateName": {
+            "type": "string",
+            "example": "Priya Nair"
+          },
+          "jobTitle": {
+            "type": "string",
+            "example": "Network Engineer"
+          },
+          "referredOn": {
+            "type": "string",
+            "example": "2026-11-20",
+            "description": "The day the application was added"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECEIVED",
+              "IN_PROCESS",
+              "OFFER_STAGE",
+              "HIRED",
+              "NOT_SELECTED",
+              "CLOSED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "candidateName",
+          "jobTitle",
+          "referredOn",
+          "status"
+        ]
+      },
+      "MyReferralsResponse": {
+        "type": "object",
+        "properties": {
+          "openRoles": {
+            "description": "Open jobs that take referrals and have not passed their closing date",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReferralRoleResponse"
+            }
+          },
+          "referrals": {
+            "description": "One row per application of a candidate you referred",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyReferralResponse"
+            }
+          },
+          "hired": {
+            "type": "number",
+            "example": 1,
+            "description": "Referred candidates who were hired"
+          }
+        },
+        "required": [
+          "openRoles",
+          "referrals",
+          "hired"
         ]
       }
     }

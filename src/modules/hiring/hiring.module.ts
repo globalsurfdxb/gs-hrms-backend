@@ -2,21 +2,32 @@ import { Module } from '@nestjs/common';
 import { OrgModule } from '../org/org.public.js';
 import { ApplicationsController } from './api/applications.controller.js';
 import { CandidatesController } from './api/candidates.controller.js';
+import { InterviewsController } from './api/interviews.controller.js';
 import { JobsController } from './api/jobs.controller.js';
+import { MyHiringController } from './api/my-hiring.controller.js';
 import { RequisitionsController } from './api/requisitions.controller.js';
 import { ApplicationsService } from './application/applications.service.js';
 import { CandidatesService } from './application/candidates.service.js';
+import { InterviewsService } from './application/interviews.service.js';
 import { JobsService } from './application/jobs.service.js';
 import { RequisitionsService } from './application/requisitions.service.js';
 import { ApplicationsRepository } from './infrastructure/applications.repository.js';
 import { CandidatesRepository } from './infrastructure/candidates.repository.js';
+import { InterviewsRepository } from './infrastructure/interviews.repository.js';
 import { JobsRepository } from './infrastructure/jobs.repository.js';
 import { RequisitionsRepository } from './infrastructure/requisitions.repository.js';
 
-// Built step by step — see docs/modules/hiring.md §11. Step 1: requisitions. Step 2: jobs. Step 3: candidates and pipeline.
+// Built step by step — see docs/modules/hiring.md §11. Step 1: requisitions. Step 2: jobs. Step 3: candidates and pipeline. Step 4: interviews.
 @Module({
   imports: [OrgModule],
-  controllers: [RequisitionsController, JobsController, CandidatesController, ApplicationsController],
+  controllers: [
+    RequisitionsController,
+    JobsController,
+    CandidatesController,
+    ApplicationsController,
+    InterviewsController,
+    MyHiringController,
+  ],
   providers: [
     RequisitionsService,
     RequisitionsRepository,
@@ -26,6 +37,8 @@ import { RequisitionsRepository } from './infrastructure/requisitions.repository
     CandidatesRepository,
     ApplicationsService,
     ApplicationsRepository,
+    InterviewsService,
+    InterviewsRepository,
   ],
 })
 export class HiringModule {}
