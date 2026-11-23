@@ -85,11 +85,37 @@ describe('Requisitions — Team Lead scope (BR-HIR-019)', () => {
     expect(headed.locations.map((l: { id: string }) => l.id)).toEqual(['Dubai', 'Kochi']);
     expect(tl.departments.some((d: { id: string }) => d.id === ref.sales)).toBe(false);
 
+    expect(tl.hiringManagers).toEqual([]);
+
     const hr = (await as.hr.get('/api/hiring/requisitions/scope').expect(200)).body;
-    expect(hr).toEqual({ restricted: false, hiringManager: null, departments: [], defaultLocationId: null });
+    expect(hr).toMatchObject({ restricted: false, hiringManager: null, departments: [], defaultLocationId: null });
+    // Who may be the hiring manager: Requisition approvals → Edit, by permission (BR-HIR-003).
+    const managers = hr.hiringManagers.map((p: { id: string }) => p.id);
+    expect(managers).toEqual(expect.arrayContaining([id.teamLead, id.hr, id.superAdmin]));
+    expect(managers).not.toContain(id.employee);
+    expect(managers).not.toContain(id.recruiter);
+    expect(Object.keys(hr.hiringManagers[0]).sort()).toEqual(['employeeCode', 'id', 'name']);
 
     await as.employee.get('/api/hiring/requisitions/scope').expect(403);
     await as.recruiter.get('/api/hiring/requisitions/scope').expect(403);
+  });
+
+  it('lists a department’s people for the replacement picker, within the requester’s scope', async () => {
+    const people = (path: string) => as.teamLead.get(`/api/hiring/requisitions/departments/${path}/people`);
+    const own = (await people(ref.own).expect(200)).body;
+    expect(own).toContainEqual(
+      expect.objectContaining({ id: id.teamLead, employeeCode: PERSONA.teamLead, status: 'ACTIVE' }),
+    );
+    expect(Object.keys(own[0]).sort()).toEqual(['designation', 'employeeCode', 'id', 'name', 'status']);
+    await people(ref.headed).expect(200);
+    // Not their department: the same 404 as an unknown one.
+    expect((await people(ref.sales).expect(404)).body.code).toBe('department.not_found');
+
+    await as.hr.get(`/api/hiring/requisitions/departments/${ref.sales}/people`).expect(200);
+    await as.hr.get('/api/hiring/requisitions/departments/01999999-0000-7000-8000-000000000000/people').expect(404);
+    await as.hr.get('/api/hiring/requisitions/departments/not-a-uuid/people').expect(400);
+    await as.employee.get(`/api/hiring/requisitions/departments/${ref.own}/people`).expect(403);
+    await as.recruiter.get(`/api/hiring/requisitions/departments/${ref.own}/people`).expect(403);
   });
 
   it('lets a Team Lead raise for their own department and one they head, as hiring manager', async () => {

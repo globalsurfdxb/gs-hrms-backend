@@ -1,0 +1,26 @@
+meta {
+  name: Department people
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/hiring/requisitions/departments/{{reqDepartmentId}}/people
+  body: none
+  auth: none
+}
+
+docs {
+  Needs Requisitions → Add. Everyone in a department, whatever their status (INACTIVE = has left), for the
+  "Employee being replaced" picker on a Replacement requisition. Name, employee code, designation and status only.
+
+  Without full hiring access (GS-058 Team Lead) only your own department or one you head; any other is 404.
+  Set reqDepartmentId (a department id, e.g. from List departments) first.
+}
+
+tests {
+  test("people (200) — or 404 outside your departments", function () {
+    expect([200, 403, 404]).to.include(res.status);
+    if (res.status === 200) expect(res.body).to.be.an("array");
+  });
+}

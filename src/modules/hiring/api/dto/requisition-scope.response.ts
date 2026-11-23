@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PersonRefResponse, RefResponse } from './common.response.js';
+import { PersonRefResponse, RefResponse, person } from './common.response.js';
 
 /** A department the caller may raise a requisition for, with the locations it can be based in. */
 export class RequesterDepartmentResponse {
@@ -29,6 +29,13 @@ export class RequisitionScopeResponse {
   })
   hiringManager: PersonRefResponse | null;
   @ApiProperty({
+    type: [PersonRefResponse],
+    description:
+      'Who may be chosen as hiring manager when not restricted: active employees whose role has Requisition ' +
+      'approvals → Edit (BR-HIR-003), by name. Empty when restricted (you are the hiring manager).',
+  })
+  hiringManagers: PersonRefResponse[];
+  @ApiProperty({
     type: [RequesterDepartmentResponse],
     description:
       'Their own department first, then the departments they head. Empty when restricted means none is set up.',
@@ -41,4 +48,24 @@ export class RequisitionScopeResponse {
     description: 'Location to preselect: the caller’s own when the department works there',
   })
   defaultLocationId: string | null;
+}
+
+/** Someone in a department, for the "Employee being replaced" picker. */
+export class ReplaceablePersonResponse extends PersonRefResponse {
+  @ApiProperty({ type: String, nullable: true, example: 'Network Engineer' }) designation: string | null;
+  @ApiProperty({ enum: ['ONBOARDING', 'ACTIVE', 'OFFBOARDING', 'INACTIVE'], description: 'INACTIVE = has left' })
+  status: 'ONBOARDING' | 'ACTIVE' | 'OFFBOARDING' | 'INACTIVE';
+
+  static from(
+    this: void,
+    e: {
+      id: string;
+      employeeCode: string;
+      fullName: string;
+      employmentStatus: ReplaceablePersonResponse['status'];
+      designation: { title: string } | null;
+    },
+  ): ReplaceablePersonResponse {
+    return { ...person(e), designation: e.designation?.title ?? null, status: e.employmentStatus };
+  }
 }

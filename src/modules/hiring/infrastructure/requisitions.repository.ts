@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuditService, type AuditActor } from '../../../core/audit/audit.service.js';
 import { PrismaService } from '../../../core/database/prisma.service.js';
+import { PERMISSIONS, permKey } from '../../../core/iam/permission-catalog.js';
 import type {
   HiringEmploymentType,
   Prisma,
@@ -191,6 +192,35 @@ export class RequisitionsRepository {
 
   employee(id: string) {
     return this.prisma.employee.findUnique({ where: { id }, select: { id: true, employmentStatus: true } });
+  }
+
+  /** Everyone who may be chosen as hiring manager (BR-HIR-003, Q11): active, and their role grants Requisition
+      approvals → Edit — by permission, so custom roles qualify. For the requisition form. */
+  hiringManagers() {
+    const feature = PERMISSIONS.hiring.requisitionApprovals;
+    return this.prisma.employee.findMany({
+      where: {
+        employmentStatus: 'ACTIVE',
+        role: {
+          AND: [
+            { permissions: { some: { key: feature } } },
+            { permissions: { some: { key: permKey(feature, 'edit') } } },
+          ],
+        },
+      },
+      select: PERSON.select,
+      orderBy: [{ fullName: 'asc' }, { employeeCode: 'asc' }],
+    });
+  }
+
+  /** People of one department, whatever their status (someone who left is the usual one being replaced). For the
+      "Employee being replaced" picker. */
+  departmentPeople(departmentId: string) {
+    return this.prisma.employee.findMany({
+      where: { departmentId },
+      select: { ...PERSON.select, employmentStatus: true, designation: { select: { title: true } } },
+      orderBy: [{ fullName: 'asc' }, { employeeCode: 'asc' }],
+    });
   }
 
   /** A hiring manager candidate with the permission keys of their role (BR-HIR-003: they must be able to decide). */

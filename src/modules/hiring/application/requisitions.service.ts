@@ -11,7 +11,7 @@ import type { DecideRequisitionDto } from '../api/dto/decide-requisition.dto.js'
 import type { ListRequisitionsQuery } from '../api/dto/list-requisitions.query.js';
 import { person } from '../api/dto/common.response.js';
 import { RequisitionListResponse, RequisitionResponse } from '../api/dto/requisition.response.js';
-import type { RequisitionScopeResponse } from '../api/dto/requisition-scope.response.js';
+import { ReplaceablePersonResponse, type RequisitionScopeResponse } from '../api/dto/requisition-scope.response.js';
 import type { UpdateRequisitionDto } from '../api/dto/update-requisition.dto.js';
 import {
   assertEditable,
@@ -72,9 +72,13 @@ export class RequisitionsService {
 
   /** BR-HIR-019: what the requisition form may offer the caller. */
   async scope(user: AuthUser): Promise<RequisitionScopeResponse> {
-    if (seesAll(user)) return { restricted: false, hiringManager: null, departments: [], defaultLocationId: null };
+    if (seesAll(user)) {
+      const hiringManagers = (await this.requisitions.hiringManagers()).map(person);
+      return { restricted: false, hiringManager: null, hiringManagers, departments: [], defaultLocationId: null };
+    }
     const s = await this.requisitions.requesterScope(user.employeeId);
-    if (!s) return { restricted: true, hiringManager: null, departments: [], defaultLocationId: null };
+    if (!s)
+      return { restricted: true, hiringManager: null, hiringManagers: [], departments: [], defaultLocationId: null };
     const departments = s.departments.map((d) => ({
       id: d.id,
       name: d.name,
@@ -87,7 +91,17 @@ export class RequisitionsService {
       : first.locations.some((l) => l.id === s.location.id)
         ? s.location.id
         : first.locations[0].id;
-    return { restricted: true, hiringManager: person(s.me), departments, defaultLocationId };
+    return { restricted: true, hiringManager: person(s.me), hiringManagers: [], departments, defaultLocationId };
+  }
+
+  /** People of a department for the "Employee being replaced" picker. Without full access only a department the
+      caller may raise for (BR-HIR-019); any other is a 404, as is an unknown one. */
+  async departmentPeople(departmentId: string, user: AuthUser): Promise<ReplaceablePersonResponse[]> {
+    const allowed = seesAll(user)
+      ? !!(await this.requisitions.department(departmentId))
+      : !!(await this.requisitions.requesterScope(user.employeeId))?.departments.some((d) => d.id === departmentId);
+    if (!allowed) throw notFound('department');
+    return (await this.requisitions.departmentPeople(departmentId)).map(ReplaceablePersonResponse.from);
   }
 
   async create(dto: CreateRequisitionDto, user: AuthUser): Promise<RequisitionResponse> {

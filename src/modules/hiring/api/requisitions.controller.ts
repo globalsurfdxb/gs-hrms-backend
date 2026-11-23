@@ -10,7 +10,7 @@ import { CreateRequisitionDto } from './dto/create-requisition.dto.js';
 import { DecideRequisitionDto } from './dto/decide-requisition.dto.js';
 import { ListRequisitionsQuery } from './dto/list-requisitions.query.js';
 import { RequisitionListResponse, RequisitionResponse } from './dto/requisition.response.js';
-import { RequisitionScopeResponse } from './dto/requisition-scope.response.js';
+import { ReplaceablePersonResponse, RequisitionScopeResponse } from './dto/requisition-scope.response.js';
 import { UpdateRequisitionDto } from './dto/update-requisition.dto.js';
 
 const FEATURE = PERMISSIONS.hiring.requisitions;
@@ -48,12 +48,29 @@ export class RequisitionsController {
       'Needs Requisitions → Add. With full hiring access (Super Admin, HR, Talent Acquisition Manager) restricted=false: ' +
       'choose any active company, department and hiring manager. Otherwise (Team Lead, Office Admin by default) ' +
       'restricted=true: only your own department and the departments you head, each with its company and the ' +
-      'locations it works in; you are the hiring manager (BR-HIR-019).',
+      'locations it works in; you are the hiring manager (BR-HIR-019). Unrestricted callers also get ' +
+      '`hiringManagers`: who may be chosen as hiring manager (active, Requisition approvals → Edit).',
   })
   @ApiOkResponse({ type: RequisitionScopeResponse })
   @ApiErrors(401, 403)
   scope(@CurrentUser() user: AuthUser) {
     return this.requisitions.scope(user);
+  }
+
+  @RequirePermission(FEATURE, 'add')
+  @Get('departments/:departmentId/people')
+  @ApiOperation({
+    summary: 'People of a department (Employee being replaced)',
+    description:
+      'Needs Requisitions → Add. For the "Employee being replaced" picker on a Replacement requisition: everyone in ' +
+      'the department whatever their status (INACTIVE = has left), with designation, by name. Without full hiring ' +
+      'access only a department you may raise for (your own or one you head, BR-HIR-019); another, or an unknown ' +
+      'one, is 404. No contact details.',
+  })
+  @ApiOkResponse({ type: [ReplaceablePersonResponse] })
+  @ApiErrors(400, 401, 403, 404)
+  departmentPeople(@Param('departmentId', ParseUUIDPipe) departmentId: string, @CurrentUser() user: AuthUser) {
+    return this.requisitions.departmentPeople(departmentId, user);
   }
 
   @RequirePermission(FEATURE)

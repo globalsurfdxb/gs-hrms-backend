@@ -182,10 +182,15 @@ export class InterviewsRepository {
     });
   }
 
-  /** Open jobs that take referrals, for "Roles you can refer for". */
-  referralJobs() {
+  /** Open jobs that take referrals, for "Roles you can refer for": the newest 200 that may still be open. A day of
+      margin covers every location's "today"; the service applies each location's own date. */
+  referralJobs(now = new Date()) {
     return this.prisma.job.findMany({
-      where: { status: 'OPEN', referralEligible: true },
+      where: {
+        status: 'OPEN',
+        referralEligible: true,
+        closingDate: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)) },
+      },
       select: {
         id: true,
         code: true,
@@ -198,7 +203,7 @@ export class InterviewsRepository {
           },
         },
       },
-      orderBy: { closingDate: 'asc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 200,
     });
   }

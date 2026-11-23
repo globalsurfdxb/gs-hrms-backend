@@ -172,7 +172,7 @@ export class InterviewsService {
   async referrals(user: AuthUser, now = new Date()): Promise<MyReferralsResponse> {
     const [candidates, jobs] = await Promise.all([
       this.interviews.referralsOf(user.employeeId),
-      this.interviews.referralJobs(),
+      this.interviews.referralJobs(now),
     ]);
     const referrals = candidates.flatMap((c) =>
       c.applications.map((a) => ({
@@ -186,6 +186,8 @@ export class InterviewsService {
     return {
       openRoles: jobs
         .filter((j) => dayOf(j.closingDate) >= todayIn(j.requisition.location.timezone, now))
+        // Closing soonest first.
+        .sort((a, b) => a.closingDate.getTime() - b.closingDate.getTime() || a.code.localeCompare(b.code))
         .map((j) => ({
           jobId: j.id,
           code: j.code,
