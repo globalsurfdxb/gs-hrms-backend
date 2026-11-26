@@ -158,7 +158,10 @@ export class CandidatesService {
     if (!job) throw notFound('job');
     assertCanApply(job, await this.applications.exists(candidateId, job.id));
     const created = await this.applications.create(candidateId, job.id, actorOf(user));
-    return ApplicationDetailResponse.fromDetail(created, { canEdit: canEdit(user) });
+    return ApplicationDetailResponse.fromDetail(created, {
+      canEdit: canEdit(user),
+      seesInterviews: hasPermission(user.permissions, PERMISSIONS.hiring.interviews),
+    });
   }
 
   async setTags(id: string, dto: CandidateTagsDto, user: AuthUser): Promise<CandidateDetailResponse> {

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import type { App } from 'supertest/types.js';
 import { createTestApp } from '../app.js';
@@ -35,6 +35,46 @@ describe('Pipeline API', () => {
     const listed = (await w.as.hr.get('/api/hiring/jobs?locationId=Dubai&pageSize=100').expect(200)).body.items;
     const row = listed.find((j: { id: string }) => j.id === job.id);
     expect(row?.candidates).toEqual({ active: 1, total: 2 });
+  });
+
+  it('gives each pipeline row the notice period, city and next scheduled interview', async () => {
+    const { job, appId } = await onNewJob({ currentCity: 'Sharjah', noticeDays: 45 });
+    const row = async () =>
+      (await w.as.hr.get(`/api/hiring/jobs/${job.id}/applications`).expect(200)).body.items.find(
+        (a: { id: string }) => a.id === appId,
+      );
+    expect(await row()).toMatchObject({ candidate: { noticeDays: 45, currentCity: 'Sharjah' }, nextInterview: null });
+
+    // Two interviews: the earlier one is next, in the location's local time.
+    const day = new Date(Date.now() + randomInt(200, 2000) * 86_400_000).toISOString().slice(0, 10);
+    const schedule = (time: string, round: string) =>
+      w
+        .send('hr', 'post', '/interviews', {
+          applicationId: appId,
+          round,
+          date: day,
+          time,
+          durationMin: 60,
+          mode: 'TEAMS',
+          panelIds: [w.id.teamLead],
+        })
+        .expect(201);
+    await schedule('15:00', 'HR');
+    const first = (await schedule('09:30', 'TECHNICAL')).body;
+    expect((await row()).nextInterview).toEqual({
+      id: first.id,
+      round: 'TECHNICAL',
+      date: day,
+      time: '09:30',
+      timezone: 'Asia/Dubai',
+      startsAt: `${day}T05:30:00.000Z`,
+    });
+    // A cancelled interview is no longer next.
+    await w.send('hr', 'post', `/interviews/${first.id}/cancel`).expect(200);
+    expect((await row()).nextInterview).toMatchObject({ round: 'HR', time: '15:00' });
+    expect((await w.as.hr.get(`/api/hiring/applications/${appId}`).expect(200)).body.nextInterview).toMatchObject({
+      round: 'HR',
+    });
   });
 
   it('moves forward and back with a history line each, never to Hired (BR-HIR-009)', async () => {

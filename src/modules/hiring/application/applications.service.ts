@@ -109,4 +109,5 @@ export class ApplicationsService {
 
 const viewerOf = (user: AuthUser) => ({
   canEdit: hasPermission(user.permissions, PERMISSIONS.hiring.candidates, 'edit'),
+  seesInterviews: hasPermission(user.permissions, PERMISSIONS.hiring.interviews),
 });

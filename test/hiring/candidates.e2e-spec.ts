@@ -56,6 +56,14 @@ describe('Candidates API', () => {
     expect(viewed).toBe(1);
   });
 
+  it('shows the agency in the candidates list', async () => {
+    const job = await w.job();
+    const body = w.candidate({ jobId: job.id, source: 'AGENCY', agency: 'TalentHub' });
+    await w.send('hr', 'post', '/candidates', body).expect(201);
+    const list = (await w.as.hr.get(`/api/hiring/candidates?q=${encodeURIComponent(body.email)}`).expect(200)).body;
+    expect(list.items).toEqual([expect.objectContaining({ email: body.email, agency: 'TalentHub' })]);
+  });
+
   it('refuses a duplicate by email or phone and points at the existing candidate (BR-HIR-007)', async () => {
     const body = w.candidate({ locationId: 'Dubai' });
     const first = (await w.send('hr', 'post', '/candidates', body).expect(201)).body;

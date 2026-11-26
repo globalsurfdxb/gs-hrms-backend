@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { EXITS, STAGES, type Exit, type Stage } from '../../domain/application.rules.js';
 import { CANDIDATE_SOURCES, type CandidateSource } from '../../domain/candidate.rules.js';
+import { INTERVIEW_ROUNDS } from '../../domain/interview.rules.js';
+import { wallClockIn } from '../../../../shared/time/wall-clock.js';
 import type {
   ApplicationDetailRecord,
   ApplicationRecord,
@@ -66,7 +68,19 @@ export class ApplicationCandidateResponse {
   @ApiProperty({ example: 'Emirates Networks LLC' }) currentCompany: string;
   @ApiProperty({ example: 4.5 }) experienceYears: number;
   @ApiProperty({ enum: CANDIDATE_SOURCES }) source: CandidateSource;
+  @ApiProperty({ example: 30, description: 'Notice period in days (0 = immediate)' }) noticeDays: number;
+  @ApiProperty({ example: 'Dubai' }) currentCity: string;
   @ApiProperty({ type: [String], example: ['Shortlisted'] }) tags: string[];
+}
+
+/** The next scheduled interview on an application, in the location's local time. */
+export class ApplicationNextInterviewResponse {
+  @ApiProperty() id: string;
+  @ApiProperty({ enum: INTERVIEW_ROUNDS }) round: (typeof INTERVIEW_ROUNDS)[number];
+  @ApiProperty({ example: '2026-12-01', description: 'Local date at the job location' }) date: string;
+  @ApiProperty({ example: '10:00', description: 'Local time at the job location' }) time: string;
+  @ApiProperty({ example: 'Asia/Dubai' }) timezone: string;
+  @ApiProperty({ example: '2026-12-01T06:00:00.000Z' }) startsAt: string;
 }
 
 export class ApplicationViewerResponse {
@@ -76,9 +90,15 @@ export class ApplicationViewerResponse {
 /** A pipeline row: the application with the candidate behind it. */
 export class ApplicationResponse extends ApplicationSummaryResponse {
   @ApiProperty({ type: ApplicationCandidateResponse }) candidate: ApplicationCandidateResponse;
+  @ApiProperty({
+    type: ApplicationNextInterviewResponse,
+    nullable: true,
+    description: 'The earliest SCHEDULED interview; null when none, or without Interviews → View',
+  })
+  nextInterview: ApplicationNextInterviewResponse | null;
   @ApiProperty({ type: ApplicationViewerResponse }) viewer: ApplicationViewerResponse;
 
-  static fromRow(this: void, a: ApplicationRecord, viewer: { canEdit: boolean }): ApplicationResponse {
+  static fromRow(this: void, a: ApplicationRecord, viewer: ApplicationViewer): ApplicationResponse {
     const c = a.candidate;
     return {
       ...ApplicationSummaryResponse.from(a),
@@ -90,9 +110,12 @@ export class ApplicationResponse extends ApplicationSummaryResponse {
         currentTitle: c.currentTitle,
         currentCompany: c.currentCompany,
         experienceYears: c.experienceYears.toNumber(),
+        noticeDays: c.noticeDays,
+        currentCity: c.currentCity,
         source: c.source,
         tags: c.tags,
       },
+      nextInterview: viewer.seesInterviews ? nextInterviewOf(a.interviews) : null,
       viewer: { canEdit: viewer.canEdit },
     };
   }
@@ -101,7 +124,7 @@ export class ApplicationResponse extends ApplicationSummaryResponse {
 export class ApplicationDetailResponse extends ApplicationResponse {
   @ApiProperty({ type: [StageChangeResponse], description: 'Oldest first' }) history: StageChangeResponse[];
 
-  static fromDetail(this: void, a: ApplicationDetailRecord, viewer: { canEdit: boolean }): ApplicationDetailResponse {
+  static fromDetail(this: void, a: ApplicationDetailRecord, viewer: ApplicationViewer): ApplicationDetailResponse {
     return { ...ApplicationResponse.fromRow(a, viewer), history: a.history.map(stageChange) };
   }
 }
@@ -121,3 +144,17 @@ export const stageChange = (h: ApplicationDetailRecord['history'][number]): Stag
   to: h.to,
   note: h.note,
 });
+
+/** What the caller may do and see on an application. */
+export interface ApplicationViewer {
+  canEdit: boolean;
+  /** Interviews → View: the next interview is included. */
+  seesInterviews: boolean;
+}
+
+const nextInterviewOf = (list: ApplicationRecord['interviews']): ApplicationNextInterviewResponse | null => {
+  const i = list.at(0);
+  if (!i) return null;
+  const { day, time } = wallClockIn(i.startsAt, i.timezone);
+  return { id: i.id, round: i.round, date: day, time, timezone: i.timezone, startsAt: i.startsAt.toISOString() };
+};
