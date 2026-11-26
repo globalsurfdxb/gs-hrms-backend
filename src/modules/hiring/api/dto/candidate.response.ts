@@ -17,6 +17,8 @@ export class CandidateResponse {
   @ApiProperty({ example: 'Network Engineer' }) currentTitle: string;
   @ApiProperty({ example: 4.5 }) experienceYears: number;
   @ApiProperty({ enum: CANDIDATE_SOURCES }) source: CandidateSource;
+  @ApiProperty({ example: 'TalentHub', nullable: true, description: 'Set when the source is an agency' })
+  agency: string | null;
   @ApiProperty({ type: [String], example: ['Shortlisted'] }) tags: string[];
   @ApiProperty({ type: [ApplicationSummaryResponse], description: 'Newest first' })
   applications: ApplicationSummaryResponse[];
@@ -33,6 +35,7 @@ export class CandidateResponse {
       currentTitle: c.currentTitle,
       experienceYears: c.experienceYears.toNumber(),
       source: c.source,
+      agency: c.agency,
       tags: c.tags,
       applications: c.applications.map(ApplicationSummaryResponse.from),
       createdAt: c.createdAt.toISOString(),
@@ -73,7 +76,6 @@ export class CandidateDetailResponse extends CandidateResponse {
   expectedSalary?: MoneyResponse | null;
   @ApiProperty({ example: 'Employment visa (transferable)' }) visaStatus: string;
   @ApiProperty({ type: PersonRefResponse, nullable: true }) referrer: PersonRefResponse | null;
-  @ApiProperty({ example: 'TalentHub', nullable: true }) agency: string | null;
   @ApiProperty({ example: 'Priya_Nair_CV.pdf', nullable: true, description: 'File name only (no file stored yet)' })
   cvName: string | null;
   @ApiProperty({ example: 'linkedin.com/in/priya-nair' }) links: string;

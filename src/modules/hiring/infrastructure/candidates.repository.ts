@@ -52,6 +52,7 @@ const CANDIDATE = {
   currentTitle: true,
   experienceYears: true,
   source: true,
+  agency: true,
   tags: true,
   createdAt: true,
   location: { select: { id: true, name: true } },

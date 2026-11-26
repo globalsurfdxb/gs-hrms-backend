@@ -46,9 +46,18 @@ const APPLICATION = {
       currentTitle: true,
       currentCompany: true,
       experienceYears: true,
+      noticeDays: true,
+      currentCity: true,
       source: true,
       tags: true,
     },
+  },
+  // The next scheduled interview, for the card and the "Next" column (shown only with Interviews → View).
+  interviews: {
+    where: { status: 'SCHEDULED' },
+    orderBy: { startsAt: 'asc' },
+    take: 1,
+    select: { id: true, round: true, startsAt: true, timezone: true },
   },
 } as const satisfies Prisma.ApplicationSelect;
 

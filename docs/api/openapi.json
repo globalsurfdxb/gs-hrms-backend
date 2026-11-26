@@ -11253,6 +11253,12 @@
               "DIRECT"
             ]
           },
+          "agency": {
+            "type": "object",
+            "example": "TalentHub",
+            "nullable": true,
+            "description": "Set when the source is an agency"
+          },
           "tags": {
             "example": [
               "Shortlisted"
@@ -11283,6 +11289,7 @@
           "currentTitle",
           "experienceYears",
           "source",
+          "agency",
           "tags",
           "applications",
           "createdAt"
@@ -11563,6 +11570,12 @@
               "DIRECT"
             ]
           },
+          "agency": {
+            "type": "object",
+            "example": "TalentHub",
+            "nullable": true,
+            "description": "Set when the source is an agency"
+          },
           "tags": {
             "example": [
               "Shortlisted"
@@ -11623,11 +11636,6 @@
               }
             ]
           },
-          "agency": {
-            "type": "object",
-            "example": "TalentHub",
-            "nullable": true
-          },
           "cvName": {
             "type": "object",
             "example": "Priya_Nair_CV.pdf",
@@ -11669,6 +11677,7 @@
           "currentTitle",
           "experienceYears",
           "source",
+          "agency",
           "tags",
           "applications",
           "createdAt",
@@ -11676,7 +11685,6 @@
           "noticeDays",
           "visaStatus",
           "referrer",
-          "agency",
           "cvName",
           "links",
           "consentGivenAt",
@@ -11873,6 +11881,15 @@
               "DIRECT"
             ]
           },
+          "noticeDays": {
+            "type": "number",
+            "example": 30,
+            "description": "Notice period in days (0 = immediate)"
+          },
+          "currentCity": {
+            "type": "string",
+            "example": "Dubai"
+          },
           "tags": {
             "example": [
               "Shortlisted"
@@ -11892,7 +11909,52 @@
           "currentCompany",
           "experienceYears",
           "source",
+          "noticeDays",
+          "currentCity",
           "tags"
+        ]
+      },
+      "ApplicationNextInterviewResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string",
+            "enum": [
+              "SCREENING_CALL",
+              "TECHNICAL",
+              "HR",
+              "FINAL"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-12-01",
+            "description": "Local date at the job location"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00",
+            "description": "Local time at the job location"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Dubai"
+          },
+          "startsAt": {
+            "type": "string",
+            "example": "2026-12-01T06:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "round",
+          "date",
+          "time",
+          "timezone",
+          "startsAt"
         ]
       },
       "ApplicationViewerResponse": {
@@ -11971,6 +12033,16 @@
           "candidate": {
             "$ref": "#/components/schemas/ApplicationCandidateResponse"
           },
+          "nextInterview": {
+            "nullable": true,
+            "description": "The earliest SCHEDULED interview; null when none, or without Interviews → View",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationNextInterviewResponse"
+              }
+            ]
+          },
           "viewer": {
             "$ref": "#/components/schemas/ApplicationViewerResponse"
           },
@@ -11993,6 +12065,7 @@
           "appliedAt",
           "stageChangedAt",
           "candidate",
+          "nextInterview",
           "viewer",
           "history"
         ]
@@ -12092,6 +12165,16 @@
           "candidate": {
             "$ref": "#/components/schemas/ApplicationCandidateResponse"
           },
+          "nextInterview": {
+            "nullable": true,
+            "description": "The earliest SCHEDULED interview; null when none, or without Interviews → View",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationNextInterviewResponse"
+              }
+            ]
+          },
           "viewer": {
             "$ref": "#/components/schemas/ApplicationViewerResponse"
           }
@@ -12107,6 +12190,7 @@
           "appliedAt",
           "stageChangedAt",
           "candidate",
+          "nextInterview",
           "viewer"
         ]
       },
