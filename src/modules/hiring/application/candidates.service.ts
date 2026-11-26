@@ -4,12 +4,13 @@ import type { AuthUser } from '../../../core/auth/auth-user.js';
 import { hasPermission, PERMISSIONS } from '../../../core/iam/permission-catalog.js';
 import { AppError, forbidden, notFound } from '../../../shared/errors/app-error.js';
 import type { ApplyToJobDto, CandidateNoteDto, CandidateTagsDto } from '../api/dto/candidate-actions.dto.js';
-import type { DuplicatesQuery, ListCandidatesQuery } from '../api/dto/candidate-queries.js';
+import type { CandidateSummaryQuery, DuplicatesQuery, ListCandidatesQuery } from '../api/dto/candidate-queries.js';
 import { ApplicationDetailResponse } from '../api/dto/application.response.js';
 import {
   CandidateDetailResponse,
   CandidateListResponse,
   CandidateResponse,
+  CandidateSummaryResponse,
   DuplicateCandidateResponse,
 } from '../api/dto/candidate.response.js';
 import type { CreateCandidateDto } from '../api/dto/create-candidate.dto.js';
@@ -40,6 +41,7 @@ export class CandidatesService {
         q: query.q?.trim() || undefined,
         jobId: query.jobId,
         stage: query.stage,
+        exit: query.exit,
         source: query.source,
         tag: query.tag?.trim() || undefined,
         locationId: query.locationId,
@@ -48,6 +50,11 @@ export class CandidatesService {
       pageSize,
     );
     return { items: items.map(CandidateResponse.from), total, page, pageSize };
+  }
+
+  async summary(query: CandidateSummaryQuery, user: AuthUser): Promise<CandidateSummaryResponse> {
+    const c = await this.candidates.summary(hiringScopeOf(user), query.locationId);
+    return { total: c.total, inPipeline: c.inPipeline, hired: c.hired, rejected: c.rejected };
   }
 
   async get(id: string, user: AuthUser): Promise<CandidateDetailResponse> {

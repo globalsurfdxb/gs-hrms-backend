@@ -8,10 +8,11 @@ import { PERMISSIONS } from '../../../core/iam/permission-catalog.js';
 import { CandidatesService } from '../application/candidates.service.js';
 import { ApplicationDetailResponse } from './dto/application.response.js';
 import { ApplyToJobDto, CandidateNoteDto, CandidateTagsDto } from './dto/candidate-actions.dto.js';
-import { DuplicatesQuery, ListCandidatesQuery } from './dto/candidate-queries.js';
+import { CandidateSummaryQuery, DuplicatesQuery, ListCandidatesQuery } from './dto/candidate-queries.js';
 import {
   CandidateDetailResponse,
   CandidateListResponse,
+  CandidateSummaryResponse,
   DuplicateCandidateResponse,
 } from './dto/candidate.response.js';
 import { CreateCandidateDto } from './dto/create-candidate.dto.js';
@@ -37,7 +38,9 @@ export class CandidatesController {
     summary: 'List candidates',
     description:
       `Needs Candidates → View. ${SCOPE} Newest first. Search ` +
-      'q matches name, email, phone, company, title, city or an exact tag. No salary in the list.',
+      'q matches name, email, phone, company, title, city or an exact tag. stage = an application still in the ' +
+      'pipeline there; exit = an application closed out that way (both: closed out from that stage). Job, stage and ' +
+      'exit look only at applications the caller may see. No salary in the list.',
   })
   @ApiOkResponse({ type: CandidateListResponse })
   @ApiErrors(400, 401, 403)
@@ -57,6 +60,21 @@ export class CandidatesController {
   @ApiErrors(400, 401, 403)
   duplicates(@Query() query: DuplicatesQuery, @CurrentUser() user: AuthUser) {
     return this.candidates.duplicates(query, user);
+  }
+
+  @RequirePermission(FEATURE)
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Candidate counts',
+    description:
+      'Needs Candidates → View. The Candidates page counts over the same candidates the list shows (optionally one ' +
+      'location) and only the applications the caller may see (BR-HIR-022): candidates, candidates still in the ' +
+      'pipeline, candidates hired, and rejected applications.',
+  })
+  @ApiOkResponse({ type: CandidateSummaryResponse })
+  @ApiErrors(400, 401, 403)
+  summary(@Query() query: CandidateSummaryQuery, @CurrentUser() user: AuthUser) {
+    return this.candidates.summary(query, user);
   }
 
   @RequirePermission(FEATURE)

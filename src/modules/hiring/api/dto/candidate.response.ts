@@ -50,6 +50,18 @@ export class CandidateListResponse {
   @ApiProperty({ example: 50 }) pageSize: number;
 }
 
+/** The counts on the Candidates page, over the candidates the caller may list. */
+export class CandidateSummaryResponse {
+  @ApiProperty({ example: 120, description: 'Candidates' }) total: number;
+  @ApiProperty({
+    example: 45,
+    description: 'Candidates with an application still in the pipeline (not closed out or hired)',
+  })
+  inPipeline: number;
+  @ApiProperty({ example: 6, description: 'Candidates hired (an application at HIRED)' }) hired: number;
+  @ApiProperty({ example: 30, description: 'Rejected applications, across all jobs' }) rejected: number;
+}
+
 export class CandidateNoteResponse {
   @ApiProperty() id: string;
   @ApiProperty({ example: 'Asked for 45 days notice.' }) text: string;

@@ -133,6 +133,32 @@ describe('Own jobs (BR-HIR-022)', () => {
     await w.send('taManager', 'post', `/jobs/${other.id}/resume`).expect(200);
   });
 
+  it('counts and filters only the candidates and applications on own jobs', async () => {
+    const counts = async (who: 'recruiter' | 'hr') =>
+      (await w.as[who].get('/api/hiring/candidates/summary').expect(200)).body;
+    const [rec, hr] = [await counts('recruiter'), await counts('hr')];
+    // On both jobs, rejected on the other one: the Recruiter sees them, but not that rejection.
+    const c = (await w.send('hr', 'post', '/candidates', { ...w.candidate(), jobId: other.id }).expect(201)).body;
+    await w.send('hr', 'post', `/candidates/${c.id}/applications`, { jobId: mine.id }).expect(201);
+    await w
+      .send('hr', 'post', `/applications/${c.applications[0].id}/exit`, { exit: 'REJECTED', reason: 'Skills mismatch' })
+      .expect(200);
+    // Only on the other job: not counted for the Recruiter at all.
+    await w.send('hr', 'post', '/candidates', { ...w.candidate(), jobId: other.id }).expect(201);
+
+    expect(await counts('recruiter')).toEqual({ ...rec, total: rec.total + 1, inPipeline: rec.inPipeline + 1 });
+    expect(await counts('hr')).toEqual({
+      ...hr,
+      total: hr.total + 2,
+      inPipeline: hr.inPipeline + 2,
+      rejected: hr.rejected + 1,
+    });
+    const listed = await w.as.recruiter.get('/api/hiring/candidates?pageSize=1').expect(200);
+    expect(listed.body.total).toBe(rec.total + 1);
+    const rejected = await w.as.recruiter.get('/api/hiring/candidates?exit=REJECTED&pageSize=200').expect(200);
+    expect(ids(rejected)).not.toContain(c.id);
+  });
+
   it('keeps requisitions and hiring reports away from the Recruiter', async () => {
     await w.as.recruiter.get('/api/hiring/requisitions').expect(403);
   });

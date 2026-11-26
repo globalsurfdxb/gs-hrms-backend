@@ -1,0 +1,33 @@
+meta {
+  name: Candidate counts
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/hiring/candidates/summary?locationId=Dubai
+  body: none
+  auth: none
+}
+
+params:query {
+  locationId: Dubai
+}
+
+docs {
+  Needs Candidates → View (HR GS-119, Super Admin GS-120, TA Manager GS-155, Recruiter GS-156). Team Lead, Office Admin and Employee get 403.
+  The four counts on the Candidates page: total, inPipeline (still in the pipeline), hired (candidates) and rejected
+  (applications), over the same candidates the list shows.
+
+  Own jobs (BR-HIR-022): signed in as GS-156 Recruiter only candidates and applications on jobs you recruit for or
+  manage are counted. Super Admin, HR and GS-155 Talent Acquisition Manager count everything.
+}
+
+tests {
+  test("counts (200) — or 403 without Candidates access", function () {
+    expect([200, 403]).to.include(res.status);
+    if (res.status === 200) {
+      for (const k of ["total", "inPipeline", "hired", "rejected"]) expect(res.body[k]).to.be.a("number");
+    }
+  });
+}
