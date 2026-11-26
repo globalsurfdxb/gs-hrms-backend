@@ -33,10 +33,18 @@ export class ListCandidatesQuery extends Paging {
   @IsUUID()
   jobId?: string;
 
-  @ApiPropertyOptional({ enum: STAGES, description: 'Has an active (not exited) application at this stage' })
+  @ApiPropertyOptional({
+    enum: STAGES,
+    description: 'Has an application at this stage still in the pipeline (with exit: closed out from this stage)',
+  })
   @IsOptional()
   @IsIn(STAGES)
   stage?: (typeof STAGES)[number];
+
+  @ApiPropertyOptional({ enum: EXITS, description: 'Has an application closed out this way' })
+  @IsOptional()
+  @IsIn(EXITS)
+  exit?: (typeof EXITS)[number];
 
   @ApiPropertyOptional({ enum: CANDIDATE_SOURCES })
   @IsOptional()
@@ -50,6 +58,14 @@ export class ListCandidatesQuery extends Paging {
   tag?: string;
 
   @ApiPropertyOptional({ example: 'Dubai' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  locationId?: string;
+}
+
+export class CandidateSummaryQuery {
+  @ApiPropertyOptional({ example: 'Dubai', description: 'Only candidates of this location, as in the list' })
   @IsOptional()
   @IsString()
   @MaxLength(40)

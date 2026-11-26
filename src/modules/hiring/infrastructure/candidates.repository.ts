@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuditService, type AuditActor } from '../../../core/audit/audit.service.js';
 import { PrismaService } from '../../../core/database/prisma.service.js';
-import type { ApplicationStage, CandidateSource, Prisma } from '../../../generated/prisma/client.js';
+import type { ApplicationExit, ApplicationStage, CandidateSource, Prisma } from '../../../generated/prisma/client.js';
 import { conflict } from '../../../shared/errors/app-error.js';
 import { appliedHistory } from '../domain/application.rules.js';
 import { APPLICATION_SUMMARY, STAGE_HISTORY } from './applications.repository.js';
@@ -38,6 +38,7 @@ export interface CandidateFilter {
   q?: string;
   jobId?: string;
   stage?: ApplicationStage;
+  exit?: ApplicationExit;
   source?: CandidateSource;
   tag?: string;
   locationId?: string;
@@ -111,17 +112,19 @@ export class CandidatesRepository {
   ) {}
 
   async list(scope: HiringScope, filter: CandidateFilter, page: number, pageSize: number) {
-    // Job and stage filters look only at applications the caller may see, so they reveal nothing about other jobs.
+    // Job, stage and exit filters look only at applications the caller may see, so they reveal nothing about other
+    // jobs. A stage alone means still in the pipeline there; with an exit, closed out from there.
     const app: Prisma.ApplicationWhereInput = {
       ...applicationInScope(scope),
       ...(filter.jobId && { jobId: filter.jobId }),
-      ...(filter.stage && { stage: filter.stage, exit: null }),
+      ...(filter.stage && { stage: filter.stage }),
+      ...((filter.stage || filter.exit) && { exit: filter.exit ?? null }),
     };
     const where: Prisma.CandidateWhereInput = {
       AND: [
         candidateInScope(scope),
         filter.q ? candidateSearch(filter.q) : {},
-        filter.jobId || filter.stage ? { applications: { some: app } } : {},
+        filter.jobId || filter.stage || filter.exit ? { applications: { some: app } } : {},
         filter.source ? { source: filter.source } : {},
         filter.tag ? { tags: { has: filter.tag } } : {},
         filter.locationId ? { locationId: filter.locationId } : {},
@@ -138,6 +141,25 @@ export class CandidatesRepository {
       this.prisma.candidate.count({ where }),
     ]);
     return { items, total };
+  }
+
+  /** The Candidates page counts, over the candidates the caller may list (BR-HIR-022) and only the applications
+      they may see, so nothing is counted from another job. */
+  async summary(scope: HiringScope, locationId?: string) {
+    const inLocation: Prisma.CandidateWhereInput = locationId ? { locationId } : {};
+    const candidates: Prisma.CandidateWhereInput = { AND: [candidateInScope(scope), inLocation] };
+    const withApplication = (where: Prisma.ApplicationWhereInput): Prisma.CandidateWhereInput => ({
+      AND: [candidates, { applications: { some: { AND: [applicationInScope(scope), where] } } }],
+    });
+    const [total, inPipeline, hired, rejected] = await this.prisma.$transaction([
+      this.prisma.candidate.count({ where: candidates }),
+      this.prisma.candidate.count({ where: withApplication({ exit: null, stage: { not: 'HIRED' } }) }),
+      this.prisma.candidate.count({ where: withApplication({ exit: null, stage: 'HIRED' }) }),
+      this.prisma.application.count({
+        where: { AND: [applicationInScope(scope), { exit: 'REJECTED' }, { candidate: inLocation }] },
+      }),
+    ]);
+    return { total, inPipeline, hired, rejected };
   }
 
   /** A candidate the caller may see (BR-HIR-022), or null. */

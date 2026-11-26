@@ -136,9 +136,56 @@ describe('Candidates API', () => {
     expect(actions).toEqual(['candidate.created', 'candidate.tags_changed', 'candidate.note_added']);
   });
 
+  it('counts candidates for the Candidates page and filters by how an application was closed out', async () => {
+    const counts = async () => (await w.as.hr.get('/api/hiring/candidates/summary?locationId=Dubai').expect(200)).body;
+    const before = await counts();
+    const job = await w.job();
+    const add = async (body: Record<string, unknown>) =>
+      (await w.send('hr', 'post', '/candidates', w.candidate(body)).expect(201)).body;
+    const [moved, rejected, hired] = [
+      await add({ jobId: job.id }),
+      await add({ jobId: job.id }),
+      await add({ jobId: job.id }),
+    ];
+    await add({ locationId: 'Dubai' }); // talent pool: counted, no application
+    await add({ locationId: 'Kochi' }); // another location: not counted
+    const appOf = (c: { applications: { id: string }[] }) => c.applications[0].id;
+    await w.send('hr', 'post', `/applications/${appOf(moved)}/move`, { stage: 'SCREENING' }).expect(200);
+    await w
+      .send('hr', 'post', `/applications/${appOf(rejected)}/exit`, { exit: 'REJECTED', reason: 'Skills mismatch' })
+      .expect(200);
+    // HIRED comes only from an accepted offer (step 5), so the test sets it directly.
+    await w.prisma.application.update({ where: { id: appOf(hired) }, data: { stage: 'HIRED' } });
+
+    expect(await counts()).toEqual({
+      total: before.total + 4,
+      inPipeline: before.inPipeline + 1,
+      hired: before.hired + 1,
+      rejected: before.rejected + 1,
+    });
+
+    const ids = async (query: Record<string, string>) =>
+      (
+        await w.as.hr
+          .get('/api/hiring/candidates')
+          .query({ jobId: job.id, ...query })
+          .expect(200)
+      ).body.items
+        .map((c: { id: string }) => c.id)
+        .sort();
+    expect(await ids({ exit: 'REJECTED' })).toEqual([rejected.id]);
+    expect(await ids({ stage: 'APPLIED', exit: 'REJECTED' })).toEqual([rejected.id]);
+    expect(await ids({ stage: 'APPLIED' })).toEqual([]);
+    expect(await ids({ stage: 'SCREENING' })).toEqual([moved.id]);
+    expect(await ids({ stage: 'HIRED' })).toEqual([hired.id]);
+    expect(await ids({ exit: 'WITHDRAWN' })).toEqual([]);
+    await w.as.hr.get('/api/hiring/candidates?exit=GONE').expect(400);
+  });
+
   it.each(['teamLead', 'officeAdmin', 'employee'] as Who[])('gives %s no access to candidates', async (who) => {
     const c = (await w.send('hr', 'post', '/candidates', w.candidate({ locationId: 'Dubai' })).expect(201)).body;
     await w.as[who].get('/api/hiring/candidates').expect(403);
+    await w.as[who].get('/api/hiring/candidates/summary').expect(403);
     await w.as[who].get(`/api/hiring/candidates/${c.id}`).expect(403);
     await w.as[who].get('/api/hiring/candidates/duplicates').query({ email: c.email }).expect(403);
     await w.send(who, 'post', '/candidates', w.candidate({ locationId: 'Dubai' })).expect(403);

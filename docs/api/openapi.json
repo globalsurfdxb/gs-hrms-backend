@@ -5431,7 +5431,7 @@
     },
     "/api/hiring/candidates": {
       "get": {
-        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. Newest first. Search q matches name, email, phone, company, title, city or an exact tag. No salary in the list.",
+        "description": "Needs Candidates → View. With full hiring access (Jobs → View and Requisitions → View: Super Admin, HR, Talent Acquisition Manager) any candidate; otherwise only candidates on the caller’s own jobs (hiring manager or recruiter, BR-HIR-022), with only those applications; another candidate is 404. Newest first. Search q matches name, email, phone, company, title, city or an exact tag. stage = an application still in the pipeline there; exit = an application closed out that way (both: closed out from that stage). Job, stage and exit look only at applications the caller may see. No salary in the list.",
         "operationId": "CandidatesController_list",
         "parameters": [
           {
@@ -5479,7 +5479,7 @@
             "name": "stage",
             "required": false,
             "in": "query",
-            "description": "Has an active (not exited) application at this stage",
+            "description": "Has an application at this stage still in the pipeline (with exit: closed out from this stage)",
             "schema": {
               "type": "string",
               "enum": [
@@ -5489,6 +5489,20 @@
                 "HR_INTERVIEW",
                 "OFFER",
                 "HIRED"
+              ]
+            }
+          },
+          {
+            "name": "exit",
+            "required": false,
+            "in": "query",
+            "description": "Has an application closed out this way",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "REJECTED",
+                "WITHDRAWN",
+                "ON_HOLD"
               ]
             }
           },
@@ -5743,6 +5757,75 @@
           }
         ],
         "summary": "Find candidates with the same email or phone",
+        "tags": [
+          "Hiring · Candidates"
+        ]
+      }
+    },
+    "/api/hiring/candidates/summary": {
+      "get": {
+        "description": "Needs Candidates → View. The Candidates page counts over the same candidates the list shows (optionally one location) and only the applications the caller may see (BR-HIR-022): candidates, candidates still in the pipeline, candidates hired, and rejected applications.",
+        "operationId": "CandidatesController_summary",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Only candidates of this location, as in the list",
+            "schema": {
+              "example": "Dubai",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (code `request.invalid`, field errors in `details.fields`) or a business rule failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Signed in but not allowed (missing permission, or request from another origin)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Candidate counts",
         "tags": [
           "Hiring · Candidates"
         ]
@@ -11348,6 +11431,37 @@
           "name",
           "email",
           "phone"
+        ]
+      },
+      "CandidateSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 120,
+            "description": "Candidates"
+          },
+          "inPipeline": {
+            "type": "number",
+            "example": 45,
+            "description": "Candidates with an application still in the pipeline (not closed out or hired)"
+          },
+          "hired": {
+            "type": "number",
+            "example": 6,
+            "description": "Candidates hired (an application at HIRED)"
+          },
+          "rejected": {
+            "type": "number",
+            "example": 30,
+            "description": "Rejected applications, across all jobs"
+          }
+        },
+        "required": [
+          "total",
+          "inPipeline",
+          "hired",
+          "rejected"
         ]
       },
       "StageChangeResponse": {
